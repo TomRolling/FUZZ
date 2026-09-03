@@ -54,6 +54,11 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Clé privée utilisée pour signer les mises à jour (indispensable pour que
+          # l'updater embarqué dans l'app accepte le téléchargement). À créer une fois
+          # dans les secrets du dépôt GitHub — voir README, section "Mises à jour auto".
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           # Si le déclencheur est un tag (push), publie automatiquement une Release GitHub
           # avec les installeurs attachés. En déclenchement manuel, build seulement (pas de release).
@@ -62,4 +67,5 @@ jobs:
           releaseBody: 'Installeurs générés automatiquement pour Windows, macOS et Linux.'
           releaseDraft: true
           prerelease: false
+          includeUpdaterJson: true
           args: ${{ matrix.args }}

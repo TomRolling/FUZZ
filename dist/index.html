@@ -461,6 +461,13 @@
     </div>
 
     <div class="tabPanel" id="tab-options">
+      <div class="upgrade" id="updateCard" style="display:none; cursor:default;">
+        <div class="info">
+          <div class="name">🔄 Mises à jour</div>
+          <div class="desc" id="updateStatusText">Vérification...</div>
+        </div>
+        <div class="price"><button class="smallBtn" id="updateCheckBtn" style="margin:0;">Vérifier</button></div>
+      </div>
       <div class="soundToggleBtn" id="soundToggleBtn">
         <span>🔊 Sons du jeu</span>
         <span class="state" id="soundStateLabel">Activés</span>
@@ -2203,6 +2210,78 @@ function applyOfflineProgress() {
 }
 
 // ================= EXPORT / IMPORT / SHARE / RESET =================
+// ================= MISES À JOUR AUTOMATIQUES (app native uniquement) =================
+// Invisible et sans effet sur la version web/PWA — seule l'app Tauri a accès à
+// window.__TAURI__.updater. Le fichier latest.json consulté est généré et signé
+// automatiquement par le workflow GitHub Actions à chaque nouvelle release taguée.
+let _pendingUpdate = null;
+
+async function initUpdateUI() {
+  if (!isTauriApp() || !window.__TAURI__.updater) return; // reste caché sur le web
+  const card = document.getElementById('updateCard');
+  card.style.display = 'flex';
+  try {
+    const version = await window.__TAURI__.app.getVersion();
+    document.getElementById('updateStatusText').textContent = `Version actuelle : v${version}`;
+  } catch (e) { /* pas bloquant si la version n'est pas lisible */ }
+  refreshUpdateStatus(true);
+}
+
+async function refreshUpdateStatus(silent) {
+  const statusEl = document.getElementById('updateStatusText');
+  try {
+    const update = await window.__TAURI__.updater.check();
+    if (update && update.available) {
+      _pendingUpdate = update;
+      statusEl.textContent = `🎉 Nouvelle version disponible : v${update.version}`;
+      document.getElementById('updateCheckBtn').textContent = 'Installer';
+      if (!silent) showToast(`🎉 Version ${update.version} disponible !`);
+    } else {
+      _pendingUpdate = null;
+      statusEl.textContent = 'Tu as déjà la dernière version ✅';
+      document.getElementById('updateCheckBtn').textContent = 'Vérifier';
+      if (!silent) showToast('✅ Tu as déjà la dernière version.');
+    }
+  } catch (e) {
+    console.error(e);
+    if (!silent) {
+      statusEl.textContent = 'Impossible de vérifier (pas de connexion ?)';
+      showToast('❌ Impossible de vérifier les mises à jour.');
+    }
+  }
+}
+
+async function installPendingUpdate() {
+  if (!_pendingUpdate) { await refreshUpdateStatus(false); return; }
+  if (!confirm(`Installer la mise à jour v${_pendingUpdate.version} ? L'app va redémarrer automatiquement une fois terminé. Ta sauvegarde n'est pas affectée.`)) return;
+  const statusEl = document.getElementById('updateStatusText');
+  const btn = document.getElementById('updateCheckBtn');
+  btn.disabled = true;
+  try {
+    let total = 0, downloaded = 0;
+    await _pendingUpdate.downloadAndInstall((event) => {
+      if (event.event === 'Started') total = event.data.contentLength || 0;
+      else if (event.event === 'Progress') {
+        downloaded += event.data.chunkLength;
+        statusEl.textContent = total ? `Téléchargement... ${Math.round(downloaded / total * 100)}%` : 'Téléchargement...';
+      } else if (event.event === 'Finished') {
+        statusEl.textContent = 'Installation terminée, redémarrage...';
+      }
+    });
+    await window.__TAURI__.process.relaunch();
+  } catch (e) {
+    console.error(e);
+    statusEl.textContent = "Échec de l'installation.";
+    showToast('❌ Échec de la mise à jour.');
+    btn.disabled = false;
+  }
+}
+
+document.getElementById('updateCheckBtn').addEventListener('click', () => {
+  if (_pendingUpdate) installPendingUpdate();
+  else refreshUpdateStatus(false);
+});
+
 document.getElementById('soundToggleBtn').addEventListener('click', () => {
   state.soundEnabled = !state.soundEnabled;
   if (state.soundEnabled) playTone(600, 0.06, 'sine', 0.04);
@@ -2358,6 +2437,7 @@ applyOfflineProgress();
 generateQuests();
 checkAchievements();
 renderAll();
+initUpdateUI();
 
 </script>
 

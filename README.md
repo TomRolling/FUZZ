@@ -65,6 +65,60 @@ Aucune installation de Rust/Node nécessaire sur ta machine pour cette méthode 
 se passe sur les serveurs GitHub, gratuit pour les dépôts publics (et un quota gratuit
 généreux pour les dépôts privés).
 
+## Mises à jour automatiques (bouton "Vérifier" dans le jeu)
+
+L'app peut désormais se mettre à jour toute seule : à chaque nouvelle release (tag `vX.X.X`),
+elle détecte la nouvelle version, la télécharge, l'installe et redémarre — plus besoin de
+désinstaller/réinstaller manuellement.
+
+**Obligatoire avant de builder une release avec l'updater actif** : Tauri exige que chaque
+mise à jour soit signée cryptographiquement (sécurité : empêche quiconque d'injecter un faux
+exécutable via une future mise à jour). Ça se fait **une seule fois**, chez toi :
+
+### 1. Génère ta paire de clés
+
+```bash
+cd jardin-idle-tauri
+npx tauri signer generate -w ~/.tauri/jardin-idle.key
+```
+
+Ça te demande un mot de passe pour protéger la clé (choisis-en un, note-le). Le terminal
+affiche ensuite une **clé publique** (un long texte qui commence par `dW50cnVzdGVk...` ou
+similaire) — copie-la.
+
+### 2. Colle la clé publique dans la config
+
+Ouvre `src-tauri/tauri.conf.json`, trouve la ligne :
+```json
+"pubkey": "REMPLACE_MOI_PAR_TA_CLE_PUBLIQUE_GENEREE_LOCALEMENT"
+```
+et remplace par ta vraie clé publique copiée à l'étape 1.
+
+### 3. Ajoute la clé privée comme secret GitHub (jamais dans le code !)
+
+Sur `github.com/TomRolling/IdleJardin` → **Settings** → **Secrets and variables** → **Actions**
+→ **New repository secret**, crée ces deux secrets :
+
+| Nom | Valeur |
+|---|---|
+| `TAURI_SIGNING_PRIVATE_KEY` | Le contenu du fichier `~/.tauri/jardin-idle.key` (ouvre-le avec un éditeur de texte et copie tout) |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | Le mot de passe choisi à l'étape 1 |
+
+### 4. Commit, push, tag comme d'habitude
+
+Une fois ces 3 étapes faites (une seule fois, pas à refaire à chaque version), chaque nouveau
+tag `vX.X.X` poussé génère automatiquement un `latest.json` signé, attaché à la Release. Le
+bouton "Vérifier" dans l'app (onglet Options) le détecte et propose l'installation.
+
+**Pour sortir une nouvelle version** : pense à incrémenter le numéro de version dans
+`src-tauri/tauri.conf.json` (champ `"version"`) avant de tagger — c'est ce numéro que
+l'updater compare pour savoir s'il y a du neuf.
+
+⚠️ Ne perds pas le fichier `~/.tauri/jardin-idle.key` ni le mot de passe — sans eux, impossible
+de publier une nouvelle mise à jour reconnue par les installations existantes (il faudrait
+générer une nouvelle paire de clés, ce qui casserait la mise à jour automatique pour tout le
+monde une fois).
+
 ## Sauvegarde du jeu dans l'app native
 
 Ton système actuel utilise `localStorage`, qui **fonctionne nativement dans Tauri**
