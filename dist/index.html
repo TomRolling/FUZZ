@@ -246,6 +246,7 @@
   .upgrade .price { font-size: 13px; color: var(--accent-dark); font-weight: 700; white-space: nowrap; margin-left: 10px; }
   .upgrade .owned { background: #e0f2e0; border-radius: 8px; padding: 2px 8px; font-size: 11px; margin-left: 6px; }
   .upgrade .synergy { font-size: 10px; color: #ef6c00; }
+  .upgrade .roiBadge { font-size: 10px; color: #2e7d32; font-weight: 700; margin-top: 2px; }
 
   .prestigeBox { background: linear-gradient(135deg, #f3e9ff, #e6d9ff); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; text-align: center; color: #23331a; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
   #prestigeBtn { padding: 11px 22px; border-radius: 12px; border: none; background: linear-gradient(180deg, #9a7fd4, var(--purple)); color: white; cursor: pointer; font-size: 14px; font-weight: 700; box-shadow: 0 3px 0 #5e3b9c; }
@@ -332,6 +333,7 @@
     opacity: 0.6;
   }
   .gardenIcon { font-size: 22px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.15)); animation: gardenSway 3.5s ease-in-out infinite; }
+  .gardenSprite { width: 22px; height: 22px; object-fit: contain; image-rendering: pixelated; image-rendering: crisp-edges; }
   .gardenIcon:nth-child(odd) { animation-delay: -1.2s; }
   .gardenIcon:nth-child(3n) { animation-delay: -2.1s; }
   @keyframes gardenSway { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-3px) rotate(-4deg); } }
@@ -503,11 +505,11 @@ const BUILDINGS = [
   { id: 'serre', name: 'Serre automatisée', desc: "Pousse même la nuit, un peu flippant.", baseCost: 12000, baseCps: 47 },
   { id: 'drone', name: 'Drone désherbeur IA', desc: "Confond parfois les mauvaises herbes et le chat.", baseCost: 130000, baseCps: 260 },
   { id: 'usine', name: 'Usine de compost', desc: "Sent horriblement mauvais, rapporte énormément.", baseCost: 1.4e6, baseCps: 1400 },
-  { id: 'franchise', name: 'Franchise régionale', desc: "Ton papy est maintenant actionnaire.", baseCost: 2e7, baseCps: 7800 },
-  { id: 'labo', name: 'Laboratoire OGM', desc: "Tomates de la taille d'un ballon de basket.", baseCost: 3.3e8, baseCps: 44000 },
-  { id: 'satellite', name: "Satellite d'irrigation", desc: "Arrose ton jardin depuis l'orbite.", baseCost: 5.1e9, baseCps: 260000 },
-  { id: 'portail', name: 'Portail dimensionnel à graines', desc: "Personne ne sait vraiment d'où ça vient.", baseCost: 7.5e10, baseCps: 1.6e6 },
-  { id: 'mars', name: 'Colonie martienne verte', desc: "Le premier potager sur Mars.", baseCost: 1e12, baseCps: 1e7 },
+  { id: 'franchise', name: 'Franchise régionale', desc: "Ton papy est maintenant actionnaire.", baseCost: 1.599e7, baseCps: 7800 },
+  { id: 'labo', name: 'Laboratoire OGM', desc: "Tomates de la taille d'un ballon de basket.", baseCost: 1.849e8, baseCps: 44000 },
+  { id: 'satellite', name: "Satellite d'irrigation", desc: "Arrose ton jardin depuis l'orbite.", baseCost: 2.240e9, baseCps: 260000 },
+  { id: 'portail', name: 'Portail dimensionnel à graines', desc: "Personne ne sait vraiment d'où ça vient.", baseCost: 2.826e10, baseCps: 1.6e6 },
+  { id: 'mars', name: 'Colonie martienne verte', desc: "Le premier potager sur Mars.", baseCost: 6.5e11, baseCps: 1e7 },
   { id: 'iaGalactique', name: 'IA jardinière galactique', desc: "Optimise la photosynthèse à l'échelle de la galaxie.", baseCost: 1.4e13, baseCps: 6.5e7 },
   { id: 'bigbang', name: 'Fleur du Big Bang', desc: "A poussé avant l'univers. Personne ne comprend comment.", baseCost: 1.7e14, baseCps: 4.3e8 },
   { id: 'vaisseauGraine', name: 'Vaisseau-graine intergalactique', desc: "Sème des forêts sur des exoplanètes.", baseCost: 2.2e15, baseCps: 2.8e9 },
@@ -521,6 +523,21 @@ const BUILDINGS = [
 const GROWTH = 1.15;
 
 // ================= JARDIN VISUEL (icônes évolutives par bâtiment) =================
+//
+// COMPATIBILITÉ SPRITES / PIXEL ART (préparation pour plus tard) :
+// Aujourd'hui chaque bâtiment est représenté par un simple emoji. Le jour où tu veux
+// remplacer ça par de vrais sprites pixel art, tu n'auras PAS besoin de toucher au reste
+// du jeu (logique, sauvegardes, achats...) — seulement à modifier les 2 points suivants :
+//   1. Passe VISUAL_ASSET_MODE à 'sprite' ci-dessous.
+//   2. Dépose tes images dans un dossier `assets/sprites/buildings/<id>.png` (ex: stagiaire.png,
+//      voisin.png, etc. — les <id> sont les mêmes que ceux utilisés dans BUILDINGS/GARDEN_ICONS)
+//      à la racine du projet, à côté de index.html (donc dans dist/assets/sprites/buildings/
+//      pour la version Tauri).
+// La fonction getBuildingVisualHtml() ci-dessous gère automatiquement le choix emoji/sprite,
+// donc renderGarden() (et n'importe quel autre appelant futur) n'a rien à changer.
+const VISUAL_ASSET_MODE = 'emoji'; // 'emoji' | 'sprite'
+const SPRITE_BASE_PATH = 'assets/sprites/buildings/';
+
 const GARDEN_ICONS = {
   stagiaire: '🧑‍🌾', voisin: '🧔', tondeuse: '🚜', serre: '🏡', drone: '🛸',
   usine: '🏭', franchise: '🏪', labo: '🧪', satellite: '🛰️', portail: '🌀',
@@ -528,6 +545,20 @@ const GARDEN_ICONS = {
   jardinQuantique: '⚛️', multiversMousse: '🍄', conscienceChloro: '🧠',
   templeCompost: '⛩️', grainePrimordiale: '🌰', jardinHorsTemps: '⏳',
 };
+
+// Renvoie le HTML d'une icône de bâtiment (emoji aujourd'hui, <img> sprite demain),
+// avec repli automatique sur l'emoji si le sprite mode est actif mais que l'image
+// correspondante n'existe pas encore (utile pendant une transition progressive).
+function getBuildingVisualHtml(buildingId, extraClass) {
+  const emoji = GARDEN_ICONS[buildingId] || '🌱';
+  const cls = 'gardenIcon' + (extraClass ? ' ' + extraClass : '');
+  if (VISUAL_ASSET_MODE === 'sprite') {
+    const src = `${SPRITE_BASE_PATH}${buildingId}.png`;
+    return `<img src="${src}" class="${cls} gardenSprite" alt="" onerror="this.outerHTML='<span class=&quot;${cls}&quot;>${emoji}</span>'">`;
+  }
+  return `<span class="${cls}">${emoji}</span>`;
+}
+
 function renderGarden() {
   const el = document.getElementById('gardenScene');
   if (!el) return;
@@ -535,10 +566,9 @@ function renderGarden() {
   for (const b of BUILDINGS) {
     const owned = state.buildings[b.id] || 0;
     if (owned <= 0) continue;
-    const icon = GARDEN_ICONS[b.id] || '🌱';
     // Le nombre d'icônes affichées croît doucement (échelle log) et reste plafonné pour ne pas surcharger l'écran.
     const count = Math.max(1, Math.min(6, 1 + Math.floor(Math.log10(owned + 1) * 2)));
-    for (let i = 0; i < count; i++) html += `<span class="gardenIcon">${icon}</span>`;
+    for (let i = 0; i < count; i++) html += getBuildingVisualHtml(b.id);
   }
   el.innerHTML = html || '<span class="gardenIcon" style="opacity:0.4;">🌱</span>';
 }
@@ -622,12 +652,20 @@ const RESEARCH = [
 
 // ================= ASCENSION UPGRADES (Éclats Stellaires — ne reset JAMAIS, même par une nouvelle Ascension) =================
 const ASCENSION_UPGRADES = [
+  // --- Branche Production (comme avant) ---
   { id: 'as_prod1', name: 'Résonance stellaire', desc: '+30% de production globale.', cost: 1, type: 'prodMult', value: 1.3, requires: null },
   { id: 'as_click1', name: 'Clic céleste', desc: '+100% de Verdure par clic.', cost: 2, type: 'clickMult', value: 2, requires: null },
   { id: 'as_knowledge1', name: 'Sagesse des étoiles', desc: '+100% de gain de Connaissances.', cost: 2, type: 'knowledgeMult', value: 2, requires: null },
   { id: 'as_cheaper1', name: 'Commerce interstellaire', desc: 'Coût des bâtiments réduit de 10% supplémentaire.', cost: 3, type: 'cheaper', value: 0.9, requires: null },
   { id: 'as_offline1', name: 'Jardin autonome total', desc: 'Gains hors-ligne à 100%, cumulable avec les autres sources.', cost: 3, type: 'offline', value: 1.0, requires: null },
   { id: 'as_prod2', name: 'Éclat de constellation', desc: '+50% de production globale supplémentaire.', cost: 5, type: 'prodMult', value: 1.5, requires: 'as_prod1' },
+  // --- Branche Snowball (accélère les cycles de Prestige/Ascension suivants) ---
+  { id: 'as_seedBoost1', name: 'Fertilité stellaire', desc: '+25% de Verdure "comptée" pour le calcul des Graines Cosmiques gagnées au Prestige.', cost: 4, type: 'prestigeSeedMult', value: 0.25, requires: null },
+  { id: 'as_seedBoost2', name: 'Abondance cosmique', desc: '+35% supplémentaires de Verdure "comptée" pour le Prestige.', cost: 8, type: 'prestigeSeedMult', value: 0.35, requires: 'as_seedBoost1' },
+  { id: 'as_ascBoost1', name: 'Résonance galactique', desc: '+25% de Graines "comptées" pour le calcul des Éclats gagnés à l\'Ascension.', cost: 6, type: 'ascensionSeedMult', value: 0.25, requires: null },
+  { id: 'as_synergy1', name: 'Toile mycélienne stellaire', desc: '+50% sur tous les effets de synergie entre bâtiments.', cost: 5, type: 'synergyMult', value: 1.5, requires: null },
+  { id: 'as_startBonus1', name: 'Graine éternelle', desc: 'Après un Prestige OU une Ascension, commence avec 5000 Verdure.', cost: 6, type: 'startBonus', value: 5000, requires: 'as_seedBoost1' },
+  { id: 'as_clickCps1', name: 'Écho stellaire éternel', desc: '+12% de production/seconde ajoutée à chaque clic.', cost: 7, type: 'clickCpsPercent', value: 0.12, requires: 'as_click1' },
 ];
 
 // ================= PRESTIGE UPGRADES (Graines Cosmiques) =================
@@ -852,9 +890,9 @@ function combinedUpgradeValue(type) {
     if (u.type === type && u.owned) {
       if (type === 'prodMult' || type === 'clickMult' || type === 'synergyMult' || type === 'knowledgeMult') result *= u.value;
       else if (type === 'offline' || type === 'weatherShield') result = Math.max(result, u.value);
-      else if (type === 'offlineBonus' || type === 'clickCpsPercent') result += u.value;
+      else if (type === 'offlineBonus' || type === 'clickCpsPercent' || type === 'prestigeSeedMult' || type === 'ascensionSeedMult') result += u.value;
       else if (type === 'cheaper') result = result === 0 ? u.value : result * u.value;
-      else if (type === 'startBonus') result = u.value;
+      else if (type === 'startBonus') result = Math.max(result, u.value);
       else if (type === 'autobuy') result = true;
       else if (type === 'questMult') result = Math.max(result, u.value);
       else if (type === 'uniqueDiscount') result = Math.min(result || 1, u.value);
@@ -1057,7 +1095,10 @@ function buyResearch(id) {
   saveGame(); renderAll();
 }
 
-function prestigeGainAmount() { return Math.floor(Math.cbrt(state.totalEarned / 1e9)); }
+function prestigeGainAmount() {
+  const boost = 1 + (combinedUpgradeValue('prestigeSeedMult') || 0);
+  return Math.floor(Math.cbrt((state.totalEarned * boost) / 1e9));
+}
 
 function doPrestige() {
   const gain = prestigeGainAmount();
@@ -1094,7 +1135,10 @@ function doPrestige() {
 }
 
 const ASCENSION_SEED_DIVISOR = 80; // validé par simulation : ~80 graines cumulées pour le 1er Éclat
-function ascensionGainAmount() { return Math.floor(Math.cbrt((state.seedsSinceAscension || 0) / ASCENSION_SEED_DIVISOR)); }
+function ascensionGainAmount() {
+  const boost = 1 + (combinedUpgradeValue('ascensionSeedMult') || 0);
+  return Math.floor(Math.cbrt(((state.seedsSinceAscension || 0) * boost) / ASCENSION_SEED_DIVISOR));
+}
 function ascensionUnlocked() { return (state.totalSeedsEarned || 0) >= ASCENSION_SEED_DIVISOR || state.totalAscensions > 0; }
 
 function doAscension() {
@@ -1522,9 +1566,25 @@ function renderBuyModeRow() {
   });
 }
 
+// Calcule quel bâtiment offre le meilleur rapport CPS gagné / coût du prochain exemplaire —
+// aide les joueurs à éviter le piège du "moins cher d'abord" qui n'est pas toujours le plus rentable.
+function bestRoiBuildingId() {
+  let bestId = null, bestRoi = -1;
+  for (const b of BUILDINGS) {
+    const synBonus = synergyBonusFor(b.id);
+    const effectiveCps = b.baseCps * (1 + synBonus);
+    const cost = buildingCost(b, 1);
+    if (cost <= 0) continue;
+    const roi = effectiveCps / cost;
+    if (roi > bestRoi) { bestRoi = roi; bestId = b.id; }
+  }
+  return bestId;
+}
+
 function renderShop() {
   const shop = document.getElementById('shop');
   shop.innerHTML = '';
+  const bestRoiId = bestRoiBuildingId();
   for (const b of BUILDINGS) {
     const owned = state.buildings[b.id] || 0;
     const n = state.buyMode === 'max' ? maxAffordable(b) : state.buyMode;
@@ -1538,6 +1598,7 @@ function renderShop() {
         <div class="name">${b.name} <span class="owned">${owned}</span></div>
         <div class="desc">${b.desc} — ${formatNum(b.baseCps)}/s chacun</div>
         ${synBonus > 0 ? `<div class="synergy">Synergie active : +${(synBonus*100).toFixed(0)}%</div>` : ''}
+        ${b.id === bestRoiId ? `<div class="roiBadge">💡 Meilleur rapport qualité/prix</div>` : ''}
       </div>
       <div class="price">${state.buyMode === 'max' ? 'x' + n + ' : ' : ''}${formatNum(cost)} 🌿</div>
     `;
@@ -2172,30 +2233,64 @@ function applyImportedData(parsed) {
   showToast('Sauvegarde importée !');
 }
 
-document.getElementById('exportBtn').addEventListener('click', () => {
-  const data = encodeSave();
-  const blob = new Blob([data], { type: 'text/plain' });
+// ================= HELPERS FICHIER & PRESSE-PAPIER (universels web + app native Tauri) =================
+// Dans l'app native (Tauri), le trick <a download> du navigateur est bloqué par sécurité
+// et ne montre aucune fenêtre "Enregistrer sous" — on utilise donc l'API native de Tauri
+// quand elle est disponible (window.__TAURI__), sinon on retombe sur le comportement navigateur classique.
+function isTauriApp() { return typeof window !== 'undefined' && !!window.__TAURI__; }
+
+async function writeClipboardText(text) {
+  if (isTauriApp() && window.__TAURI__.clipboardManager) {
+    try { await window.__TAURI__.clipboardManager.writeText(text); return true; } catch(e) { console.error(e); }
+  }
+  try { await navigator.clipboard.writeText(text); return true; } catch(e) { return false; }
+}
+
+async function exportSaveFile(filename, text) {
+  if (isTauriApp() && window.__TAURI__.dialog && window.__TAURI__.fs) {
+    try {
+      const path = await window.__TAURI__.dialog.save({
+        defaultPath: filename,
+        filters: [{ name: 'Sauvegarde Jardin Idle', extensions: ['txt'] }]
+      });
+      if (!path) return { ok: false, cancelled: true };
+      await window.__TAURI__.fs.writeTextFile(path, text);
+      return { ok: true, path };
+    } catch (e) {
+      console.error(e);
+      return { ok: false, error: e };
+    }
+  }
+  // Navigateur classique (site web / PWA) : téléchargement direct dans le dossier par défaut du navigateur.
+  const blob = new Blob([text], { type: 'text/plain' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  return { ok: true, path: null };
+}
+
+document.getElementById('exportBtn').addEventListener('click', async () => {
+  const data = encodeSave();
   const d = new Date();
   const stamp = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  a.href = url;
-  a.download = `jardin-idle-save-${stamp}.txt`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-  navigator.clipboard?.writeText(data).catch(() => {});
-  showToast('💾 Sauvegarde téléchargée (et copiée)');
+  const filename = `jardin-idle-save-${stamp}.txt`;
+  const result = await exportSaveFile(filename, data);
+  if (result.cancelled) return; // le joueur a annulé la fenêtre "Enregistrer sous", pas d'erreur à afficher
+  if (!result.ok) { showToast('❌ Échec de la sauvegarde du fichier.'); return; }
+  await writeClipboardText(data);
+  showToast(result.path ? `💾 Sauvegarde enregistrée : ${result.path}` : '💾 Sauvegarde téléchargée (et copiée)');
 });
 
-document.getElementById('copyCodeBtn').addEventListener('click', () => {
+document.getElementById('copyCodeBtn').addEventListener('click', async () => {
   const data = encodeSave();
-  navigator.clipboard?.writeText(data).then(() => {
+  const success = await writeClipboardText(data);
+  if (success) {
     showToast('📋 Code de sauvegarde copié ! Colle-le sur ton autre appareil via "Importer (coller un code)".');
-  }).catch(() => {
+  } else {
     prompt('Copie ce code manuellement :', data);
-  });
+  }
 });
 document.getElementById('importBtn').addEventListener('click', () => {
   document.getElementById('importFileInput').click();
@@ -2229,13 +2324,13 @@ document.getElementById('restoreBackupBtn').addEventListener('click', () => {
     applyImportedData(JSON.parse(backup));
   } catch(e) { alert('Sauvegarde de secours corrompue.'); }
 });
-document.getElementById('shareBtn').addEventListener('click', () => {
+document.getElementById('shareBtn').addEventListener('click', async () => {
   const text = `🌱 Jardin Idle — Mon jardin :\n` +
     `${formatNum(state.totalEarned)} Verdure gagnée\n` +
     `${state.cosmicSeeds} Graines Cosmiques\n` +
     `${state.prestigeCount} prestiges effectués\n` +
     `${Object.values(state.achievements||{}).length} succès débloqués`;
-  navigator.clipboard?.writeText(text).catch(()=>{});
+  await writeClipboardText(text);
   prompt('Copie ce texte pour le partager :', text);
 });
 document.getElementById('resetBtn').addEventListener('click', () => {
