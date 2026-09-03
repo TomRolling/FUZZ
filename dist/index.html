@@ -1,0 +1,2280 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#43a047">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Jardin Idle">
+<meta name="description" content="Jardin Idle - un jeu idle de jardinage : clique, améliore, cherche, prestige.">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="64x64" href="icons/favicon.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>Jardin Idle - MVP complet</title>
+<script>
+  // Calcule la hauteur RÉELLE visible (plus fiable que 100dvh seul sur iOS,
+  // où la barre d'adresse de Safari et le mode PWA installé ne sont pas
+  // toujours pris en compte correctement). Mis à jour en continu.
+  function setAppHeight() {
+    const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+    document.documentElement.style.setProperty('--app-height', h + 'px');
+  }
+  setAppHeight();
+  window.addEventListener('resize', setAppHeight);
+  window.addEventListener('orientationchange', setAppHeight);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', setAppHeight);
+    window.visualViewport.addEventListener('scroll', setAppHeight);
+  }
+</script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; overscroll-behavior: none; }
+  :root {
+    --accent: #43a047;
+    --accent-dark: #2e7d32;
+    --purple: #7e57c2;
+    --blue: #1e88e5;
+    --card-bg: rgba(255,255,255,0.92);
+    --radius: 14px;
+  }
+  body {
+    margin: 0;
+    font-family: 'Poppins', 'Segoe UI', sans-serif;
+    background: radial-gradient(circle at 20% 0%, #e3f6dc 0%, #cdebc6 45%, #a8dba0 100%);
+    color: #23331a;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100dvh;
+    height: var(--app-height, 100dvh);
+    transition: background 1.2s ease, color 0.6s ease;
+    overflow: hidden;
+    padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  body.theme-1 { background: radial-gradient(circle at 20% 0%, #e3f6dc 0%, #cdebc6 45%, #a8dba0 100%); }
+  body.theme-2 { background: radial-gradient(circle at 20% 0%, #dff4ee 0%, #b7e0d8 45%, #8fcdbf 100%); }
+  body.theme-3 { background: radial-gradient(circle at 20% 0%, #e2e7fb 0%, #cfd8f0 45%, #a9b8e8 100%); }
+  body.theme-4 { background: radial-gradient(circle at 20% 0%, #4a4694 0%, #2b2f5e 60%, #1a1a3d 100%); color: #f0f0ff; }
+  body.theme-5 { background: radial-gradient(circle at 20% 0%, #5b2a9e 0%, #2a0d55 55%, #0d0221 100%); color: #f3e9ff; }
+
+  /* ===== Top bar (compact stats) ===== */
+  .topBar {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 12px 6px 12px;
+    z-index: 5;
+  }
+  h1 { margin: 0; font-size: 18px; letter-spacing: 0.5px; }
+  .weatherBadge { margin-top: 4px; font-size: 11.5px; background: var(--card-bg); padding: 3px 12px; border-radius: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+
+  .statsRow {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    width: 100%;
+    max-width: 480px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .statChip {
+    background: var(--card-bg);
+    border-radius: 10px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    color: #23331a;
+  }
+  .statChip.verdure { color: var(--accent-dark); font-size: 14px; }
+  .statChip.seeds { color: var(--purple); }
+  .statChip.knowledge { color: var(--blue); }
+
+  .invasiveBox { background: #ffe0e0; border: 2px solid #e53935; border-radius: 12px; padding: 8px 14px; margin-top: 8px; width: 100%; max-width: 480px; text-align: center; font-size: 12px; cursor: pointer; animation: pulse 1.2s infinite; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(229,57,53,0.35); } 50% { box-shadow: 0 0 0 8px rgba(229,57,53,0); } }
+  .invasiveBox b { color: #b71c1c; }
+
+  /* ===== Full-screen click zone ===== */
+  .clickZone {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+    overflow: hidden;
+  }
+  .clickZone.disabled { cursor: not-allowed; }
+  .clickText {
+    font-size: clamp(26px, 8vw, 58px);
+    line-height: 1.15;
+    font-weight: 900;
+    color: rgba(46, 125, 50, 0.35);
+    animation: pulseScale 1.8s ease-in-out infinite;
+    pointer-events: none;
+    text-align: center;
+    max-width: 80vw;
+  }
+  body.theme-4 .clickText, body.theme-5 .clickText { color: rgba(255,255,255,0.25); }
+  .clickZone.disabled .clickText { font-size: clamp(20px, 6vw, 40px); color: rgba(229,57,53,0.5); animation: none; }
+  @keyframes pulseScale { 0%,100% { transform: scale(1); opacity: 0.35; } 50% { transform: scale(1.12); opacity: 0.65; } }
+
+  .floatText { position: fixed; pointer-events: none; font-weight: bold; color: var(--accent-dark); animation: floatUp 0.8s ease-out forwards; z-index: 50; font-size: 18px; }
+  @keyframes floatUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-40px); } }
+
+  .golden { position: fixed; font-size: 30px; cursor: pointer; z-index: 100; animation: floaty 2s ease-in-out infinite, popIn 0.3s ease-out; filter: drop-shadow(0 0 6px gold); }
+  @keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+  @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+
+  .newBadge { display:inline-block; background:#ff7043; color:white; font-size:9px; padding:1px 5px; border-radius:8px; margin-left:4px; vertical-align:middle; }
+
+  /* ===== Bottom arrow / menu button ===== */
+  .drawerArrow {
+    position: fixed;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 170;
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 12px 26px;
+    border-radius: 30px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 700;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.28);
+    transition: background 0.2s, transform 0.2s;
+  }
+  .drawerArrow:hover { background: var(--accent-dark); }
+  .drawerArrow.open { transform: translateX(-50%) scale(0.95); }
+
+  /* ===== Overlay ===== */
+  .drawerOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 160; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+  .drawerOverlay.open { opacity: 1; pointer-events: auto; }
+
+  /* ===== Bottom sheet drawer ===== */
+  .drawer {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    height: 78vh;
+    height: 78dvh;
+    background: #fdfdfd;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -6px 24px rgba(0,0,0,0.28);
+    z-index: 165;
+    transform: translateY(100%);
+    transition: transform 0.32s ease;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .drawer.open { transform: translateY(0); }
+
+  .drawerHeader {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px 4px 14px;
+  }
+  .drawerHandle { width: 40px; height: 4px; background: #ccc; border-radius: 4px; margin: 0 auto; }
+  #drawerCloseBtn { border: none; background: #eee; color: #333; border-radius: 8px; padding: 6px 10px; font-size: 12px; cursor: pointer; font-weight: 700; }
+
+  .drawerTabsRow {
+    flex-shrink: 0;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 8px 12px 10px 12px;
+    border-bottom: 1px solid #eee;
+  }
+  .drawerBtn {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 12px;
+    background: #f2f2f2;
+    cursor: pointer;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #23331a;
+    position: relative;
+    min-width: 58px;
+  }
+  .drawerBtn .icon { font-size: 18px; }
+  .drawerBtn.active { background: var(--accent); color: white; }
+  .drawerBtn .newBadge { position: absolute; top: -4px; right: -2px; }
+
+  .drawerContent {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 16px calc(90px + env(safe-area-inset-bottom)) 16px;
+  }
+
+  .tabPanel { display: none; animation: fadeIn 0.25s ease; }
+  .tabPanel.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+  .buyModeRow { display: flex; gap: 6px; margin-bottom: 10px; }
+  .buyModeBtn { flex: 1; padding: 7px; border: none; border-radius: 10px; background: #f2f2f2; cursor: pointer; font-size: 12px; font-weight: 700; }
+  .buyModeBtn.active { background: var(--purple); color: white; }
+
+  .upgrade { display: flex; justify-content: space-between; align-items: center; background: white; border-radius: 12px; padding: 11px 15px; margin-bottom: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); cursor: pointer; border: 2px solid transparent; transition: border 0.15s, opacity 0.15s, transform 0.1s; color: #23331a; }
+  .upgrade:hover:not(.disabled) { border-color: var(--accent); transform: translateX(2px); }
+  .upgrade.disabled { opacity: 0.45; cursor: not-allowed; }
+  .upgrade .info { text-align: left; }
+  .upgrade .name { font-weight: 700; font-size: 14px; }
+  .upgrade .desc { font-size: 11px; opacity: 0.65; }
+  .upgrade .price { font-size: 13px; color: var(--accent-dark); font-weight: 700; white-space: nowrap; margin-left: 10px; }
+  .upgrade .owned { background: #e0f2e0; border-radius: 8px; padding: 2px 8px; font-size: 11px; margin-left: 6px; }
+  .upgrade .synergy { font-size: 10px; color: #ef6c00; }
+
+  .prestigeBox { background: linear-gradient(135deg, #f3e9ff, #e6d9ff); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; text-align: center; color: #23331a; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+  #prestigeBtn { padding: 11px 22px; border-radius: 12px; border: none; background: linear-gradient(180deg, #9a7fd4, var(--purple)); color: white; cursor: pointer; font-size: 14px; font-weight: 700; box-shadow: 0 3px 0 #5e3b9c; }
+  #prestigeBtn:disabled { background: #b0aac2; box-shadow: none; cursor: not-allowed; }
+  .prestigeInfo { font-size: 12px; opacity: 0.85; margin-top: 6px; }
+
+  .achv { background: white; border-radius: 12px; padding: 10px 14px; margin-bottom: 6px; font-size: 13px; color: #23331a; }
+  .achv.locked { opacity: 0.55; }
+  .achvTop { display: flex; justify-content: space-between; align-items: center; }
+  .achv .name { font-weight: 700; }
+  .achv .desc { font-size: 11px; opacity: 0.65; }
+  .achvBarWrap { background: #e4e4e4; border-radius: 6px; height: 6px; margin-top: 6px; overflow: hidden; }
+  .achvBarFill { background: var(--accent); height: 100%; border-radius: 6px; transition: width 0.3s ease; }
+
+  .nextGoalBox { background: rgba(255,255,255,0.5); border-radius: 10px; padding: 6px 12px; margin-top: 6px; font-size: 11px; color: inherit; }
+  .nextGoalBox b { font-weight: 700; }
+  .nextGoalBarWrap { background: rgba(0,0,0,0.12); border-radius: 6px; height: 5px; margin-top: 4px; overflow: hidden; }
+  .nextGoalBarFill { background: var(--accent); height: 100%; border-radius: 6px; transition: width 0.3s ease; }
+
+  .statLine { display: flex; justify-content: space-between; background: white; border-radius: 10px; padding: 8px 14px; margin-bottom: 6px; font-size: 13px; color: #23331a; }
+
+  .questCard { background: white; border-radius: 12px; padding: 12px; margin-bottom: 8px; color: #23331a; }
+  .questCard .qName { font-weight: 700; font-size: 14px; }
+  .questCard .qDesc { font-size: 12px; opacity: 0.7; margin: 4px 0; }
+  .qBar { background: #eee; border-radius: 6px; height: 10px; overflow: hidden; margin: 6px 0; }
+  .qBarFill { background: var(--accent); height: 100%; transition: width 0.3s; }
+  .claimBtn { padding: 7px 14px; border: none; border-radius: 10px; background: var(--accent); color: white; cursor: pointer; font-size: 12px; font-weight: 700; }
+  .claimBtn:disabled { background: #ccc; cursor: not-allowed; }
+
+  .defiRow { background: white; border-radius: 12px; padding: 12px; margin-bottom: 10px; color: #23331a; }
+  .toggle { display: flex; align-items: center; justify-content: space-between; }
+  .toggleBtn { padding: 6px 14px; border-radius: 20px; border: none; cursor: pointer; font-size: 12px; font-weight: 700; }
+  .toggleBtn.on { background: #e53935; color: white; }
+  .toggleBtn.off { background: #ddd; color: #333; }
+
+  .footerBtns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .smallBtn { padding: 10px 16px; border-radius: 10px; border: none; background: #f2f2f2; cursor: pointer; font-size: 13px; font-weight: 700; }
+
+  .toastContainer { position: fixed; top: calc(16px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 200; display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; }
+  .toast { background: var(--accent-dark); color: white; padding: 10px 18px; border-radius: 10px; font-size: 13px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); animation: toastIn 0.3s ease-out, toastOut 0.3s ease-in 2.7s forwards; white-space: nowrap; }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes toastOut { to { opacity: 0; } }
+
+  /* ===== Click particles ===== */
+  .particle { position: fixed; pointer-events: none; font-size: 15px; z-index: 60; animation: particleMove 0.65s ease-out forwards; will-change: transform, opacity; }
+  @keyframes particleMove { 0% { transform: translate(0,0) scale(1) rotate(0deg); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(0.35) rotate(var(--rot)); opacity: 0; } }
+
+  /* ===== Combo indicator ===== */
+  .comboBadge { position: absolute; bottom: 14%; left: 50%; transform: translateX(-50%) scale(0.9); font-size: 13px; font-weight: 800; color: #ef6c00; background: rgba(255,255,255,0.85); padding: 4px 12px; border-radius: 20px; opacity: 0; transition: opacity 0.15s, transform 0.15s; pointer-events: none; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+  .comboBadge.show { opacity: 1; transform: translateX(-50%) scale(1); }
+
+  /* ===== Bump feedback on stat change ===== */
+  .bump { animation: bumpAnim 0.35s ease-out; }
+  @keyframes bumpAnim { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
+
+  .soundToggleBtn { display:flex; align-items:center; justify-content:space-between; background:white; border-radius:12px; padding:11px 15px; margin-bottom:8px; box-shadow:0 2px 6px rgba(0,0,0,0.08); cursor:pointer; color:#23331a; font-weight:700; font-size:13px; gap: 10px; }
+  .soundToggleBtn .state { font-size: 12px; padding: 4px 10px; border-radius: 20px; background: #eee; white-space: nowrap; }
+  .soundToggleBtn .state.on { background: var(--accent); color: white; }
+
+  /* ===== Next-purchase progress bar ===== */
+  .progressBarWrap { width: 100%; max-width: 480px; height: 8px; background: rgba(255,255,255,0.5); border-radius: 6px; margin-top: 7px; overflow: hidden; }
+  .progressBarFill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-dark)); border-radius: 6px; transition: width 0.4s ease; }
+  .progressBarLabel { font-size: 10px; opacity: 0.75; margin-top: 3px; text-align: center; }
+
+  /* ===== Confetti (célébration de paliers) ===== */
+  .confettiPiece { position: fixed; top: -20px; pointer-events: none; z-index: 90; border-radius: 2px; animation: confettiFall linear forwards; }
+  @keyframes confettiFall { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(110vh) rotate(720deg); opacity: 0.2; } }
+
+  /* ===== Mode sombre forcé (indépendant du thème de progression) ===== */
+  body.darkOverride { background: radial-gradient(circle at 20% 0%, #2b2f5e 0%, #1a1a3d 60%, #0d0221 100%) !important; color: #f0f0ff !important; }
+
+  /* ===== Jardin visuel évolutif ===== */
+  .gardenScene {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-end;
+    justify-content: center;
+    gap: 5px 7px;
+    padding: 10px 18px calc(94px + env(safe-area-inset-bottom)) 18px;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.6;
+  }
+  .gardenIcon { font-size: 22px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.15)); animation: gardenSway 3.5s ease-in-out infinite; }
+  .gardenIcon:nth-child(odd) { animation-delay: -1.2s; }
+  .gardenIcon:nth-child(3n) { animation-delay: -2.1s; }
+  @keyframes gardenSway { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-3px) rotate(-4deg); } }
+  .clickText { position: relative; z-index: 1; }
+  .comboBadge { z-index: 1; }
+
+  /* ===== Tutoriel de premier lancement ===== */
+  .tutorialOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 300; display: flex; align-items: center; justify-content: center; padding: calc(20px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left)); }
+  .tutorialBox { background: white; color: #23331a; border-radius: 16px; padding: 22px; max-width: 380px; box-shadow: 0 8px 30px rgba(0,0,0,0.3); text-align: left; animation: fadeIn 0.3s ease; }
+  .tutorialBox h2 { margin-top: 0; font-size: 19px; }
+  .tutorialBox p { font-size: 13px; line-height: 1.55; }
+  #tutorialCloseBtn { margin-top: 10px; width: 100%; padding: 12px; border: none; border-radius: 10px; background: var(--accent); color: white; font-weight: 700; font-size: 14px; cursor: pointer; }
+</style>
+</head>
+<body class="theme-1" id="bodyEl">
+
+<div class="topBar">
+  <h1>🌱 Jardin Idle</h1>
+  <div class="weatherBadge" id="weatherBadge"></div>
+  <div class="statsRow">
+    <div class="statChip verdure" id="verdureCount">0</div>
+    <div class="statChip rate" id="rateText">+0/s</div>
+    <div class="statChip seeds" id="seedsText">0 🌌</div>
+    <div class="statChip knowledge" id="knowledgeText">0 📚</div>
+  </div>
+  <div class="progressBarWrap"><div class="progressBarFill" id="nextPurchaseFill"></div></div>
+  <div class="progressBarLabel" id="nextPurchaseLabel"></div>
+  <div class="nextGoalBox" id="nextGoalBox" style="display:none;"></div>
+  <div class="invasiveBox" id="invasiveBox" style="display:none;"></div>
+</div>
+
+<div class="clickZone" id="clickZone">
+  <div class="gardenScene" id="gardenScene"></div>
+  <div class="clickText" id="clickText">Clic ici pour désherber</div>
+  <div class="comboBadge" id="comboBadge"></div>
+</div>
+<div class="toastContainer" id="toastContainer"></div>
+
+<div class="tutorialOverlay" id="tutorialOverlay" style="display:none;">
+  <div class="tutorialBox">
+    <h2>🌱 Bienvenue dans ton jardin !</h2>
+    <p>👆 <b>Clique</b> au centre de l'écran pour désherber et gagner de la Verdure 🌿.</p>
+    <p>🏪 Ouvre le <b>menu</b> en bas de l'écran pour acheter des bâtiments qui produisent de la Verdure automatiquement, même hors-ligne.</p>
+    <p>🌍 Une fois que tu as beaucoup progressé, utilise le <b>Prestige</b> (onglet dédié) pour recommencer avec des bonus permanents et aller plus vite la fois suivante.</p>
+    <button id="tutorialCloseBtn">Compris, je me lance !</button>
+  </div>
+</div>
+
+<div class="tutorialOverlay" id="offlineOverlay" style="display:none;">
+  <div class="tutorialBox">
+    <h2 id="offlineTitle">⏱️ Pendant ton absence</h2>
+    <p id="offlineBody"></p>
+    <button id="offlineCloseBtn">Continuer à jardiner 🌱</button>
+  </div>
+</div>
+
+<button class="drawerArrow" id="drawerArrowBtn">▲ Menu</button>
+<div class="drawerOverlay" id="drawerOverlay"></div>
+
+<div class="drawer" id="drawer">
+  <div class="drawerHeader" id="drawerHeader">
+    <div class="drawerHandle"></div>
+    <button id="drawerCloseBtn">Fermer ✕</button>
+  </div>
+  <div class="drawerTabsRow" id="drawerButtons"></div>
+  <div class="drawerContent" id="tabPanels">
+
+    <div class="tabPanel active" id="tab-jardin">
+      <div class="buyModeRow" id="buyModeRow"></div>
+      <div id="shop"></div>
+    </div>
+
+    <div class="tabPanel" id="tab-clic">
+      <p style="font-size:12px;opacity:0.7;">Renforce tes clics — certaines améliorations ajoutent un % de ta production/seconde à chaque clic, pour que cliquer reste utile même très loin dans la partie.</p>
+      <div id="clickShop"></div>
+    </div>
+
+    <div class="tabPanel" id="tab-special">
+      <div id="specialShop"></div>
+    </div>
+
+    <div class="tabPanel" id="tab-recherche">
+      <div id="researchShop"></div>
+    </div>
+
+    <div class="tabPanel" id="tab-prestige">
+      <div class="prestigeBox">
+        <div id="prestigeInfo" class="prestigeInfo"></div>
+        <div class="progressBarWrap" id="prestigeProgressWrap"><div class="progressBarFill" id="prestigeProgressFill" style="background:linear-gradient(90deg,var(--purple),#5e3b9c);"></div></div>
+        <div class="progressBarLabel" id="prestigeProgressLabel"></div>
+        <button id="prestigeBtn">🌍 Terraformer (Prestige)</button>
+      </div>
+      <div id="prestigeShop"></div>
+    </div>
+
+    <div class="tabPanel" id="tab-ascension">
+      <div class="prestigeBox" style="background:linear-gradient(135deg, #1a1a3d, #3d2b6e); color:#f0e9ff;">
+        <div id="ascensionInfo" class="prestigeInfo"></div>
+        <div class="progressBarWrap" id="ascensionProgressWrap"><div class="progressBarFill" id="ascensionProgressFill" style="background:linear-gradient(90deg,#ffd54f,#ff7043);"></div></div>
+        <div class="progressBarLabel" id="ascensionProgressLabel" style="color:#f0e9ff;"></div>
+        <button id="ascensionBtn">🌟 Ascensionner</button>
+      </div>
+      <div id="ascensionShop"></div>
+    </div>
+
+    <div class="tabPanel" id="tab-quetes">
+      <div id="questList"></div>
+    </div>
+
+    <div class="tabPanel" id="tab-defi">
+      <div id="defiPanel"></div>
+    </div>
+
+    <div class="tabPanel" id="tab-succes">
+      <div id="achvList"></div>
+    </div>
+
+    <div class="tabPanel" id="tab-stats">
+      <div id="statsList"></div>
+    </div>
+
+    <div class="tabPanel" id="tab-journal">
+      <p style="font-size:12px;opacity:0.7;">Historique des derniers événements de ton jardin.</p>
+      <div id="eventLogList"></div>
+    </div>
+
+    <div class="tabPanel" id="tab-options">
+      <div class="soundToggleBtn" id="soundToggleBtn">
+        <span>🔊 Sons du jeu</span>
+        <span class="state" id="soundStateLabel">Activés</span>
+      </div>
+      <div style="padding:6px 4px 14px 4px;">
+        <label for="volumeSlider" style="font-size:12px;opacity:0.75;display:flex;justify-content:space-between;"><span>Volume</span><span id="volumeValueLabel">100%</span></label>
+        <input type="range" id="volumeSlider" min="0" max="100" step="5" value="100" style="width:100%;">
+      </div>
+      <div class="soundToggleBtn" id="darkModeToggleBtn">
+        <span>🌙 Mode sombre forcé</span>
+        <span class="state" id="darkModeStateLabel">Désactivé</span>
+      </div>
+      <div class="soundToggleBtn" id="vacationToggleBtn">
+        <span>🏖️ Mode vacances (bloque les herbes invasives)</span>
+        <span class="state" id="vacationStateLabel">Désactivé</span>
+      </div>
+      <p style="font-size:12px;opacity:0.7;">Sauvegarde, partage et remise à zéro.</p>
+      <div class="footerBtns">
+        <button class="smallBtn" id="exportBtn">💾 Exporter (fichier)</button>
+        <button class="smallBtn" id="copyCodeBtn">📋 Copier mon code (autre appareil)</button>
+        <button class="smallBtn" id="importBtn">📂 Importer (fichier)</button>
+        <button class="smallBtn" id="importPasteBtn">📋 Importer (coller un code)</button>
+        <button class="smallBtn" id="restoreBackupBtn">♻️ Restaurer sauvegarde de secours</button>
+        <button class="smallBtn" id="shareBtn">📣 Partager</button>
+        <button class="smallBtn" id="resetBtn">🗑️ Reset total</button>
+      </div>
+      <input type="file" id="importFileInput" accept=".txt,.json" style="display:none;">
+    </div>
+
+  </div>
+</div>
+
+<script>
+
+const SAVE_VERSION = 2;
+
+// ================= CONFIG: BUILDINGS =================
+const BUILDINGS = [
+  { id: 'stagiaire', name: 'Stagiaire motivé', desc: "Arrache les mauvaises herbes, se plaint beaucoup.", baseCost: 15, baseCps: 0.1 },
+  { id: 'voisin', name: 'Voisin recruté', desc: "Vient 'juste pour aider', reste 3h.", baseCost: 100, baseCps: 1 },
+  { id: 'tondeuse', name: 'Tondeuse motorisée', desc: "Réveille tout le quartier à 8h un dimanche.", baseCost: 1100, baseCps: 8 },
+  { id: 'serre', name: 'Serre automatisée', desc: "Pousse même la nuit, un peu flippant.", baseCost: 12000, baseCps: 47 },
+  { id: 'drone', name: 'Drone désherbeur IA', desc: "Confond parfois les mauvaises herbes et le chat.", baseCost: 130000, baseCps: 260 },
+  { id: 'usine', name: 'Usine de compost', desc: "Sent horriblement mauvais, rapporte énormément.", baseCost: 1.4e6, baseCps: 1400 },
+  { id: 'franchise', name: 'Franchise régionale', desc: "Ton papy est maintenant actionnaire.", baseCost: 2e7, baseCps: 7800 },
+  { id: 'labo', name: 'Laboratoire OGM', desc: "Tomates de la taille d'un ballon de basket.", baseCost: 3.3e8, baseCps: 44000 },
+  { id: 'satellite', name: "Satellite d'irrigation", desc: "Arrose ton jardin depuis l'orbite.", baseCost: 5.1e9, baseCps: 260000 },
+  { id: 'portail', name: 'Portail dimensionnel à graines', desc: "Personne ne sait vraiment d'où ça vient.", baseCost: 7.5e10, baseCps: 1.6e6 },
+  { id: 'mars', name: 'Colonie martienne verte', desc: "Le premier potager sur Mars.", baseCost: 1e12, baseCps: 1e7 },
+  { id: 'iaGalactique', name: 'IA jardinière galactique', desc: "Optimise la photosynthèse à l'échelle de la galaxie.", baseCost: 1.4e13, baseCps: 6.5e7 },
+  { id: 'bigbang', name: 'Fleur du Big Bang', desc: "A poussé avant l'univers. Personne ne comprend comment.", baseCost: 1.7e14, baseCps: 4.3e8 },
+  { id: 'vaisseauGraine', name: 'Vaisseau-graine intergalactique', desc: "Sème des forêts sur des exoplanètes.", baseCost: 2.2e15, baseCps: 2.8e9 },
+  { id: 'jardinQuantique', name: 'Jardin quantique', desc: "Pousse et ne pousse pas en même temps.", baseCost: 3e16, baseCps: 1.9e10 },
+  { id: 'multiversMousse', name: 'Multivers de mousse', desc: "De la mousse dans toutes les réalités possibles.", baseCost: 4.5e17, baseCps: 1.3e11 },
+  { id: 'conscienceChloro', name: 'Conscience chlorophyllienne', desc: "Les plantes ont commencé à réfléchir. C'est inquiétant.", baseCost: 6e18, baseCps: 9e11 },
+  { id: 'templeCompost', name: 'Temple du Compost Éternel', desc: "On y vénère la décomposition.", baseCost: 8e19, baseCps: 6e12 },
+  { id: 'grainePrimordiale', name: 'Graine Primordiale', desc: "La toute première graine ayant jamais existé.", baseCost: 1e21, baseCps: 4e13 },
+  { id: 'jardinHorsTemps', name: 'Jardin au-delà du temps', desc: "Il a toujours été là. Il sera toujours là.", baseCost: 1.4e22, baseCps: 3e14 },
+];
+const GROWTH = 1.15;
+
+// ================= JARDIN VISUEL (icônes évolutives par bâtiment) =================
+const GARDEN_ICONS = {
+  stagiaire: '🧑‍🌾', voisin: '🧔', tondeuse: '🚜', serre: '🏡', drone: '🛸',
+  usine: '🏭', franchise: '🏪', labo: '🧪', satellite: '🛰️', portail: '🌀',
+  mars: '🔴', iaGalactique: '🤖', bigbang: '💥', vaisseauGraine: '🚀',
+  jardinQuantique: '⚛️', multiversMousse: '🍄', conscienceChloro: '🧠',
+  templeCompost: '⛩️', grainePrimordiale: '🌰', jardinHorsTemps: '⏳',
+};
+function renderGarden() {
+  const el = document.getElementById('gardenScene');
+  if (!el) return;
+  let html = '';
+  for (const b of BUILDINGS) {
+    const owned = state.buildings[b.id] || 0;
+    if (owned <= 0) continue;
+    const icon = GARDEN_ICONS[b.id] || '🌱';
+    // Le nombre d'icônes affichées croît doucement (échelle log) et reste plafonné pour ne pas surcharger l'écran.
+    const count = Math.max(1, Math.min(6, 1 + Math.floor(Math.log10(owned + 1) * 2)));
+    for (let i = 0; i < count; i++) html += `<span class="gardenIcon">${icon}</span>`;
+  }
+  el.innerHTML = html || '<span class="gardenIcon" style="opacity:0.4;">🌱</span>';
+}
+
+// ================= CLICK UPGRADES (parallèle aux bâtiments) =================
+// 'flatMult' : multiplie le gain de clic de base
+// 'cpsPercent' : ajoute un % de la production/seconde totale au gain de clic (additif, garde le clic utile très loin)
+const CLICK_UPGRADES = [
+  { id: 'c1', name: 'Gants renforcés', desc: '+100% Verdure par clic.', cost: 30, type: 'flatMult', value: 2 },
+  { id: 'c2', name: 'Clic synchronisé', desc: 'Chaque clic ajoute 5% de ta production/seconde.', cost: 200, type: 'cpsPercent', value: 0.05 },
+  { id: 'c3', name: 'Poignet d\'acier', desc: '+100% Verdure par clic supplémentaire.', cost: 2200, type: 'flatMult', value: 2 },
+  { id: 'c4', name: 'Clic en rafale', desc: '+5% supplémentaire de ta production/seconde par clic.', cost: 24000, type: 'cpsPercent', value: 0.05 },
+  { id: 'c5', name: 'Binette vibrante', desc: '+100% Verdure par clic supplémentaire.', cost: 260000, type: 'flatMult', value: 2 },
+  { id: 'c6', name: 'Réflexes augmentés', desc: '+5% supplémentaire de ta production/seconde par clic.', cost: 2.8e6, type: 'cpsPercent', value: 0.05 },
+  { id: 'c7', name: 'Gant-drone', desc: '+150% Verdure par clic supplémentaire.', cost: 4e7, type: 'flatMult', value: 2.5 },
+  { id: 'c8', name: 'Synchronisation neurale', desc: '+6% supplémentaire de ta production/seconde par clic.', cost: 6.6e8, type: 'cpsPercent', value: 0.06 },
+  { id: 'c9', name: 'Exosquelette léger', desc: '+150% Verdure par clic supplémentaire.', cost: 1e10, type: 'flatMult', value: 2.5 },
+  { id: 'c10', name: 'Clic quantique', desc: '+6% supplémentaire de ta production/seconde par clic.', cost: 1.5e11, type: 'cpsPercent', value: 0.06 },
+  { id: 'c11', name: 'Main martienne', desc: '+200% Verdure par clic supplémentaire.', cost: 2e12, type: 'flatMult', value: 3 },
+  { id: 'c12', name: 'Résonance galactique', desc: '+7% supplémentaire de ta production/seconde par clic.', cost: 2.8e13, type: 'cpsPercent', value: 0.07 },
+  { id: 'c13', name: 'Doigts du Big Bang', desc: '+200% Verdure par clic supplémentaire.', cost: 3.4e14, type: 'flatMult', value: 3 },
+  { id: 'c14', name: 'Clic intergalactique', desc: '+7% supplémentaire de ta production/seconde par clic.', cost: 4.4e15, type: 'cpsPercent', value: 0.07 },
+  { id: 'c15', name: 'Pression quantique', desc: '+250% Verdure par clic supplémentaire.', cost: 6e16, type: 'flatMult', value: 3.5 },
+  { id: 'c16', name: 'Écho de mousse', desc: '+8% supplémentaire de ta production/seconde par clic.', cost: 9e17, type: 'cpsPercent', value: 0.08 },
+  { id: 'c17', name: 'Volonté chlorophyllienne', desc: '+250% Verdure par clic supplémentaire.', cost: 1.2e19, type: 'flatMult', value: 3.5 },
+  { id: 'c18', name: 'Rituel du compost', desc: '+8% supplémentaire de ta production/seconde par clic.', cost: 1.6e20, type: 'cpsPercent', value: 0.08 },
+  { id: 'c19', name: 'Empreinte primordiale', desc: '+300% Verdure par clic supplémentaire.', cost: 2e21, type: 'flatMult', value: 4 },
+  { id: 'c20', name: 'Clic hors du temps', desc: '+10% supplémentaire de ta production/seconde par clic.', cost: 2.8e22, type: 'cpsPercent', value: 0.10 },
+];
+
+// Synergies: chaque unité de "source" boost le cps de "target" de percent
+const SYNERGIES = [
+  { source: 'serre', target: 'stagiaire', percent: 0.02 },
+  { source: 'franchise', target: 'voisin', percent: 0.02 },
+  { source: 'usine', target: 'tondeuse', percent: 0.015 },
+  { source: 'iaGalactique', target: 'drone', percent: 0.02 },
+  { source: 'labo', target: 'usine', percent: 0.015 },
+  { source: 'portail', target: 'satellite', percent: 0.02 },
+  { source: 'bigbang', target: 'mars', percent: 0.03 },
+  { source: 'satellite', target: 'serre', percent: 0.015 },
+  { source: 'grainePrimordiale', target: 'jardinQuantique', percent: 0.02 },
+  { source: 'jardinHorsTemps', target: 'conscienceChloro', percent: 0.025 },
+];
+
+// ================= UNIQUE SPECIAL BUILDINGS =================
+const UNIQUE_BUILDINGS = [
+  { id: 'arbreAncestral', name: 'Arbre Ancestral', desc: 'Double la production de tous les Stagiaires motivés.', cost: 1e6 },
+  { id: 'chatJardin', name: 'Le Chat du Jardin', desc: "Rapporte un bonus aléatoire de Verdure toutes les heures.", cost: 5e6 },
+  { id: 'fontaineMagique', name: 'Fontaine Magique', desc: '+20% de production globale.', cost: 5e7 },
+  { id: 'gnomeDeJardin', name: 'Gnome de Jardin Ancien', desc: '+50% de Verdure gagnée par clic.', cost: 2e8 },
+  { id: 'horlogeSolaire', name: 'Horloge Solaire', desc: "+30% d'efficacité de production hors-ligne.", cost: 1e9 },
+  { id: 'grelotVent', name: 'Grelot du Vent', desc: "Capacité active : x4 production pendant 20s.", cost: 3e9, active: { cooldownMs: 4 * 60000, type: 'boostMult', value: 4, durationMs: 20000 } },
+  { id: 'bibliothequeRacines', name: 'Bibliothèque des Racines', desc: '+30% de gain de Connaissances.', cost: 5e10 },
+  { id: 'meuleCosmique', name: 'Meule Cosmique', desc: '+30% de production globale supplémentaire.', cost: 8e12 },
+  { id: 'coeurBraise', name: 'Cœur de Braise', desc: "Capacité active : gain instantané égal à 10 minutes de production.", cost: 5e13, active: { cooldownMs: 8 * 60000, type: 'instantGain', minutesEquivalent: 10 } },
+  { id: 'sentinelleTemporelle', name: 'Sentinelle Temporelle', desc: "Réduit de 50% l'apparition des mauvaises herbes invasives.", cost: 2e14 },
+];
+
+// ================= COSMÉTIQUES DE CLIC (purement visuels) =================
+const SKINS = [
+  { id: 'default', name: 'Feuilles classiques', desc: 'Le style par défaut.', emojis: ['🌿','🍃','✨'], cost: 0 },
+  { id: 'flowers', name: 'Pack Floral', desc: 'Des pétales à chaque clic.', emojis: ['🌸','🌺','💮'], cost: 5 },
+  { id: 'stars', name: 'Pack Étoilé', desc: 'Un peu de magie cosmique.', emojis: ['⭐','💫','🌙'], cost: 8 },
+  { id: 'candy', name: 'Pack Friandises', desc: 'Sucré et coloré.', emojis: ['🍬','🍭','🧁'], cost: 6 },
+];
+
+// ================= RESEARCH TREE (Connaissances) =================
+const RESEARCH = [
+  { id: 'r_prod1', name: 'Compost amélioré', desc: '+10% production globale.', cost: 5, type: 'prodMult', value: 1.10, requires: null },
+  { id: 'r_click1', name: 'Technique du poignet', desc: '+50% Verdure par clic.', cost: 5, type: 'clickMult', value: 1.5, requires: null },
+  { id: 'r_knowledge1', name: 'Carnet d\'observations', desc: '+50% de gain de Connaissances.', cost: 5, type: 'knowledgeMult', value: 1.5, requires: null },
+  { id: 'r_cheap1', name: 'Achat en gros', desc: '-8% sur le coût des bâtiments.', cost: 8, type: 'cheaper', value: 0.92, requires: null },
+  { id: 'r_synergy1', name: 'Écosystème optimisé', desc: '+50% sur tous les effets de synergie.', cost: 10, type: 'synergyMult', value: 1.5, requires: 'r_prod1' },
+  { id: 'r_weather1', name: 'Abri météo', desc: 'Réduit de moitié les effets négatifs de la météo.', cost: 12, type: 'weatherShield', value: 0.5, requires: null },
+  { id: 'r_quest1', name: 'Carnet de quêtes', desc: '+50% de récompenses de quêtes journalières.', cost: 10, type: 'questMult', value: 1.5, requires: null },
+  { id: 'r_offline1', name: 'Goutte-à-goutte', desc: '+20% d\'efficacité hors-ligne.', cost: 15, type: 'offlineBonus', value: 0.2, requires: null },
+  { id: 'r_prod2', name: 'Biodiversité contrôlée', desc: '+15% production globale supplémentaire.', cost: 20, type: 'prodMult', value: 1.15, requires: 'r_prod1' },
+  { id: 'r_prod3', name: 'Harmonie du jardin', desc: '+25% production globale supplémentaire.', cost: 35, type: 'prodMult', value: 1.25, requires: 'r_prod2' },
+  { id: 'r_clickCps1', name: 'Résonance verte', desc: '+8% de production/seconde ajoutée à chaque clic.', cost: 15, type: 'clickCpsPercent', value: 0.08, requires: 'r_click1' },
+];
+
+// ================= ASCENSION UPGRADES (Éclats Stellaires — ne reset JAMAIS, même par une nouvelle Ascension) =================
+const ASCENSION_UPGRADES = [
+  { id: 'as_prod1', name: 'Résonance stellaire', desc: '+30% de production globale.', cost: 1, type: 'prodMult', value: 1.3, requires: null },
+  { id: 'as_click1', name: 'Clic céleste', desc: '+100% de Verdure par clic.', cost: 2, type: 'clickMult', value: 2, requires: null },
+  { id: 'as_knowledge1', name: 'Sagesse des étoiles', desc: '+100% de gain de Connaissances.', cost: 2, type: 'knowledgeMult', value: 2, requires: null },
+  { id: 'as_cheaper1', name: 'Commerce interstellaire', desc: 'Coût des bâtiments réduit de 10% supplémentaire.', cost: 3, type: 'cheaper', value: 0.9, requires: null },
+  { id: 'as_offline1', name: 'Jardin autonome total', desc: 'Gains hors-ligne à 100%, cumulable avec les autres sources.', cost: 3, type: 'offline', value: 1.0, requires: null },
+  { id: 'as_prod2', name: 'Éclat de constellation', desc: '+50% de production globale supplémentaire.', cost: 5, type: 'prodMult', value: 1.5, requires: 'as_prod1' },
+];
+
+// ================= PRESTIGE UPGRADES (Graines Cosmiques) =================
+const PRESTIGE_UPGRADES = [
+  { id: 'p_click1', name: 'Poigne ferme', desc: '+100% de Verdure par clic.', cost: 1, type: 'clickMult', value: 2, requires: null },
+  { id: 'p_prod1', name: 'Terreau enrichi', desc: '+25% production globale.', cost: 2, type: 'prodMult', value: 1.25, requires: null },
+  { id: 'p_offline1', name: 'Arrosage automatique', desc: "Gains hors-ligne portés à 75%.", cost: 3, type: 'offline', value: 0.75, requires: null },
+  { id: 'p_auto1', name: 'Assistant jardinier', desc: "Achète automatiquement l'amélioration la moins chère toutes les 5s.", cost: 5, type: 'autobuy', value: true, requires: null },
+  { id: 'p_click2', name: 'Binette légendaire', desc: '+200% de Verdure par clic supplémentaire.', cost: 6, type: 'clickMult', value: 3, requires: 'p_click1' },
+  { id: 'p_prod2', name: 'Symbiose fongique', desc: '+50% production globale supplémentaire.', cost: 8, type: 'prodMult', value: 1.5, requires: 'p_prod1' },
+  { id: 'p_offline2', name: 'Serre autonome totale', desc: 'Gains hors-ligne portés à 100%.', cost: 10, type: 'offline', value: 1.0, requires: 'p_offline1' },
+  { id: 'p_startBonus', name: 'Graine mère', desc: 'Après un prestige, commence avec 1000 Verdure.', cost: 12, type: 'startBonus', value: 1000, requires: null },
+  { id: 'p_prod3', name: 'Bénédiction de Gaïa', desc: '+100% production globale supplémentaire.', cost: 20, type: 'prodMult', value: 2, requires: 'p_prod2' },
+  { id: 'p_cheaper', name: 'Négociation en gros', desc: 'Coût des améliorations réduit de 10%.', cost: 15, type: 'cheaper', value: 0.9, requires: null },
+  { id: 'p_synergyBoost', name: 'Réseau mycélien', desc: '+50% sur les effets de synergie.', cost: 25, type: 'synergyMult', value: 1.5, requires: 'p_prod3' },
+  { id: 'p_questBoost', name: 'Journal du jardinier', desc: '+50% de récompenses de quêtes.', cost: 10, type: 'questMult', value: 1.5, requires: null },
+  { id: 'p_weatherShield', name: 'Dôme climatique', desc: 'Effets négatifs de météo réduits de moitié.', cost: 18, type: 'weatherShield', value: 0.5, requires: null },
+  { id: 'p_uniqueDiscount', name: 'Réseau de fournisseurs', desc: '-15% sur le coût des bâtiments spéciaux uniques.', cost: 20, type: 'uniqueDiscount', value: 0.85, requires: null },
+  { id: 'p_knowledgeBoost', name: 'Bibliothèque du jardin', desc: '+100% de gain de Connaissances.', cost: 8, type: 'knowledgeMult', value: 2, requires: null },
+  { id: 'p_click3', name: 'Doigts de lumière', desc: '+300% de Verdure par clic supplémentaire.', cost: 30, type: 'clickMult', value: 4, requires: 'p_click2' },
+  { id: 'p_clickCps1', name: 'Résonance cosmique', desc: '+10% de production/seconde ajoutée à chaque clic.', cost: 15, type: 'clickCpsPercent', value: 0.10, requires: null },
+  { id: 'p_clickCps2', name: 'Écho stellaire', desc: '+15% supplémentaire de production/seconde ajoutée à chaque clic.', cost: 30, type: 'clickCpsPercent', value: 0.15, requires: 'p_clickCps1' },
+];
+
+// ================= WEATHER =================
+const WEATHERS = {
+  soleil: { label: '☀️ Ensoleillé', mult: 1.10, negative: false },
+  pluie: { label: '🌧️ Pluie', mult: 1.25, negative: false },
+  secheresse: { label: '🌵 Sécheresse', mult: 0.8, negative: true },
+  gel: { label: '❄️ Gel', mult: 0.6, negative: true },
+  arcEnCiel: { label: '🌈 Arc-en-ciel', mult: 1.5, negative: false },
+  brouillard: { label: '🌫️ Brouillard', mult: 0.85, negative: true },
+};
+
+// ================= ACHIEVEMENTS =================
+// `progress` retourne [valeur actuelle, valeur cible] pour afficher une barre sur les succès verrouillés.
+const ACHIEVEMENTS = [
+  { id: 'a_click100', name: 'Petit bras', desc: '100 clics effectués.', bonus: 0.01, check: s => s.totalClicks >= 100, progress: s => [s.totalClicks, 100] },
+  { id: 'a_click1000', name: 'Poignet solide', desc: '1000 clics effectués.', bonus: 0.02, check: s => s.totalClicks >= 1000, progress: s => [s.totalClicks, 1000] },
+  { id: 'a_earn1k', name: 'Premiers légumes', desc: '1 000 Verdure gagnée au total.', bonus: 0.01, check: s => s.totalEarned >= 1000, progress: s => [s.totalEarned, 1000] },
+  { id: 'a_earn1m', name: 'Petit empire vert', desc: '1 000 000 Verdure gagnée au total.', bonus: 0.03, check: s => s.totalEarned >= 1e6, progress: s => [s.totalEarned, 1e6] },
+  { id: 'a_earn1b', name: 'Magnat du jardin', desc: '1 milliard de Verdure gagnée au total.', bonus: 0.05, check: s => s.totalEarned >= 1e9, progress: s => [s.totalEarned, 1e9] },
+  { id: 'a_earn1t', name: 'Divinité végétale', desc: '1 trillion de Verdure gagnée au total.', bonus: 0.08, check: s => s.totalEarned >= 1e12, progress: s => [s.totalEarned, 1e12] },
+  { id: 'a_stagiaire10', name: 'Petite équipe', desc: '10 Stagiaires motivés.', bonus: 0.01, check: s => (s.buildings.stagiaire||0) >= 10, progress: s => [s.buildings.stagiaire||0, 10] },
+  { id: 'a_stagiaire50', name: 'Armée de stagiaires', desc: '50 Stagiaires motivés.', bonus: 0.02, check: s => (s.buildings.stagiaire||0) >= 50, progress: s => [s.buildings.stagiaire||0, 50] },
+  { id: 'a_drone10', name: 'Essaim de drones', desc: '10 Drones désherbeurs IA.', bonus: 0.02, check: s => (s.buildings.drone||0) >= 10, progress: s => [s.buildings.drone||0, 10] },
+  { id: 'a_mars1', name: 'Bienvenue sur Mars', desc: 'Posséder une Colonie martienne verte.', bonus: 0.03, check: s => (s.buildings.mars||0) >= 1, progress: s => [s.buildings.mars||0, 1] },
+  { id: 'a_bigbang1', name: 'Avant toute chose', desc: 'Posséder une Fleur du Big Bang.', bonus: 0.05, check: s => (s.buildings.bigbang||0) >= 1, progress: s => [s.buildings.bigbang||0, 1] },
+  { id: 'a_hors_temps1', name: 'Éternité', desc: 'Posséder un Jardin au-delà du temps.', bonus: 0.08, check: s => (s.buildings.jardinHorsTemps||0) >= 1, progress: s => [s.buildings.jardinHorsTemps||0, 1] },
+  { id: 'a_prestige1', name: 'Nouveau départ', desc: 'Premier prestige effectué.', bonus: 0.03, check: s => s.prestigeCount >= 1, progress: s => [s.prestigeCount, 1] },
+  { id: 'a_prestige5', name: 'Habitué du redémarrage', desc: '5 prestiges effectués.', bonus: 0.05, check: s => s.prestigeCount >= 5, progress: s => [s.prestigeCount, 5] },
+  { id: 'a_prestige20', name: 'Terraformeur professionnel', desc: '20 prestiges effectués.', bonus: 0.1, check: s => s.prestigeCount >= 20, progress: s => [s.prestigeCount, 20] },
+  { id: 'a_seeds10', name: "Poussière d'étoiles", desc: '10 Graines Cosmiques accumulées.', bonus: 0.03, check: s => s.totalSeedsEarned >= 10, progress: s => [s.totalSeedsEarned, 10] },
+  { id: 'a_golden10', name: 'Chasseur de bonus', desc: '10 mauvaises herbes dorées cliquées.', bonus: 0.02, check: s => s.goldenClicked >= 10, progress: s => [s.goldenClicked, 10] },
+  { id: 'a_research1', name: 'Apprenti chercheur', desc: 'Débloquer 1 recherche.', bonus: 0.01, check: s => Object.keys(s.researchUpgrades||{}).length >= 1, progress: s => [Object.keys(s.researchUpgrades||{}).length, 1] },
+  { id: 'a_research5', name: 'Chercheur confirmé', desc: 'Débloquer 5 recherches.', bonus: 0.04, check: s => Object.keys(s.researchUpgrades||{}).length >= 5, progress: s => [Object.keys(s.researchUpgrades||{}).length, 5] },
+  { id: 'a_unique1', name: 'Objet rare', desc: 'Posséder un bâtiment spécial unique.', bonus: 0.02, check: s => Object.keys(s.uniqueBuildings||{}).length >= 1, progress: s => [Object.keys(s.uniqueBuildings||{}).length, 1] },
+  { id: 'a_unique5', name: 'Collection complète', desc: 'Posséder 5 bâtiments spéciaux.', bonus: 0.08, check: s => Object.keys(s.uniqueBuildings||{}).length >= 5, progress: s => [Object.keys(s.uniqueBuildings||{}).length, 5] },
+  { id: 'a_unique8', name: 'Conservateur du jardin', desc: 'Posséder tous les bâtiments spéciaux.', bonus: 0.12, check: s => Object.keys(s.uniqueBuildings||{}).length >= UNIQUE_BUILDINGS.length, progress: s => [Object.keys(s.uniqueBuildings||{}).length, UNIQUE_BUILDINGS.length] },
+  { id: 'a_quest10', name: 'Jardinier assidu', desc: 'Compléter 10 quêtes journalières.', bonus: 0.03, check: s => (s.questsCompleted||0) >= 10, progress: s => [s.questsCompleted||0, 10] },
+  { id: 'a_weatherAll', name: "Prévisionniste", desc: 'Vivre les 6 types de météo.', bonus: 0.02, check: s => (s.weatherSeen||[]).length >= 6, progress: s => [(s.weatherSeen||[]).length, 6] },
+  { id: 'a_invasive10', name: "Chasseur d'invasives", desc: '10 mauvaises herbes invasives vaincues.', bonus: 0.03, check: s => (s.invasiveDefeated||0) >= 10, progress: s => [s.invasiveDefeated||0, 10] },
+  { id: 'a_clickUp10', name: 'Maître du clic', desc: '10 améliorations de clic achetées.', bonus: 0.04, check: s => Object.keys(s.clickUpgrades||{}).length >= 10, progress: s => [Object.keys(s.clickUpgrades||{}).length, 10] },
+  { id: 'a_clickUpAll', name: 'Clic transcendant', desc: 'Toutes les améliorations de clic achetées.', bonus: 0.1, check: s => Object.keys(s.clickUpgrades||{}).length >= 20, progress: s => [Object.keys(s.clickUpgrades||{}).length, 20] },
+  { id: 'a_noBuy1', name: 'Minimaliste', desc: '1 Défi Sans-Achat réussi.', bonus: 0.02, check: s => (s.noBuyCompleted||0) >= 1, progress: s => [s.noBuyCompleted||0, 1] },
+  { id: 'a_noBuy5', name: 'Ascète du jardin', desc: '5 Défis Sans-Achat réussis.', bonus: 0.06, check: s => (s.noBuyCompleted||0) >= 5, progress: s => [s.noBuyCompleted||0, 5] },
+  { id: 'a_speed1', name: 'Éclair vert', desc: '1 Défi Éclair réussi.', bonus: 0.02, check: s => (s.speedCompleted||0) >= 1, progress: s => [s.speedCompleted||0, 1] },
+  { id: 'a_speed5', name: 'Vitesse lumière', desc: '5 Défis Éclair réussis.', bonus: 0.07, check: s => (s.speedCompleted||0) >= 5, progress: s => [s.speedCompleted||0, 5] },
+  // --- Succès secrets : condition non affichée tant qu'ils ne sont pas débloqués (pas de barre de progression) ---
+  { id: 'a_secret_owl', name: 'Oiseau de nuit', desc: 'Cliquer entre 2h et 4h du matin.', bonus: 0.03, check: s => { const h = new Date().getHours(); return h >= 2 && h < 4 && s.totalClicks > 0; }, secret: true },
+  { id: 'a_secret_patience', name: 'Zen absolu', desc: "Rester 10 minutes sur l'écran sans cliquer une seule fois (hors Défi Sans-Clic).", bonus: 0.04, check: s => (s.maxIdleGapSec || 0) >= 600, secret: true },
+  { id: 'a_secret_clicker', name: 'Frénésie', desc: 'Cliquer 30 fois en moins de 5 secondes.', bonus: 0.03, check: s => (s.maxClicksIn5s || 0) >= 30, secret: true },
+];
+
+const QUEST_POOL = ['click', 'earn', 'buy', 'golden'];
+
+// ================= ONBOARDING / UNLOCKS =================
+const TAB_DEFS = [
+  { id: 'jardin', label: 'Jardin', icon: '🌱', unlock: () => true },
+  { id: 'clic', label: 'Clic', icon: '👆', unlock: s => s.totalClicks >= 15 },
+  { id: 'special', label: 'Spécial', icon: '✨', unlock: s => (s.buildings.serre||0) >= 1 || s.totalEarned >= 8000 },
+  { id: 'recherche', label: 'Recherche', icon: '🔬', unlock: s => s.totalEarned >= 2000 },
+  { id: 'prestige', label: 'Prestige', icon: '🌍', unlock: s => s.totalEarned >= 5e4 || s.prestigeCount > 0 },
+  { id: 'ascension', label: 'Ascension', icon: '🌟', unlock: s => (s.totalSeedsEarned || 0) >= ASCENSION_SEED_DIVISOR || s.totalAscensions > 0 },
+  { id: 'quetes', label: 'Quêtes', icon: '📋', unlock: s => Object.keys(s.buildings||{}).length >= 1 },
+  { id: 'defi', label: 'Défi', icon: '🏅', unlock: s => s.prestigeCount >= 1 },
+  { id: 'succes', label: 'Succès', icon: '🏆', unlock: s => s.totalClicks >= 20 || s.totalEarned >= 500 },
+  { id: 'stats', label: 'Stats', icon: '📊', unlock: () => true },
+  { id: 'journal', label: 'Journal', icon: '📜', unlock: () => true },
+  { id: 'options', label: 'Options', icon: '⚙️', unlock: () => true },
+];
+
+// ================= STATE =================
+function defaultState() {
+  return {
+    verdure: 0,
+    totalEarned: 0,
+    totalClicks: 0,
+    goldenClicked: 0,
+    invasiveDefeated: 0,
+    questsCompleted: 0,
+    cosmicSeeds: 0,
+    totalSeedsEarned: 0,
+    prestigeCount: 0,
+    knowledge: 0,
+    buildings: {},
+    uniqueBuildings: {},
+    researchUpgrades: {},
+    prestigeUpgrades: {},
+    clickUpgrades: {},
+    achievements: {},
+    tabsSeen: { jardin: true },
+    activeTab: 'jardin',
+    weather: 'soleil',
+    weatherSeen: ['soleil'],
+    lastWeatherChange: Date.now(),
+    invasiveWeed: null,
+    challengeNoClick: false,
+    clicksThisRun: 0,
+    challengesCompleted: 0,
+    challengeNoBuy: false,
+    purchasesThisRun: 0,
+    noBuyCompleted: 0,
+    challengeSpeed: false,
+    speedChallengeStart: null,
+    speedCompleted: 0,
+    dailyQuests: null,
+    dailyProgress: { click: 0, earn: 0, buy: 0, golden: 0 },
+    buyMode: 1,
+    lastSave: Date.now(),
+    lastGoldenSpawn: Date.now(),
+    lastButterflySpawn: Date.now(),
+    soundEnabled: true,
+    soundVolume: 100,
+    totalPlayTimeSec: 0,
+    saveVersion: SAVE_VERSION,
+    eventLog: [],
+    ownedSkins: { default: true },
+    activeSkin: 'default',
+    forceDarkMode: false,
+    vacationMode: false,
+    lastBackupTime: 0,
+    tutorialSeen: false,
+    maxIdleGapSec: 0,
+    maxClicksIn5s: 0,
+    fastestPrestigeSec: null,
+    lastPrestigeTime: null,
+    bestCpsEver: 0,
+    activeCooldowns: {},
+    stellarShards: 0,
+    totalAscensions: 0,
+    seedsSinceAscension: 0,
+    ascensionUpgrades: {},
+  };
+}
+let state = defaultState();
+
+function applyLoadedState(parsed) {
+  state = { ...defaultState(), ...parsed };
+  state.dailyProgress = { ...defaultState().dailyProgress, ...(parsed.dailyProgress || {}) };
+  state.tabsSeen = { ...defaultState().tabsSeen, ...(parsed.tabsSeen || {}) };
+  state.ownedSkins = { ...defaultState().ownedSkins, ...(parsed.ownedSkins || {}) };
+  state.eventLog = Array.isArray(parsed.eventLog) ? parsed.eventLog : [];
+  // Migration douce : les sauvegardes plus anciennes récupèrent simplement les nouveaux champs par défaut ci-dessus.
+  state.saveVersion = SAVE_VERSION;
+}
+
+function loadGame() {
+  const saved = localStorage.getItem('jardinIdleSave');
+  if (saved) {
+    try {
+      applyLoadedState(JSON.parse(saved));
+      return;
+    } catch(e) { console.error('Save corrompue, tentative avec la sauvegarde de secours', e); }
+  }
+  const backup = localStorage.getItem('jardinIdleSave_backup');
+  if (backup) {
+    try { applyLoadedState(JSON.parse(backup)); } catch(e) { console.error('Sauvegarde de secours également corrompue', e); }
+  }
+}
+function saveGame() {
+  state.lastSave = Date.now();
+  state.saveVersion = SAVE_VERSION;
+  const json = JSON.stringify(state);
+  localStorage.setItem('jardinIdleSave', json);
+  if (Date.now() - (state.lastBackupTime || 0) > 5 * 60000) {
+    localStorage.setItem('jardinIdleSave_backup', json);
+    state.lastBackupTime = Date.now();
+  }
+}
+loadGame();
+
+// ================= HELPERS =================
+function formatNum(n) {
+  if (n === Infinity) return '∞';
+  const sign = n < 0 ? '-' : '';
+  const original = Math.abs(n);
+  let n2 = original;
+  if (n2 < 1000) return sign + (Math.floor(n2*100)/100).toString();
+  const units = ['K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc','UDc','DDc','TDc','QaDc','QiDc','SxDc','SpDc','OcDc','NoDc','Vg'];
+  let unitIndex = -1;
+  while (n2 >= 1000 && unitIndex < units.length - 1) { n2 /= 1000; unitIndex++; }
+  // Au-delà de la dernière unité nommée (~10^66), on repasse en notation scientifique plutôt que d'afficher un nombre sans suffixe.
+  if (n2 >= 1000) return sign + original.toExponential(2).replace('e+', 'e');
+  return sign + n2.toFixed(2) + (units[unitIndex] || '');
+}
+
+function hasPrestigeUpgrade(id) { return !!state.prestigeUpgrades[id]; }
+function hasResearch(id) { return !!state.researchUpgrades[id]; }
+function hasUnique(id) { return !!state.uniqueBuildings[id]; }
+function hasClickUpgrade(id) { return !!state.clickUpgrades[id]; }
+function hasAscensionUpgrade(id) { return !!state.ascensionUpgrades[id]; }
+
+function combinedUpgradeValue(type) {
+  let result = (type === 'prodMult' || type === 'clickMult' || type === 'synergyMult' || type === 'knowledgeMult') ? 1 : 0;
+  const sources = [
+    ...PRESTIGE_UPGRADES.map(u => ({...u, owned: hasPrestigeUpgrade(u.id)})),
+    ...RESEARCH.map(u => ({...u, owned: hasResearch(u.id)})),
+    ...ASCENSION_UPGRADES.map(u => ({...u, owned: hasAscensionUpgrade(u.id)})),
+  ];
+  for (const u of sources) {
+    if (u.type === type && u.owned) {
+      if (type === 'prodMult' || type === 'clickMult' || type === 'synergyMult' || type === 'knowledgeMult') result *= u.value;
+      else if (type === 'offline' || type === 'weatherShield') result = Math.max(result, u.value);
+      else if (type === 'offlineBonus' || type === 'clickCpsPercent') result += u.value;
+      else if (type === 'cheaper') result = result === 0 ? u.value : result * u.value;
+      else if (type === 'startBonus') result = u.value;
+      else if (type === 'autobuy') result = true;
+      else if (type === 'questMult') result = Math.max(result, u.value);
+      else if (type === 'uniqueDiscount') result = Math.min(result || 1, u.value);
+    }
+  }
+  return result;
+}
+
+function clickShopFlatMult() {
+  let mult = 1;
+  for (const c of CLICK_UPGRADES) if (c.type === 'flatMult' && hasClickUpgrade(c.id)) mult *= c.value;
+  return mult;
+}
+function clickShopCpsPercent() {
+  let sum = 0;
+  for (const c of CLICK_UPGRADES) if (c.type === 'cpsPercent' && hasClickUpgrade(c.id)) sum += c.value;
+  return sum;
+}
+
+function achievementMultiplier() {
+  let bonus = 0;
+  for (const a of ACHIEVEMENTS) if (a.check(state)) bonus += a.bonus;
+  return 1 + bonus;
+}
+function seedMultiplier() { return Math.pow(1.15, state.cosmicSeeds); }
+function shardMultiplier() { return Math.pow(1.5, state.stellarShards || 0); }
+
+function uniqueMultipliers() {
+  let prod = 1, click = 1, offlineBonus = 0, knowledge = 1, invasiveRate = 1;
+  if (hasUnique('fontaineMagique')) prod *= 1.2;
+  if (hasUnique('gnomeDeJardin')) click *= 1.5;
+  if (hasUnique('horlogeSolaire')) offlineBonus += 0.3;
+  if (hasUnique('bibliothequeRacines')) knowledge *= 1.3;
+  if (hasUnique('meuleCosmique')) prod *= 1.3;
+  if (hasUnique('sentinelleTemporelle')) invasiveRate *= 0.5;
+  return { prod, click, offlineBonus, knowledge, invasiveRate };
+}
+
+function weatherMultiplier() {
+  const w = WEATHERS[state.weather] || WEATHERS.soleil;
+  if (!w.negative) return w.mult;
+  const shield = combinedUpgradeValue('weatherShield') || 0;
+  const greenhouseRelief = (state.buildings.serre || 0) > 0 ? 0.5 : 0;
+  const totalRelief = Math.min(0.9, shield + greenhouseRelief * 0.5);
+  return 1 - (1 - w.mult) * (1 - totalRelief);
+}
+function invasivePenalty() { return state.invasiveWeed && state.invasiveWeed.active ? 0.7 : 1; }
+function activeBoostMultiplier() {
+  return (window._activeBoostUntil && Date.now() < window._activeBoostUntil) ? (window._activeBoostMult || 1) : 1;
+}
+
+function totalProdMultiplier() {
+  return seedMultiplier()
+    * shardMultiplier()
+    * combinedUpgradeValue('prodMult')
+    * achievementMultiplier()
+    * uniqueMultipliers().prod
+    * weatherMultiplier()
+    * invasivePenalty()
+    * activeBoostMultiplier();
+}
+function totalClickFlatMultiplier() {
+  return combinedUpgradeValue('clickMult') * uniqueMultipliers().click * clickShopFlatMult();
+}
+function totalClickCpsPercent() {
+  return combinedUpgradeValue('clickCpsPercent') + clickShopCpsPercent();
+}
+
+function synergyBonusFor(buildingId) {
+  let bonus = 0;
+  const synergyMult = combinedUpgradeValue('synergyMult') || 1;
+  for (const s of SYNERGIES) {
+    if (s.target === buildingId) {
+      const ownedSource = state.buildings[s.source] || 0;
+      bonus += ownedSource * s.percent * synergyMult;
+    }
+  }
+  if (buildingId === 'stagiaire' && hasUnique('arbreAncestral')) bonus += 1;
+  return bonus;
+}
+
+function totalCps() {
+  let cps = 0;
+  for (const b of BUILDINGS) {
+    const owned = state.buildings[b.id] || 0;
+    if (owned <= 0) continue;
+    const synBonus = synergyBonusFor(b.id);
+    cps += owned * b.baseCps * (1 + synBonus);
+  }
+  return cps * totalProdMultiplier();
+}
+
+function clickGain() {
+  const flatPart = 1 * totalProdMultiplier() * totalClickFlatMultiplier();
+  const cpsPart = totalCps() * totalClickCpsPercent();
+  const butterflyBoost = (window._clickBoostUntil && Date.now() < window._clickBoostUntil) ? 2 : 1;
+  return (flatPart + cpsPart) * comboMultiplier() * butterflyBoost;
+}
+
+function knowledgeRate() {
+  return Math.max(0.01, totalCps() * 0.0015) * (combinedUpgradeValue('knowledgeMult') || 1) * uniqueMultipliers().knowledge;
+}
+
+function buildingCost(b, n) {
+  const owned = state.buildings[b.id] || 0;
+  const cheaperMult = combinedUpgradeValue('cheaper') || 1;
+  const cost = b.baseCost * Math.pow(GROWTH, owned) * (Math.pow(GROWTH, n) - 1) / (GROWTH - 1);
+  return cost * cheaperMult;
+}
+function maxAffordable(b) {
+  const owned = state.buildings[b.id] || 0;
+  const cheaperMult = combinedUpgradeValue('cheaper') || 1;
+  const effectiveBase = b.baseCost * cheaperMult;
+  const avail = state.verdure;
+  const val = (avail * (GROWTH - 1)) / (effectiveBase * Math.pow(GROWTH, owned)) + 1;
+  if (val <= 0) return 0;
+  let n = Math.floor(Math.log(val) / Math.log(GROWTH));
+  return Math.max(0, Math.min(n, 10000));
+}
+function buyBuilding(id, forceN) {
+  const b = BUILDINGS.find(x => x.id === id);
+  if (!b) return;
+  let n = forceN !== undefined ? forceN : (state.buyMode === 'max' ? maxAffordable(b) : state.buyMode);
+  if (n <= 0) return;
+  const cost = buildingCost(b, n);
+  if (state.verdure >= cost) {
+    state.verdure -= cost;
+    state.buildings[id] = (state.buildings[id] || 0) + n;
+    state.dailyProgress.buy += n;
+    state.purchasesThisRun = (state.purchasesThisRun || 0) + 1;
+    playBuySound();
+    checkAchievements();
+    saveGame();
+    renderAll();
+  }
+}
+
+function buyClickUpgrade(id) {
+  const c = CLICK_UPGRADES.find(x => x.id === id);
+  if (!c || hasClickUpgrade(id)) return;
+  if (state.verdure < c.cost) return;
+  state.verdure -= c.cost;
+  state.clickUpgrades[id] = true;
+  state.purchasesThisRun = (state.purchasesThisRun || 0) + 1;
+  playBuySound();
+  checkAchievements();
+  saveGame();
+  renderAll();
+}
+
+function activeCooldownRemaining(id) {
+  const until = state.activeCooldowns[id] || 0;
+  return Math.max(0, until - Date.now());
+}
+function activateUniqueAbility(id) {
+  const u = UNIQUE_BUILDINGS.find(x => x.id === id);
+  if (!u || !u.active || !hasUnique(id)) return;
+  if (activeCooldownRemaining(id) > 0) return;
+  const a = u.active;
+  if (a.type === 'boostMult') {
+    window._activeBoostUntil = Date.now() + a.durationMs;
+    window._activeBoostMult = a.value;
+    showToast(`🔔 ${u.name} activé ! x${a.value} production pendant ${a.durationMs/1000}s`);
+  } else if (a.type === 'instantGain') {
+    const gain = totalCps() * a.minutesEquivalent * 60;
+    state.verdure += gain; state.totalEarned += gain;
+    bump('verdureCount');
+    showToast(`🔥 ${u.name} activé ! +${formatNum(gain)} Verdure instantanée`);
+  }
+  state.activeCooldowns[id] = Date.now() + a.cooldownMs;
+  playGoldenSound();
+  saveGame(); renderAll();
+}
+
+function buyUnique(id) {
+  const u = UNIQUE_BUILDINGS.find(x => x.id === id);
+  if (!u || hasUnique(id)) return;
+  const discount = combinedUpgradeValue('uniqueDiscount') || 1;
+  const cost = u.cost * discount;
+  if (state.verdure >= cost) {
+    state.verdure -= cost;
+    state.uniqueBuildings[id] = true;
+    state.purchasesThisRun = (state.purchasesThisRun || 0) + 1;
+    playBuySound();
+    checkAchievements();
+    saveGame(); renderAll();
+    showToast(`✨ Bâtiment spécial acquis : ${u.name}`);
+  }
+}
+
+function buyResearch(id) {
+  const r = RESEARCH.find(x => x.id === id);
+  if (!r || hasResearch(id)) return;
+  if (r.requires && !hasResearch(r.requires)) return;
+  if (state.knowledge < r.cost) return;
+  state.knowledge -= r.cost;
+  state.researchUpgrades[id] = true;
+  playBuySound();
+  checkAchievements();
+  saveGame(); renderAll();
+}
+
+function prestigeGainAmount() { return Math.floor(Math.cbrt(state.totalEarned / 1e9)); }
+
+function doPrestige() {
+  const gain = prestigeGainAmount();
+  if (gain < 1) return;
+  if (!confirm(`Terraformer maintenant ? Tu vas gagner ${gain} Graine(s) Cosmique(s), mais ta Verdure et tes bâtiments seront remis à zéro (les recherches, améliorations de clic et succès sont conservés). Continuer ?`)) return;
+  const noClickSuccess = state.challengeNoClick && state.clicksThisRun === 0;
+  const noBuySuccess = state.challengeNoBuy && (state.purchasesThisRun || 0) === 0;
+  const speedSuccess = state.challengeSpeed && state.speedChallengeStart && (Date.now() - state.speedChallengeStart) <= 5 * 60000;
+  const now = Date.now();
+  if (state.lastPrestigeTime) {
+    const runSec = (now - state.lastPrestigeTime) / 1000;
+    if (state.fastestPrestigeSec === null || runSec < state.fastestPrestigeSec) state.fastestPrestigeSec = runSec;
+  }
+  state.lastPrestigeTime = now;
+  state.cosmicSeeds += gain;
+  state.totalSeedsEarned += gain;
+  state.seedsSinceAscension = (state.seedsSinceAscension || 0) + gain;
+  state.prestigeCount += 1;
+  let badges = [];
+  if (noClickSuccess) { state.challengesCompleted = (state.challengesCompleted || 0) + 1; badges.push('🏅 Sans-Clic'); }
+  if (noBuySuccess) { state.noBuyCompleted = (state.noBuyCompleted || 0) + 1; badges.push('🏅 Sans-Achat'); }
+  if (speedSuccess) { state.speedCompleted = (state.speedCompleted || 0) + 1; badges.push('🏅 Éclair'); }
+  state.verdure = combinedUpgradeValue('startBonus') || 0;
+  state.totalEarned = 0;
+  state.buildings = {};
+  state.clicksThisRun = 0;
+  state.purchasesThisRun = 0;
+  if (state.challengeSpeed) state.speedChallengeStart = Date.now();
+  playPrestigeSound();
+  bump('verdureCount');
+  checkAchievements();
+  saveGame(); renderAll();
+  showToast(`🌍 Terraformation réussie ! +${gain} Graine(s) Cosmique(s)` + (badges.length ? ' ' + badges.join(' ') + ' réussi(s) !' : ''));
+}
+
+const ASCENSION_SEED_DIVISOR = 80; // validé par simulation : ~80 graines cumulées pour le 1er Éclat
+function ascensionGainAmount() { return Math.floor(Math.cbrt((state.seedsSinceAscension || 0) / ASCENSION_SEED_DIVISOR)); }
+function ascensionUnlocked() { return (state.totalSeedsEarned || 0) >= ASCENSION_SEED_DIVISOR || state.totalAscensions > 0; }
+
+function doAscension() {
+  const gain = ascensionGainAmount();
+  if (gain < 1) return;
+  if (!confirm(`Ascensionner maintenant ? Tu vas gagner ${gain} Éclat(s) Stellaire(s) (bonus permanent x1.5 chacun, jamais reset), mais tes Graines Cosmiques ET tes améliorations de Prestige seront remises à zéro (recherches, bâtiments spéciaux, améliorations de clic, succès ET améliorations d'Ascension sont conservés). Continuer ?`)) return;
+  state.stellarShards = (state.stellarShards || 0) + gain;
+  state.totalAscensions = (state.totalAscensions || 0) + 1;
+  state.seedsSinceAscension = 0;
+  state.cosmicSeeds = 0;
+  state.prestigeUpgrades = {};
+  // Une Ascension implique aussi un Prestige complet (le jardin actuel repart à zéro)
+  state.verdure = combinedUpgradeValue('startBonus') || 0;
+  state.totalEarned = 0;
+  state.buildings = {};
+  state.clicksThisRun = 0;
+  state.purchasesThisRun = 0;
+  playPrestigeSound();
+  setTimeout(() => playPrestigeSound(), 200);
+  bump('verdureCount');
+  checkAchievements();
+  saveGame(); renderAll();
+  showToast(`🌟 Ascension réussie ! +${gain} Éclat(s) Stellaire(s) — production x${shardMultiplier().toFixed(2)} au total`);
+}
+
+function buyAscensionUpgrade(id) {
+  const au = ASCENSION_UPGRADES.find(x => x.id === id);
+  if (!au || hasAscensionUpgrade(id)) return;
+  if (au.requires && !hasAscensionUpgrade(au.requires)) return;
+  if ((state.stellarShards || 0) < au.cost) return;
+  state.stellarShards -= au.cost;
+  state.ascensionUpgrades[id] = true;
+  playBuySound();
+  saveGame(); renderAll();
+}
+
+function buyPrestigeUpgrade(id) {
+  const pu = PRESTIGE_UPGRADES.find(x => x.id === id);
+  if (!pu || hasPrestigeUpgrade(id)) return;
+  if (pu.requires && !hasPrestigeUpgrade(pu.requires)) return;
+  if (state.cosmicSeeds < pu.cost) return;
+  state.cosmicSeeds -= pu.cost;
+  state.prestigeUpgrades[id] = true;
+  saveGame(); renderAll();
+}
+
+function checkAchievements() {
+  let newlyUnlocked = [];
+  for (const a of ACHIEVEMENTS) {
+    if (!state.achievements[a.id] && a.check(state)) { state.achievements[a.id] = true; newlyUnlocked.push(a); }
+  }
+  if (newlyUnlocked.length) {
+    saveGame(); playAchievementSound();
+    newlyUnlocked.forEach(a => {
+      showToast(`🏆 Succès débloqué : ${a.name}`);
+      if (a.id.startsWith('a_earn') || a.id.startsWith('a_prestige')) spawnConfetti();
+    });
+  }
+}
+
+function showToast(msg, log = true) {
+  const container = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  container.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+  if (log) logEvent(msg);
+}
+
+function bump(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('bump');
+  void el.offsetWidth; // force reflow to restart animation
+  el.classList.add('bump');
+}
+
+// ================= JOURNAL D'ÉVÉNEMENTS =================
+function logEvent(msg) {
+  const now = new Date();
+  const stamp = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  state.eventLog = state.eventLog || [];
+  state.eventLog.unshift({ t: stamp, msg });
+  if (state.eventLog.length > 30) state.eventLog.length = 30;
+}
+
+// ================= COSMÉTIQUES DE CLIC =================
+function hasSkin(id) { return !!state.ownedSkins[id]; }
+function activeSkinEmojis() {
+  const sk = SKINS.find(x => x.id === state.activeSkin) || SKINS[0];
+  return sk.emojis;
+}
+function buySkin(id) {
+  const sk = SKINS.find(x => x.id === id);
+  if (!sk || hasSkin(id)) return;
+  if (state.cosmicSeeds < sk.cost) return;
+  state.cosmicSeeds -= sk.cost;
+  state.ownedSkins[id] = true;
+  playBuySound();
+  saveGame(); renderAll();
+  showToast(`🎨 Cosmétique débloqué : ${sk.name}`);
+}
+function selectSkin(id) {
+  if (!hasSkin(id) || state.activeSkin === id) return;
+  state.activeSkin = id;
+  saveGame(); renderAll();
+}
+
+// ================= CONFETTI (célébration de paliers) =================
+function spawnConfetti() {
+  const colors = ['#43a047', '#7e57c2', '#1e88e5', '#ff7043', '#ffd54f', '#e53935'];
+  for (let i = 0; i < 24; i++) {
+    const p = document.createElement('div');
+    p.className = 'confettiPiece';
+    const size = 6 + Math.random() * 6;
+    p.style.width = size + 'px';
+    p.style.height = (size * 0.4) + 'px';
+    p.style.left = (Math.random() * 100) + 'vw';
+    p.style.background = colors[Math.floor(Math.random() * colors.length)];
+    p.style.animationDuration = (1.8 + Math.random() * 1.2) + 's';
+    p.style.animationDelay = (Math.random() * 0.3) + 's';
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 3500);
+  }
+}
+
+// ================= SOUND (procédural, sans fichier externe) =================
+let _audioCtx = null;
+function ensureAudioCtx() {
+  if (!_audioCtx) {
+    try { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) { return null; }
+  }
+  if (_audioCtx.state === 'suspended') _audioCtx.resume().catch(()=>{});
+  return _audioCtx;
+}
+function playTone(freq, duration = 0.08, type = 'sine', vol = 0.04) {
+  if (!state.soundEnabled) return;
+  const volume = (state.soundVolume === undefined ? 100 : state.soundVolume) / 100;
+  if (volume <= 0) return;
+  const ctx = ensureAudioCtx();
+  if (!ctx) return;
+  try {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type; osc.frequency.value = freq;
+    gain.gain.value = vol * volume;
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start();
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+    osc.stop(ctx.currentTime + duration);
+  } catch(e) {}
+}
+function playClickSound() { playTone(560 + Math.random() * 90, 0.05, 'sine', 0.025); }
+function playBuySound() { playTone(320, 0.1, 'triangle', 0.045); }
+function playAchievementSound() { playTone(520, 0.09, 'sine', 0.05); setTimeout(() => playTone(760, 0.14, 'sine', 0.05), 90); }
+function playPrestigeSound() { playTone(220, 0.15, 'sawtooth', 0.04); setTimeout(() => playTone(440, 0.2, 'sine', 0.05), 120); setTimeout(() => playTone(660, 0.25, 'sine', 0.04), 260); }
+function playGoldenSound() { playTone(700, 0.06, 'sine', 0.05); setTimeout(() => playTone(900, 0.1, 'sine', 0.05), 70); }
+
+// ================= CLICK PARTICLES =================
+function spawnClickParticles(x, y) {
+  const emojis = activeSkinEmojis();
+  const count = 4 + Math.floor(Math.random() * 3);
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 28 + Math.random() * 46;
+    p.style.left = x + 'px';
+    p.style.top = y + 'px';
+    p.style.setProperty('--dx', (Math.cos(angle) * dist) + 'px');
+    p.style.setProperty('--dy', (Math.sin(angle) * dist - 10) + 'px');
+    p.style.setProperty('--rot', (Math.random() * 180 - 90) + 'deg');
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 700);
+  }
+}
+
+// ================= CLICK COMBO (feedback + petit bonus) =================
+let comboCount = 0;
+let comboResetTimer = null;
+let comboPerfectFired = false;
+function registerCombo() {
+  comboCount = Math.min(comboCount + 1, 40);
+  clearTimeout(comboResetTimer);
+  comboResetTimer = setTimeout(() => { comboCount = 0; comboPerfectFired = false; updateComboBadge(); }, 1100);
+  if (comboCount >= 20 && !comboPerfectFired) {
+    comboPerfectFired = true;
+    const bonus = Math.max(10, totalCps() * 8);
+    state.verdure += bonus; state.totalEarned += bonus;
+    bump('verdureCount');
+    playGoldenSound();
+    showToast(`🔥 COMBO PARFAIT ! +${formatNum(bonus)} Verdure bonus`);
+  }
+  updateComboBadge();
+}
+function comboMultiplier() {
+  return 1 + Math.min(comboCount, 30) * 0.015; // jusqu'à +45%
+}
+function updateComboBadge() {
+  const badge = document.getElementById('comboBadge');
+  if (!badge) return;
+  if (comboCount >= 3) {
+    badge.textContent = `🔥 Combo x${comboMultiplier().toFixed(2)}`;
+    badge.classList.add('show');
+  } else {
+    badge.classList.remove('show');
+  }
+}
+
+// ================= RENDER DEBOUNCING (perf) =================
+let _renderQueued = false;
+function scheduleRenderAll() {
+  if (_renderQueued) return;
+  _renderQueued = true;
+  requestAnimationFrame(() => { _renderQueued = false; renderAll(); });
+}
+
+// ================= WEATHER LOGIC =================
+function maybeChangeWeather() {
+  if (Date.now() - state.lastWeatherChange > 180000) {
+    const keys = Object.keys(WEATHERS);
+    const newWeather = keys[Math.floor(Math.random() * keys.length)];
+    state.weather = newWeather;
+    state.lastWeatherChange = Date.now();
+    if (!state.weatherSeen.includes(newWeather)) state.weatherSeen.push(newWeather);
+    checkAchievements();
+    saveGame();
+  }
+}
+
+// ================= INVASIVE WEED =================
+function maybeSpawnInvasive() {
+  if (state.vacationMode) return;
+  if (state.invasiveWeed && state.invasiveWeed.active) return;
+  const chance = 0.02 * uniqueMultipliers().invasiveRate;
+  if (Math.random() < chance) {
+    state.invasiveWeed = { active: true, needed: 5, done: 0 };
+    logEvent('🐛 Une mauvaise herbe invasive est apparue !');
+    saveGame();
+  }
+}
+function clickInvasive() {
+  if (!state.invasiveWeed || !state.invasiveWeed.active) return;
+  state.invasiveWeed.done += 1;
+  if (state.invasiveWeed.done >= state.invasiveWeed.needed) {
+    state.invasiveWeed = null;
+    state.invasiveDefeated += 1;
+    checkAchievements();
+    showToast('✅ Mauvaise herbe invasive éliminée !');
+  }
+  saveGame(); renderAll();
+}
+
+// ================= DAILY QUESTS =================
+function todayStr() { const d = new Date(); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; }
+function generateQuests() {
+  const today = todayStr();
+  if (state.dailyQuests && state.dailyQuests.date === today) return;
+  const shuffled = [...QUEST_POOL].sort(() => Math.random() - 0.5).slice(0, 3);
+  const quests = shuffled.map(type => {
+    let target, desc, rewardType, rewardAmount;
+    const cps = Math.max(1, totalCps());
+    if (type === 'click') { target = 50 + state.prestigeCount * 10; desc = `Clique ${target} fois`; rewardType='verdure'; rewardAmount = Math.max(100, cps*30); }
+    if (type === 'earn') { target = Math.max(500, Math.floor(cps*120)); desc = `Gagne ${formatNum(target)} Verdure`; rewardType='knowledge'; rewardAmount = 5; }
+    if (type === 'buy') { target = 5; desc = `Achète 5 niveaux de bâtiments`; rewardType='verdure'; rewardAmount = Math.max(200, cps*60); }
+    if (type === 'golden') { target = 1; desc = `Clique 1 mauvaise herbe dorée`; rewardType='knowledge'; rewardAmount = 8; }
+    return { type, target, desc, rewardType, rewardAmount, claimed: false };
+  });
+  state.dailyQuests = { date: today, quests };
+  state.dailyProgress = { click: 0, earn: 0, buy: 0, golden: 0 };
+  saveGame();
+}
+function questProgressValue(type) { return state.dailyProgress[type] || 0; }
+function claimQuest(index) {
+  if (!state.dailyQuests) return;
+  const q = state.dailyQuests.quests[index];
+  if (!q || q.claimed) return;
+  const progress = questProgressValue(q.type);
+  if (progress < q.target) return;
+  const questMult = combinedUpgradeValue('questMult') || 1;
+  const amount = q.rewardAmount * questMult;
+  if (q.rewardType === 'verdure') { state.verdure += amount; state.totalEarned += amount; }
+  else { state.knowledge += amount; }
+  q.claimed = true;
+  state.questsCompleted = (state.questsCompleted || 0) + 1;
+  checkAchievements();
+  saveGame(); renderAll();
+  showToast(`✅ Quête complétée ! +${formatNum(amount)} ${q.rewardType === 'verdure' ? 'Verdure' : 'Connaissances'}`);
+}
+
+// ================= VISUAL THEME =================
+function getThemeClass() {
+  const tierBuildings = ['jardinHorsTemps','grainePrimordiale','templeCompost','conscienceChloro'];
+  if (tierBuildings.some(id => (state.buildings[id]||0) > 0) || state.prestigeCount >= 15) return 'theme-5';
+  if ((state.buildings.mars||0) > 0 || state.prestigeCount >= 8) return 'theme-4';
+  if ((state.buildings.satellite||0) > 0 || state.prestigeCount >= 4) return 'theme-3';
+  if ((state.buildings.usine||0) > 0 || state.prestigeCount >= 1) return 'theme-2';
+  return 'theme-1';
+}
+
+// ================= TABS / ONBOARDING RENDER (menu tiroir) =================
+function unlockedTabs() { return TAB_DEFS.filter(t => t.unlock(state)); }
+
+function openDrawer() {
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('drawerOverlay').classList.add('open');
+  document.getElementById('drawerArrowBtn').classList.add('open');
+}
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawerOverlay').classList.remove('open');
+  document.getElementById('drawerArrowBtn').classList.remove('open');
+}
+function toggleDrawer() {
+  const isOpen = document.getElementById('drawer').classList.contains('open');
+  if (isOpen) closeDrawer(); else openDrawer();
+}
+
+function renderTabsRow() {
+  const unlocked = unlockedTabs();
+  let newlyUnlocked = [];
+  for (const t of unlocked) {
+    if (!state.tabsSeen[t.id]) { newlyUnlocked.push(t); state.tabsSeen[t.id] = true; }
+  }
+  if (newlyUnlocked.length) {
+    saveGame();
+    newlyUnlocked.forEach(t => showToast(`🔓 Nouvel onglet débloqué : ${t.label}`));
+  }
+  if (!unlocked.find(t => t.id === state.activeTab)) state.activeTab = 'jardin';
+
+  const drawerButtons = document.getElementById('drawerButtons');
+  drawerButtons.innerHTML = '';
+  unlocked.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'drawerBtn' + (state.activeTab === t.id ? ' active' : '');
+    btn.innerHTML = `<span class="icon">${t.icon}</span> ${t.label}` + (newlyUnlocked.includes(t) ? '<span class="newBadge">NEW</span>' : '');
+    btn.onclick = () => {
+      state.activeTab = t.id;
+      saveGame();
+      renderTabsRow();
+      renderPanelsVisibility();
+    };
+    drawerButtons.appendChild(btn);
+  });
+
+}
+function renderPanelsVisibility() {
+  document.querySelectorAll('.tabPanel').forEach(p => p.classList.remove('active'));
+  const el = document.getElementById('tab-' + state.activeTab);
+  if (el) el.classList.add('active');
+}
+
+document.getElementById('drawerArrowBtn').addEventListener('click', toggleDrawer);
+document.getElementById('drawerCloseBtn').addEventListener('click', closeDrawer);
+document.getElementById('drawerOverlay').addEventListener('click', closeDrawer);
+
+// ================= SWIPE-TO-CLOSE (mobile) =================
+(function setupSwipeToClose() {
+  const header = document.getElementById('drawerHeader');
+  let startY = null;
+  header.addEventListener('touchstart', (e) => { startY = e.touches[0].clientY; }, { passive: true });
+  header.addEventListener('touchmove', (e) => {
+    if (startY === null) return;
+    if (e.touches[0].clientY - startY > 60) { closeDrawer(); startY = null; }
+  }, { passive: true });
+  header.addEventListener('touchend', () => { startY = null; });
+})();
+
+// ================= RENDER =================
+function renderNextPurchaseBar() {
+  let target = null, targetCost = Infinity;
+  for (const b of BUILDINGS) {
+    const cost = buildingCost(b, 1);
+    if (cost < targetCost && state.verdure < cost) { targetCost = cost; target = b; }
+  }
+  const fill = document.getElementById('nextPurchaseFill');
+  const label = document.getElementById('nextPurchaseLabel');
+  if (!fill || !label) return;
+  if (!target) { fill.style.width = '100%'; label.textContent = 'Tout est abordable en ce moment !'; return; }
+  const pct = Math.min(100, (state.verdure / targetCost) * 100);
+  fill.style.width = pct.toFixed(1) + '%';
+  label.textContent = `Prochain : ${target.name} — ${formatNum(state.verdure)} / ${formatNum(targetCost)} 🌿`;
+}
+
+function renderStats() {
+  const currentCps = totalCps();
+  if (currentCps > state.bestCpsEver) state.bestCpsEver = currentCps;
+  document.getElementById('verdureCount').textContent = formatNum(state.verdure);
+  document.getElementById('rateText').textContent = `+${formatNum(currentCps)} / seconde`;
+  document.getElementById('seedsText').textContent = `${formatNum(state.cosmicSeeds)} Graines Cosmiques 🌌`;
+  document.getElementById('knowledgeText').textContent = `${formatNum(state.knowledge)} Connaissances 📚 (+${formatNum(knowledgeRate())}/s)`;
+  const w = WEATHERS[state.weather] || WEATHERS.soleil;
+  document.getElementById('weatherBadge').textContent = `${w.label} — production x${weatherMultiplier().toFixed(2)}`;
+  document.getElementById('bodyEl').className = getThemeClass() + (state.forceDarkMode ? ' darkOverride' : '');
+  renderNextPurchaseBar();
+
+  const invBox = document.getElementById('invasiveBox');
+  if (state.invasiveWeed && state.invasiveWeed.active) {
+    invBox.style.display = 'block';
+    invBox.innerHTML = `🐛 <b>Mauvaise herbe invasive !</b> Production -30%. Clique ${state.invasiveWeed.needed - state.invasiveWeed.done} fois pour l'éliminer.`;
+    invBox.onclick = clickInvasive;
+  } else { invBox.style.display = 'none'; }
+
+  const clickZone = document.getElementById('clickZone');
+  const clickText = document.getElementById('clickText');
+  if (state.challengeNoClick) {
+    clickZone.classList.add('disabled');
+    clickText.textContent = '🚫 Défi Sans-Clic actif';
+  } else {
+    clickZone.classList.remove('disabled');
+    clickText.textContent = 'Clic';
+  }
+}
+
+function renderBuyModeRow() {
+  const row = document.getElementById('buyModeRow');
+  row.innerHTML = '';
+  [1, 10, 100, 'max'].forEach(mode => {
+    const btn = document.createElement('button');
+    btn.className = 'buyModeBtn' + (state.buyMode === mode ? ' active' : '');
+    btn.textContent = mode === 'max' ? 'MAX' : 'x' + mode;
+    btn.onclick = () => { state.buyMode = mode; renderAll(); };
+    row.appendChild(btn);
+  });
+}
+
+function renderShop() {
+  const shop = document.getElementById('shop');
+  shop.innerHTML = '';
+  for (const b of BUILDINGS) {
+    const owned = state.buildings[b.id] || 0;
+    const n = state.buyMode === 'max' ? maxAffordable(b) : state.buyMode;
+    const cost = n > 0 ? buildingCost(b, n) : buildingCost(b, 1);
+    const canAfford = state.verdure >= cost && n > 0;
+    const synBonus = synergyBonusFor(b.id);
+    const div = document.createElement('div');
+    div.className = 'upgrade' + (canAfford ? '' : ' disabled');
+    div.innerHTML = `
+      <div class="info">
+        <div class="name">${b.name} <span class="owned">${owned}</span></div>
+        <div class="desc">${b.desc} — ${formatNum(b.baseCps)}/s chacun</div>
+        ${synBonus > 0 ? `<div class="synergy">Synergie active : +${(synBonus*100).toFixed(0)}%</div>` : ''}
+      </div>
+      <div class="price">${state.buyMode === 'max' ? 'x' + n + ' : ' : ''}${formatNum(cost)} 🌿</div>
+    `;
+    div.onclick = () => buyBuilding(b.id);
+    shop.appendChild(div);
+  }
+}
+
+function renderClickShop() {
+  const shop = document.getElementById('clickShop');
+  shop.innerHTML = '';
+  for (const c of CLICK_UPGRADES) {
+    const owned = hasClickUpgrade(c.id);
+    const canAfford = !owned && state.verdure >= c.cost;
+    const div = document.createElement('div');
+    div.className = 'upgrade' + (canAfford || owned ? '' : ' disabled');
+    div.innerHTML = `
+      <div class="info">
+        <div class="name">${c.name} ${owned ? '<span class="owned">✔ Acquis</span>' : ''}</div>
+        <div class="desc">${c.desc}</div>
+      </div>
+      <div class="price">${owned ? '' : formatNum(c.cost) + ' 🌿'}</div>
+    `;
+    if (!owned) div.onclick = () => buyClickUpgrade(c.id);
+    shop.appendChild(div);
+  }
+}
+
+function renderSpecial() {
+  const shop = document.getElementById('specialShop');
+  shop.innerHTML = '<p style="font-size:12px;opacity:0.7;">Bâtiments uniques, un seul exemplaire possible chacun, effets puissants.</p>';
+  const discount = combinedUpgradeValue('uniqueDiscount') || 1;
+  for (const u of UNIQUE_BUILDINGS) {
+    const owned = hasUnique(u.id);
+    const cost = u.cost * discount;
+    const canAfford = !owned && state.verdure >= cost;
+    const div = document.createElement('div');
+    div.className = 'upgrade' + (canAfford || owned ? '' : ' disabled');
+    let priceOrAction = owned ? '' : formatNum(cost) + ' 🌿';
+    if (owned && u.active) {
+      const remaining = activeCooldownRemaining(u.id);
+      priceOrAction = remaining > 0
+        ? `⏳ ${Math.ceil(remaining/1000)}s`
+        : `<button class="claimBtn" style="padding:6px 12px;">Activer</button>`;
+    }
+    div.innerHTML = `
+      <div class="info">
+        <div class="name">${u.name} ${owned ? '<span class="owned">✔ Acquis</span>' : ''}</div>
+        <div class="desc">${u.desc}</div>
+      </div>
+      <div class="price">${priceOrAction}</div>
+    `;
+    if (!owned) {
+      div.onclick = () => buyUnique(u.id);
+    } else if (u.active) {
+      const btn = div.querySelector('button');
+      if (btn) btn.onclick = (e) => { e.stopPropagation(); activateUniqueAbility(u.id); };
+    }
+    shop.appendChild(div);
+  }
+
+  shop.insertAdjacentHTML('beforeend', '<p style="font-size:12px;opacity:0.7;margin-top:16px;">🎨 Cosmétiques de clic (Graines Cosmiques, purement visuels).</p>');
+  for (const sk of SKINS) {
+    const owned = hasSkin(sk.id);
+    const active = state.activeSkin === sk.id;
+    const canAfford = !owned && state.cosmicSeeds >= sk.cost;
+    const div = document.createElement('div');
+    div.className = 'upgrade' + (canAfford || owned ? '' : ' disabled');
+    div.innerHTML = `
+      <div class="info">
+        <div class="name">${sk.emojis.join(' ')} ${sk.name} ${active ? '<span class="owned">✔ Actif</span>' : (owned ? '<span class="owned">Possédé</span>' : '')}</div>
+        <div class="desc">${sk.desc}</div>
+      </div>
+      <div class="price">${owned ? (active ? '' : 'Utiliser') : (sk.cost > 0 ? formatNum(sk.cost) + ' 🌌' : 'Gratuit')}</div>
+    `;
+    div.onclick = () => { if (!owned) buySkin(sk.id); else if (!active) selectSkin(sk.id); };
+    shop.appendChild(div);
+  }
+}
+
+function renderResearch() {
+  const shop = document.getElementById('researchShop');
+  shop.innerHTML = '<p style="font-size:12px;opacity:0.7;">Dépense tes Connaissances 📚 (gagnées passivement) sur un arbre permanent, indépendant du prestige.</p>';
+  for (const r of RESEARCH) {
+    const owned = hasResearch(r.id);
+    const locked = r.requires && !hasResearch(r.requires);
+    const canAfford = !owned && !locked && state.knowledge >= r.cost;
+    const div = document.createElement('div');
+    div.className = 'upgrade' + (canAfford || owned ? '' : ' disabled');
+    div.innerHTML = `
+      <div class="info">
+        <div class="name">${r.name} ${owned ? '<span class="owned">✔ Acquis</span>' : ''}</div>
+        <div class="desc">${r.desc}${locked ? ' (recherche préalable requise)' : ''}</div>
+      </div>
+      <div class="price">${owned ? '' : formatNum(r.cost) + ' 📚'}</div>
+    `;
+    if (!owned && !locked) div.onclick = () => buyResearch(r.id);
+    shop.appendChild(div);
+  }
+}
+
+function renderPrestige() {
+  const gain = prestigeGainAmount();
+  const btn = document.getElementById('prestigeBtn');
+  btn.disabled = gain < 1;
+  document.getElementById('prestigeInfo').innerHTML =
+    gain >= 1
+      ? `Terraformer te donnera <b>+${gain} Graine(s) Cosmique(s)</b> (chaque graine multiplie ta production par x1.15, cumulatif), mais remet ta Verdure et tes bâtiments à zéro (recherches, bâtiments spéciaux et améliorations de clic restent).<br>Actuellement : ${formatNum(state.cosmicSeeds)} graines = x${seedMultiplier().toFixed(2)} production.`
+      : `Accumule plus de Verdure (Verdure totale actuelle : ${formatNum(state.totalEarned)}) pour débloquer un nouveau prestige.`;
+
+  const nextGain = gain + 1;
+  const requiredForNext = Math.pow(nextGain, 3) * 1e9;
+  const requiredForCurrent = Math.pow(gain, 3) * 1e9;
+  const span = Math.max(1, requiredForNext - requiredForCurrent);
+  const pct = Math.min(100, Math.max(0, ((state.totalEarned - requiredForCurrent) / span) * 100));
+  const fill = document.getElementById('prestigeProgressFill');
+  const label = document.getElementById('prestigeProgressLabel');
+  if (fill) fill.style.width = pct.toFixed(1) + '%';
+  if (label) label.textContent = `Vers +${nextGain} Graine(s) Cosmique(s) : ${formatNum(state.totalEarned)} / ${formatNum(requiredForNext)} 🌿`;
+
+  const shop = document.getElementById('prestigeShop');
+  shop.innerHTML = '';
+  for (const pu of PRESTIGE_UPGRADES) {
+    const owned = hasPrestigeUpgrade(pu.id);
+    const locked = pu.requires && !hasPrestigeUpgrade(pu.requires);
+    const canAfford = !owned && !locked && state.cosmicSeeds >= pu.cost;
+    const div = document.createElement('div');
+    div.className = 'upgrade' + (canAfford || owned ? '' : ' disabled');
+    div.innerHTML = `
+      <div class="info">
+        <div class="name">${pu.name} ${owned ? '<span class="owned">✔ Acquis</span>' : ''}</div>
+        <div class="desc">${pu.desc}${locked ? ' (nécessite un autre bonus avant)' : ''}</div>
+      </div>
+      <div class="price">${owned ? '' : formatNum(pu.cost) + ' 🌌'}</div>
+    `;
+    if (!owned && !locked) div.onclick = () => buyPrestigeUpgrade(pu.id);
+    shop.appendChild(div);
+  }
+}
+
+function renderAscension() {
+  if (!ascensionUnlocked()) return;
+  const gain = ascensionGainAmount();
+  const btn = document.getElementById('ascensionBtn');
+  if (!btn) return;
+  btn.disabled = gain < 1;
+  document.getElementById('ascensionInfo').innerHTML =
+    gain >= 1
+      ? `Ascensionner te donnera <b>+${gain} Éclat(s) Stellaire(s)</b> (chaque Éclat multiplie ta production par x1.5, cumulatif et <u>jamais réinitialisé</u>), mais remet tes Graines Cosmiques et tes améliorations de Prestige à zéro (tout le reste — recherches, succès, bâtiments spéciaux, clic, améliorations d'Ascension — reste acquis).<br>Actuellement : ${formatNum(state.stellarShards||0)} Éclat(s) = x${shardMultiplier().toFixed(2)} production permanente.`
+      : `Accumule plus de Graines Cosmiques via le Prestige (${formatNum(state.seedsSinceAscension||0)} accumulées depuis ta dernière Ascension) pour débloquer ta prochaine Ascension.`;
+
+  const nextGain = gain + 1;
+  const requiredForNext = Math.pow(nextGain, 3) * ASCENSION_SEED_DIVISOR;
+  const requiredForCurrent = Math.pow(gain, 3) * ASCENSION_SEED_DIVISOR;
+  const span = Math.max(1, requiredForNext - requiredForCurrent);
+  const pct = Math.min(100, Math.max(0, ((state.seedsSinceAscension||0) - requiredForCurrent) / span * 100));
+  const fill = document.getElementById('ascensionProgressFill');
+  const label = document.getElementById('ascensionProgressLabel');
+  if (fill) fill.style.width = pct.toFixed(1) + '%';
+  if (label) label.textContent = `Vers +${nextGain} Éclat(s) : ${formatNum(state.seedsSinceAscension||0)} / ${formatNum(requiredForNext)} 🌌`;
+
+  const shop = document.getElementById('ascensionShop');
+  shop.innerHTML = '<p style="font-size:12px;opacity:0.7;">Améliorations permanentes achetées avec les Éclats Stellaires — jamais perdues, même en Ascensionnant à nouveau.</p>';
+  for (const au of ASCENSION_UPGRADES) {
+    const owned = hasAscensionUpgrade(au.id);
+    const locked = au.requires && !hasAscensionUpgrade(au.requires);
+    const canAfford = !owned && !locked && (state.stellarShards||0) >= au.cost;
+    const div = document.createElement('div');
+    div.className = 'upgrade' + (canAfford || owned ? '' : ' disabled');
+    div.innerHTML = `
+      <div class="info">
+        <div class="name">${au.name} ${owned ? '<span class="owned">✔ Acquis</span>' : ''}</div>
+        <div class="desc">${au.desc}${locked ? ' (nécessite une autre amélioration d\'Ascension avant)' : ''}</div>
+      </div>
+      <div class="price">${owned ? '' : formatNum(au.cost) + ' 🌟'}</div>
+    `;
+    if (!owned && !locked) div.onclick = () => buyAscensionUpgrade(au.id);
+    shop.appendChild(div);
+  }
+}
+
+function renderQuests() {
+  generateQuests();
+  const list = document.getElementById('questList');
+  list.innerHTML = '';
+  if (!state.dailyQuests) return;
+  state.dailyQuests.quests.forEach((q, i) => {
+    const progress = questProgressValue(q.type);
+    const pct = Math.min(100, (progress / q.target) * 100);
+    const div = document.createElement('div');
+    div.className = 'questCard';
+    div.innerHTML = `
+      <div class="qName">${q.desc}</div>
+      <div class="qDesc">Récompense : ${formatNum(q.rewardAmount * (combinedUpgradeValue('questMult')||1))} ${q.rewardType === 'verdure' ? 'Verdure 🌿' : 'Connaissances 📚'}</div>
+      <div class="qBar"><div class="qBarFill" style="width:${pct}%"></div></div>
+      <div style="font-size:11px;opacity:0.7;">${formatNum(progress)} / ${formatNum(q.target)}</div>
+      <button class="claimBtn" ${(progress >= q.target && !q.claimed) ? '' : 'disabled'}>${q.claimed ? '✔ Réclamée' : 'Réclamer'}</button>
+    `;
+    div.querySelector('.claimBtn').onclick = () => claimQuest(i);
+    list.appendChild(div);
+  });
+}
+
+function renderDefi() {
+  const panel = document.getElementById('defiPanel');
+  panel.innerHTML = `
+    <div class="defiRow">
+      <div class="toggle">
+        <div>
+          <div style="font-weight:700;">Mode Sans-Clic</div>
+          <div style="font-size:11px;opacity:0.7;">N'utilise aucun clic manuel avant le prochain prestige pour débloquer un succès spécial.</div>
+        </div>
+        <button class="toggleBtn ${state.challengeNoClick ? 'on' : 'off'}" id="toggleChallengeBtn">${state.challengeNoClick ? 'Activé' : 'Désactivé'}</button>
+      </div>
+    </div>
+    <div class="defiRow">
+      <div class="toggle">
+        <div>
+          <div style="font-weight:700;">Mode Sans-Achat</div>
+          <div style="font-size:11px;opacity:0.7;">N'achète aucun bâtiment ni amélioration (avec de la Verdure) avant le prochain prestige.</div>
+        </div>
+        <button class="toggleBtn ${state.challengeNoBuy ? 'on' : 'off'}" id="toggleChallengeBuyBtn">${state.challengeNoBuy ? 'Activé' : 'Désactivé'}</button>
+      </div>
+    </div>
+    <div class="defiRow">
+      <div class="toggle">
+        <div>
+          <div style="font-weight:700;">Défi Éclair</div>
+          <div style="font-size:11px;opacity:0.7;">Effectue ton prochain prestige en moins de 5 minutes après avoir activé ce défi.</div>
+        </div>
+        <button class="toggleBtn ${state.challengeSpeed ? 'on' : 'off'}" id="toggleChallengeSpeedBtn">${state.challengeSpeed ? 'Activé' : 'Désactivé'}</button>
+      </div>
+      ${state.challengeSpeed && state.speedChallengeStart ? `<div style="font-size:11px;opacity:0.7;margin-top:6px;">Temps restant : ${Math.max(0, Math.ceil((5*60000 - (Date.now() - state.speedChallengeStart))/1000))}s</div>` : ''}
+    </div>
+    <div class="defiRow"><div style="font-size:13px;">🏅 Défis Sans-Clic réussis : <b>${state.challengesCompleted || 0}</b></div></div>
+    <div class="defiRow"><div style="font-size:13px;">🏅 Défis Sans-Achat réussis : <b>${state.noBuyCompleted || 0}</b></div></div>
+    <div class="defiRow"><div style="font-size:13px;">🏅 Défis Éclair réussis : <b>${state.speedCompleted || 0}</b></div></div>
+    <div class="defiRow"><div style="font-size:13px;">🐛 Mauvaises herbes invasives vaincues : <b>${state.invasiveDefeated || 0}</b></div></div>
+    <div class="defiRow"><div style="font-size:13px;">🌤️ Types de météo observés : <b>${(state.weatherSeen||[]).length} / 6</b></div></div>
+  `;
+  document.getElementById('toggleChallengeBtn').onclick = () => {
+    state.challengeNoClick = !state.challengeNoClick;
+    saveGame(); renderAll();
+  };
+  document.getElementById('toggleChallengeBuyBtn').onclick = () => {
+    state.challengeNoBuy = !state.challengeNoBuy;
+    if (state.challengeNoBuy) state.purchasesThisRun = 0;
+    saveGame(); renderAll();
+  };
+  document.getElementById('toggleChallengeSpeedBtn').onclick = () => {
+    state.challengeSpeed = !state.challengeSpeed;
+    state.speedChallengeStart = state.challengeSpeed ? Date.now() : null;
+    saveGame(); renderAll();
+  };
+}
+
+// ================= OBJECTIF SUIVANT =================
+function renderNextGoal() {
+  const box = document.getElementById('nextGoalBox');
+  if (!box) return;
+  let best = null, bestPct = -1;
+  for (const a of ACHIEVEMENTS) {
+    if (state.achievements[a.id] || !a.progress) continue;
+    const [cur, target] = a.progress(state);
+    const pct = Math.min(100, Math.max(0, (cur / target) * 100));
+    if (pct > bestPct) { bestPct = pct; best = { a, cur, target, pct }; }
+  }
+  if (!best) { box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  box.innerHTML = `🎯 Objectif suivant : <b>${best.a.name}</b> — ${best.a.desc}
+    <div class="nextGoalBarWrap"><div class="nextGoalBarFill" style="width:${best.pct}%;"></div></div>`;
+}
+
+function renderAchievements() {
+  const list = document.getElementById('achvList');
+  list.innerHTML = '';
+  for (const a of ACHIEVEMENTS) {
+    const unlocked = !!state.achievements[a.id];
+    const div = document.createElement('div');
+    div.className = 'achv' + (unlocked ? '' : ' locked');
+    let barHtml = '';
+    if (!unlocked && a.progress) {
+      const [cur, target] = a.progress(state);
+      const pct = Math.min(100, Math.max(0, (cur / target) * 100));
+      barHtml = `<div class="achvBarWrap"><div class="achvBarFill" style="width:${pct}%;"></div></div><div style="font-size:10px;opacity:0.7;margin-top:2px;">${formatNum(cur)} / ${formatNum(target)}</div>`;
+    }
+    const isHiddenSecret = a.secret && !unlocked;
+    const displayName = isHiddenSecret ? '??? (succès secret)' : a.name;
+    const displayDesc = isHiddenSecret ? 'Débloqué en jouant... autrement.' : a.desc;
+    div.innerHTML = `
+      <div class="achvTop">
+        <div><div class="name">${unlocked ? '🏆' : '🔒'} ${displayName}</div><div class="desc">${displayDesc}</div></div>
+        <div>${unlocked ? '+' + (a.bonus*100).toFixed(0) + '%' : '???'}</div>
+      </div>
+      ${barHtml}
+    `;
+    list.appendChild(div);
+  }
+}
+
+function formatPlayTime(sec) {
+  sec = Math.floor(sec);
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  if (h > 0) return `${h}h ${m}min`;
+  if (m > 0) return `${m}min ${s}s`;
+  return `${s}s`;
+}
+function mostOwnedBuilding() {
+  let best = null, bestN = 0;
+  for (const b of BUILDINGS) {
+    const n = state.buildings[b.id] || 0;
+    if (n > bestN) { bestN = n; best = b; }
+  }
+  return best ? `${best.name} (${bestN})` : 'Aucun';
+}
+
+function renderStatsTab() {
+  const list = document.getElementById('statsList');
+  const rows = [
+    ['Verdure actuelle', formatNum(state.verdure)],
+    ['Verdure totale gagnée (cette vie)', formatNum(state.totalEarned)],
+    ['Production actuelle', formatNum(totalCps()) + '/s'],
+    ['Gain par clic (total)', formatNum(clickGain())],
+    ['— dont part fixe', formatNum(1 * totalProdMultiplier() * totalClickFlatMultiplier())],
+    ['— dont % de la production/s', formatNum(totalCps() * totalClickCpsPercent()) + ` (${(totalClickCpsPercent()*100).toFixed(0)}% de la prod)`],
+    ['Clics totaux', formatNum(state.totalClicks)],
+    ['Mauvaises herbes dorées cliquées', formatNum(state.goldenClicked)],
+    ['Graines Cosmiques', formatNum(state.cosmicSeeds)],
+    ['Connaissances', formatNum(state.knowledge)],
+    ['Prestiges effectués', state.prestigeCount],
+    ['Multiplicateur météo', 'x' + weatherMultiplier().toFixed(2)],
+    ['Bâtiments spéciaux possédés', Object.keys(state.uniqueBuildings||{}).length + ' / ' + UNIQUE_BUILDINGS.length],
+    ['Recherches débloquées', Object.keys(state.researchUpgrades||{}).length + ' / ' + RESEARCH.length],
+    ['Améliorations de clic', Object.keys(state.clickUpgrades||{}).length + ' / ' + CLICK_UPGRADES.length],
+    ['Temps de jeu total', formatPlayTime(state.totalPlayTimeSec || 0)],
+    ['Clics par minute (moyenne)', formatNum((state.totalClicks || 0) / Math.max(1, (state.totalPlayTimeSec || 1) / 60))],
+    ['Bâtiment le plus nombreux', mostOwnedBuilding()],
+    ['🏅 Record de production/s', formatNum(state.bestCpsEver || 0) + '/s'],
+    ['🏅 Prestige le plus rapide', state.fastestPrestigeSec ? formatPlayTime(state.fastestPrestigeSec) : 'Aucun (fais 2 prestiges pour débloquer)'],
+    ['🌟 Éclats Stellaires', formatNum(state.stellarShards || 0) + ` (x${shardMultiplier().toFixed(2)} production)`],
+    ['🌟 Ascensions effectuées', state.totalAscensions || 0],
+  ];
+  list.innerHTML = rows.map(r => `<div class="statLine"><span>${r[0]}</span><b>${r[1]}</b></div>`).join('');
+}
+
+function renderSoundToggle() {
+  const label = document.getElementById('soundStateLabel');
+  if (!label) return;
+  label.textContent = state.soundEnabled ? 'Activés' : 'Désactivés';
+  label.className = 'state' + (state.soundEnabled ? ' on' : '');
+  const slider = document.getElementById('volumeSlider');
+  const volLabel = document.getElementById('volumeValueLabel');
+  if (slider && document.activeElement !== slider) slider.value = state.soundVolume === undefined ? 100 : state.soundVolume;
+  if (volLabel) volLabel.textContent = (state.soundVolume === undefined ? 100 : state.soundVolume) + '%';
+}
+
+function renderDarkModeToggle() {
+  const label = document.getElementById('darkModeStateLabel');
+  if (!label) return;
+  label.textContent = state.forceDarkMode ? 'Activé' : 'Désactivé';
+  label.className = 'state' + (state.forceDarkMode ? ' on' : '');
+}
+
+function renderVacationToggle() {
+  const label = document.getElementById('vacationStateLabel');
+  if (!label) return;
+  label.textContent = state.vacationMode ? 'Activé' : 'Désactivé';
+  label.className = 'state' + (state.vacationMode ? ' on' : '');
+}
+
+function renderEventLog() {
+  const list = document.getElementById('eventLogList');
+  if (!list) return;
+  const log = state.eventLog || [];
+  if (!log.length) { list.innerHTML = '<p style="font-size:12px;opacity:0.6;">Aucun événement pour l\'instant.</p>'; return; }
+  list.innerHTML = log.map(e => `<div class="statLine"><span>${e.msg}</span><b>${e.t}</b></div>`).join('');
+}
+
+function renderAll() {
+  renderTabsRow();
+  renderPanelsVisibility();
+  renderStats();
+  renderGarden();
+  renderBuyModeRow();
+  renderShop();
+  renderClickShop();
+  renderSpecial();
+  renderResearch();
+  renderPrestige();
+  renderAscension();
+  renderQuests();
+  renderDefi();
+  renderAchievements();
+  renderNextGoal();
+  renderStatsTab();
+  renderSoundToggle();
+  renderDarkModeToggle();
+  renderVacationToggle();
+  renderEventLog();
+  updateDocumentTitle();
+}
+
+// ================= TITRE D'ONGLET DYNAMIQUE =================
+function updateDocumentTitle() {
+  document.title = `🌱 +${formatNum(totalCps())}/s — Jardin Idle`;
+}
+
+// ================= CLICK =================
+let _lastClickTime = null;
+let _recentClickTimes = [];
+document.getElementById('clickZone').addEventListener('click', (e) => {
+  if (state.challengeNoClick) return;
+  registerCombo();
+  const gain = clickGain();
+  state.verdure += gain;
+  state.totalEarned += gain;
+  state.totalClicks += 1;
+  state.clicksThisRun += 1;
+  state.dailyProgress.click += 1;
+  state.dailyProgress.earn += gain;
+
+  // Suivi pour les succès secrets "Zen absolu" et "Frénésie"
+  const now = Date.now();
+  if (_lastClickTime !== null) {
+    const gapSec = (now - _lastClickTime) / 1000;
+    if (gapSec > state.maxIdleGapSec) state.maxIdleGapSec = gapSec;
+  }
+  _lastClickTime = now;
+  _recentClickTimes.push(now);
+  _recentClickTimes = _recentClickTimes.filter(t => now - t <= 5000);
+  if (_recentClickTimes.length > state.maxClicksIn5s) state.maxClicksIn5s = _recentClickTimes.length;
+
+  const floatEl = document.createElement('div');
+  floatEl.className = 'floatText';
+  floatEl.textContent = `+${formatNum(gain)}`;
+  floatEl.style.left = (e.clientX - 10) + 'px';
+  floatEl.style.top = (e.clientY - 10) + 'px';
+  document.body.appendChild(floatEl);
+  setTimeout(() => floatEl.remove(), 800);
+
+  spawnClickParticles(e.clientX, e.clientY);
+  playClickSound();
+
+  checkAchievements();
+  scheduleRenderAll();
+});
+
+document.getElementById('prestigeBtn').addEventListener('click', doPrestige);
+document.getElementById('ascensionBtn').addEventListener('click', doAscension);
+
+// ================= GOLDEN WEED EVENT =================
+function spawnGoldenWeed() {
+  const el = document.createElement('div');
+  el.className = 'golden';
+  el.textContent = '🌿✨';
+  el.style.left = (10 + Math.random() * 80) + 'vw';
+  el.style.top = (15 + Math.random() * 65) + 'vh';
+  el.onclick = () => {
+    state.goldenClicked += 1;
+    state.dailyProgress.golden += 1;
+    const bonusType = Math.random() < 0.5 ? 'instant' : 'boost';
+    if (bonusType === 'instant') {
+      const bonus = Math.max(50, totalCps() * 60);
+      state.verdure += bonus; state.totalEarned += bonus;
+      state.dailyProgress.earn += bonus;
+      bump('verdureCount');
+      showToast(`✨ Mauvaise herbe dorée ! +${formatNum(bonus)} Verdure instantanée`);
+    } else {
+      window._goldenBoostUntil = Date.now() + 30000;
+      showToast(`✨ Mauvaise herbe dorée ! x3 production pendant 30s`);
+    }
+    playGoldenSound();
+    checkAchievements();
+    saveGame(); renderAll();
+    el.remove();
+  };
+  document.body.appendChild(el);
+  setTimeout(() => { if (el.parentNode) el.remove(); }, 8000);
+}
+setInterval(() => {
+  if (Date.now() - state.lastGoldenSpawn > 45000 + Math.random() * 45000) {
+    state.lastGoldenSpawn = Date.now();
+    spawnGoldenWeed();
+  }
+}, 5000);
+
+// ================= ÉVÉNEMENT ALÉATOIRE : NUÉE DE PAPILLONS =================
+function spawnButterflies() {
+  const el = document.createElement('div');
+  el.className = 'golden';
+  el.textContent = '🦋';
+  el.style.left = (10 + Math.random() * 80) + 'vw';
+  el.style.top = (15 + Math.random() * 65) + 'vh';
+  el.onclick = () => {
+    window._clickBoostUntil = Date.now() + 25000;
+    showToast(`🦋 Nuée de papillons ! x2 gain par clic pendant 25s`);
+    logEvent('🦋 Une nuée de papillons a boosté tes clics !');
+    playGoldenSound();
+    saveGame(); renderAll();
+    el.remove();
+  };
+  document.body.appendChild(el);
+  setTimeout(() => { if (el.parentNode) el.remove(); }, 8000);
+}
+setInterval(() => {
+  if (Date.now() - (state.lastButterflySpawn||0) > 90000 + Math.random() * 90000) {
+    state.lastButterflySpawn = Date.now();
+    spawnButterflies();
+  }
+}, 5000);
+
+// ================= CHAT DU JARDIN (bonus horaire) =================
+setInterval(() => {
+  if (hasUnique('chatJardin')) {
+    const bonus = Math.max(20, totalCps() * 180);
+    state.verdure += bonus; state.totalEarned += bonus;
+    saveGame(); renderAll();
+    showToast(`🐈 Le Chat du Jardin ramène +${formatNum(bonus)} Verdure !`);
+  }
+}, 3600000);
+
+// ================= AUTO-BUY =================
+setInterval(() => {
+  if (!combinedUpgradeValue('autobuy')) return;
+  let cheapest = null, cheapestCost = Infinity;
+  for (const b of BUILDINGS) {
+    const cost = buildingCost(b, 1);
+    if (cost < cheapestCost && state.verdure >= cost) { cheapestCost = cost; cheapest = b; }
+  }
+  if (cheapest) buyBuilding(cheapest.id, 1);
+
+  const cheapestClick = CLICK_UPGRADES.filter(c => !hasClickUpgrade(c.id) && state.verdure >= c.cost).sort((a,b) => a.cost - b.cost)[0];
+  if (cheapestClick) buyClickUpgrade(cheapestClick.id);
+
+  const cheapestResearch = RESEARCH.filter(r => !hasResearch(r.id) && (!r.requires || hasResearch(r.requires)) && state.knowledge >= r.cost).sort((a,b) => a.cost - b.cost)[0];
+  if (cheapestResearch) buyResearch(cheapestResearch.id);
+}, 5000);
+
+// ================= WEATHER & INVASIVE TICK =================
+setInterval(() => { maybeChangeWeather(); maybeSpawnInvasive(); }, 10000);
+
+// ================= IDLE TICK =================
+let _idleTickCount = 0;
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveGame(); });
+window.addEventListener('beforeunload', () => { saveGame(); });
+let _appStartTime = Date.now();
+setInterval(() => {
+  if (!state.challengeNoClick) {
+    const gapSec = (Date.now() - (_lastClickTime || _appStartTime)) / 1000;
+    if (gapSec > state.maxIdleGapSec) state.maxIdleGapSec = gapSec;
+  }
+  const goldenBoost = (window._goldenBoostUntil && Date.now() < window._goldenBoostUntil) ? 3 : 1;
+  const gain = totalCps() * goldenBoost;
+  state.verdure += gain;
+  state.totalEarned += gain;
+  state.dailyProgress.earn += gain;
+  state.knowledge += knowledgeRate();
+  state.totalPlayTimeSec = (state.totalPlayTimeSec || 0) + 1;
+  checkAchievements();
+  _idleTickCount = (_idleTickCount || 0) + 1;
+  if (_idleTickCount % 5 === 0) saveGame(); // écriture disque toutes les 5s seulement, pas à chaque tick
+  renderTabsRow();
+  renderStats();
+  renderShop();
+  renderSpecial();
+  renderPrestige();
+  renderQuests();
+  renderStatsTab();
+  renderDefi();
+  updateDocumentTitle();
+}, 1000);
+
+// ================= OFFLINE PROGRESS =================
+function applyOfflineProgress() {
+  const elapsedMs = Date.now() - (state.lastSave || Date.now());
+  const elapsedSec = Math.min(elapsedMs / 1000, 8 * 3600);
+  if (elapsedSec > 10) {
+    const baseEff = combinedUpgradeValue('offline') || 0.5;
+    const bonusEff = combinedUpgradeValue('offlineBonus') || 0;
+    const uniqueEff = uniqueMultipliers().offlineBonus;
+    const efficiency = Math.min(1, baseEff + bonusEff + uniqueEff);
+    const gain = totalCps() * elapsedSec * efficiency;
+    if (gain > 0) {
+      state.verdure += gain; state.totalEarned += gain;
+      const mins = Math.floor(elapsedSec / 60);
+      const hrs = Math.floor(mins / 60);
+      const timeLabel = hrs > 0 ? `${hrs}h ${mins % 60}min` : `${mins} min`;
+      if (elapsedSec > 60) {
+        document.getElementById('offlineBody').innerHTML =
+          `Tu as été absent(e) <b>${timeLabel}</b>.<br>` +
+          `Ton jardin a continué à produire à <b>${(efficiency*100).toFixed(0)}%</b> d'efficacité.<br><br>` +
+          `🌿 Gain total : <b>+${formatNum(gain)} Verdure</b>`;
+        document.getElementById('offlineOverlay').style.display = 'flex';
+        logEvent(`⏱️ Retour après ${timeLabel} : +${formatNum(gain)} Verdure`);
+      } else {
+        showToast(`⏱️ Pendant ton absence (${Math.floor(elapsedSec/60)} min) : +${formatNum(gain)} Verdure`);
+      }
+    }
+  }
+}
+
+// ================= EXPORT / IMPORT / SHARE / RESET =================
+document.getElementById('soundToggleBtn').addEventListener('click', () => {
+  state.soundEnabled = !state.soundEnabled;
+  if (state.soundEnabled) playTone(600, 0.06, 'sine', 0.04);
+  saveGame(); renderSoundToggle();
+});
+document.getElementById('volumeSlider').addEventListener('input', (e) => {
+  state.soundVolume = parseInt(e.target.value, 10);
+  document.getElementById('volumeValueLabel').textContent = state.soundVolume + '%';
+});
+document.getElementById('volumeSlider').addEventListener('change', () => {
+  saveGame();
+  playTone(600, 0.06, 'sine', 0.04);
+});
+document.getElementById('darkModeToggleBtn').addEventListener('click', () => {
+  state.forceDarkMode = !state.forceDarkMode;
+  saveGame(); renderStats(); renderDarkModeToggle();
+});
+document.getElementById('vacationToggleBtn').addEventListener('click', () => {
+  state.vacationMode = !state.vacationMode;
+  if (state.vacationMode && state.invasiveWeed) state.invasiveWeed = null;
+  saveGame(); renderAll();
+});
+
+function encodeSave() { return btoa(unescape(encodeURIComponent(JSON.stringify(state)))); }
+function applyImportedData(parsed) {
+  applyLoadedState(parsed);
+  saveGame(); renderAll();
+  showToast('Sauvegarde importée !');
+}
+
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const data = encodeSave();
+  const blob = new Blob([data], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  const stamp = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  a.href = url;
+  a.download = `jardin-idle-save-${stamp}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  navigator.clipboard?.writeText(data).catch(() => {});
+  showToast('💾 Sauvegarde téléchargée (et copiée)');
+});
+
+document.getElementById('copyCodeBtn').addEventListener('click', () => {
+  const data = encodeSave();
+  navigator.clipboard?.writeText(data).then(() => {
+    showToast('📋 Code de sauvegarde copié ! Colle-le sur ton autre appareil via "Importer (coller un code)".');
+  }).catch(() => {
+    prompt('Copie ce code manuellement :', data);
+  });
+});
+document.getElementById('importBtn').addEventListener('click', () => {
+  document.getElementById('importFileInput').click();
+});
+document.getElementById('importFileInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(decodeURIComponent(escape(atob(reader.result.trim()))));
+      applyImportedData(parsed);
+    } catch(err) { alert('Fichier de sauvegarde invalide.'); }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+});
+document.getElementById('importPasteBtn').addEventListener('click', () => {
+  const data = prompt('Colle ton code de sauvegarde :');
+  if (!data) return;
+  try {
+    const parsed = JSON.parse(decodeURIComponent(escape(atob(data))));
+    applyImportedData(parsed);
+  } catch(e) { alert('Code de sauvegarde invalide.'); }
+});
+document.getElementById('restoreBackupBtn').addEventListener('click', () => {
+  const backup = localStorage.getItem('jardinIdleSave_backup');
+  if (!backup) { alert('Aucune sauvegarde de secours disponible pour le moment.'); return; }
+  if (!confirm('Restaurer la sauvegarde de secours ? Ta progression actuelle sera remplacée.')) return;
+  try {
+    applyImportedData(JSON.parse(backup));
+  } catch(e) { alert('Sauvegarde de secours corrompue.'); }
+});
+document.getElementById('shareBtn').addEventListener('click', () => {
+  const text = `🌱 Jardin Idle — Mon jardin :\n` +
+    `${formatNum(state.totalEarned)} Verdure gagnée\n` +
+    `${state.cosmicSeeds} Graines Cosmiques\n` +
+    `${state.prestigeCount} prestiges effectués\n` +
+    `${Object.values(state.achievements||{}).length} succès débloqués`;
+  navigator.clipboard?.writeText(text).catch(()=>{});
+  prompt('Copie ce texte pour le partager :', text);
+});
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (confirm('Tout remettre à zéro (Verdure, bâtiments, graines, recherches, succès) ? Action irréversible.')) {
+    state = defaultState();
+    saveGame(); renderAll();
+  }
+});
+
+// ================= TUTORIEL DE PREMIER LANCEMENT =================
+if (!state.tutorialSeen) {
+  document.getElementById('tutorialOverlay').style.display = 'flex';
+}
+document.getElementById('tutorialCloseBtn').addEventListener('click', () => {
+  state.tutorialSeen = true;
+  document.getElementById('tutorialOverlay').style.display = 'none';
+  saveGame();
+});
+document.getElementById('offlineCloseBtn').addEventListener('click', () => {
+  document.getElementById('offlineOverlay').style.display = 'none';
+});
+
+// ================= INIT =================
+applyOfflineProgress();
+generateQuests();
+checkAchievements();
+renderAll();
+
+</script>
+
+<script>
+  // Enregistrement du service worker pour le mode hors-ligne / installation PWA.
+  // Ne fonctionne que si le fichier est servi via http(s) (pas en local file://).
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
+</script>
+
+</body>
+</html>

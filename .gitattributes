@@ -1,0 +1,11 @@
+# Empêche Git (notamment sous Windows avec autocrlf activé) de "corriger" les fins
+# de ligne à l'intérieur des fichiers binaires — ce qui corrompt silencieusement
+# les images (le format PNG est justement conçu pour détecter ce genre de corruption,
+# d'où l'erreur "Invalid PNG signature").
+*.png binary
+*.ico binary
+*.icns binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
