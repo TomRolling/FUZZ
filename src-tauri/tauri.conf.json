@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Jardin Idle",
+  "productName": "Fuzz",
   "version": "1.0.0",
-  "identifier": "com.jardinidle.app",
+  "identifier": "com.fuzzgame.app",
   "build": {
     "frontendDist": "../dist"
   },
@@ -10,7 +10,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "Jardin Idle",
+        "title": "Fuzz",
         "width": 480,
         "height": 800,
         "minWidth": 360,
@@ -38,7 +38,7 @@
   "plugins": {
     "updater": {
       "endpoints": [
-        "https://github.com/TomRolling/IdleJardin/releases/latest/download/latest.json"
+        "https://github.com/TomRolling/Fuzz/releases/latest/download/latest.json"
       ],
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDU1QTcwQURCOTFBREE4MzYKUldRMnFLMlIyd3FuVllWMFdxQVRlZ2JtbXNpNS9MVXFod3hVOVZKZUFaVjhQcmlJT0Z1WDJLRDcK"
     }

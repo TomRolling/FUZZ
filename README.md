@@ -1,4 +1,4 @@
-# 🌱 Jardin Idle — Version native (Tauri)
+# 🌱 Fuzz — Version native (Tauri)
 
 Ce dossier enveloppe ton jeu (`dist/index.html`, inchangé côté logique) dans une vraie
 application installable — `.exe` sur Windows, `.app`/`.dmg` sur macOS, `.deb`/`.AppImage`
@@ -96,7 +96,7 @@ et remplace par ta vraie clé publique copiée à l'étape 1.
 
 ### 3. Ajoute la clé privée comme secret GitHub (jamais dans le code !)
 
-Sur `github.com/TomRolling/IdleJardin` → **Settings** → **Secrets and variables** → **Actions**
+Sur `github.com/TomRolling/Fuzz` → **Settings** → **Secrets and variables** → **Actions**
 → **New repository secret**, crée ces deux secrets :
 
 | Nom | Valeur |

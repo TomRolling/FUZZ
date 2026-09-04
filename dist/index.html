@@ -6,13 +6,13 @@
 <meta name="theme-color" content="#43a047">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Jardin Idle">
-<meta name="description" content="Jardin Idle - un jeu idle de jardinage : clique, améliore, cherche, prestige.">
+<meta name="apple-mobile-web-app-title" content="Fuzz">
+<meta name="description" content="Fuzz - un jeu idle de jardinage : clique, améliore, cherche, prestige.">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="icon" type="image/png" sizes="64x64" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<title>Jardin Idle - MVP complet</title>
+<title>Fuzz - MVP complet</title>
 <script>
   // Calcule la hauteur RÉELLE visible (plus fiable que 100dvh seul sur iOS,
   // où la barre d'adresse de Safari et le mode PWA installé ne sont pas
@@ -351,7 +351,7 @@
 <body class="theme-1" id="bodyEl">
 
 <div class="topBar">
-  <h1>🌱 Jardin Idle</h1>
+  <h1>🌱 Fuzz</h1>
   <div class="weatherBadge" id="weatherBadge"></div>
   <div class="statsRow">
     <div class="statChip verdure" id="verdureCount">0</div>
@@ -2012,7 +2012,7 @@ function renderAll() {
 
 // ================= TITRE D'ONGLET DYNAMIQUE =================
 function updateDocumentTitle() {
-  document.title = `🌱 +${formatNum(totalCps())}/s — Jardin Idle`;
+  document.title = `🌱 +${formatNum(totalCps())}/s — Fuzz`;
 }
 
 // ================= CLICK =================
@@ -2330,7 +2330,7 @@ async function exportSaveFile(filename, text) {
     try {
       const path = await window.__TAURI__.dialog.save({
         defaultPath: filename,
-        filters: [{ name: 'Sauvegarde Jardin Idle', extensions: ['txt'] }]
+        filters: [{ name: 'Sauvegarde Fuzz', extensions: ['txt'] }]
       });
       if (!path) return { ok: false, cancelled: true };
       await window.__TAURI__.fs.writeTextFile(path, text);
@@ -2354,7 +2354,7 @@ document.getElementById('exportBtn').addEventListener('click', async () => {
   const data = encodeSave();
   const d = new Date();
   const stamp = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  const filename = `jardin-idle-save-${stamp}.txt`;
+  const filename = `fuzz-save-${stamp}.txt`;
   const result = await exportSaveFile(filename, data);
   if (result.cancelled) return; // le joueur a annulé la fenêtre "Enregistrer sous", pas d'erreur à afficher
   if (!result.ok) { showToast('❌ Échec de la sauvegarde du fichier.'); return; }
@@ -2404,7 +2404,7 @@ document.getElementById('restoreBackupBtn').addEventListener('click', () => {
   } catch(e) { alert('Sauvegarde de secours corrompue.'); }
 });
 document.getElementById('shareBtn').addEventListener('click', async () => {
-  const text = `🌱 Jardin Idle — Mon jardin :\n` +
+  const text = `🌱 Fuzz — Mon jardin :\n` +
     `${formatNum(state.totalEarned)} Verdure gagnée\n` +
     `${state.cosmicSeeds} Graines Cosmiques\n` +
     `${state.prestigeCount} prestiges effectués\n` +

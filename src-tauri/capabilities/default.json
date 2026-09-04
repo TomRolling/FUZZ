@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permissions par défaut de Jardin Idle",
+  "description": "Permissions par défaut de Fuzz",
   "windows": ["main"],
   "permissions": [
     "core:default",

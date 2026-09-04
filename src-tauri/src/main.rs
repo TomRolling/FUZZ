@@ -1,4 +1,4 @@
-// Point d'entrée natif de Jardin Idle.
+// Point d'entrée natif de Fuzz.
 // Aucune logique métier ici : tout le jeu vit dans dist/index.html (HTML/CSS/JS),
 // Tauri se contente d'ouvrir une fenêtre native qui charge ce fichier.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
@@ -11,5 +11,5 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .run(tauri::generate_context!())
-        .expect("erreur au lancement de Jardin Idle");
+        .expect("erreur au lancement de Fuzz");
 }
