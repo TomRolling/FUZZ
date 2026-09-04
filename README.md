@@ -1,8 +1,10 @@
 # 🌱 Fuzz — Version native (Tauri)
 
-Ce dossier enveloppe ton jeu (`dist/index.html`, inchangé côté logique) dans une vraie
+Fuzz est un jeu idle de jardinage : clique, améliore, cherche, prestige, ascensionne.
+
+Ce dossier enveloppe le jeu (`dist/index.html`, inchangé côté logique) dans une vraie
 application installable — `.exe` sur Windows, `.app`/`.dmg` sur macOS, `.deb`/`.AppImage`
-sur Linux. Tauri ouvre juste une fenêtre native qui charge ton fichier HTML ; aucune
+sur Linux. Tauri ouvre juste une fenêtre native qui charge ce fichier HTML ; aucune
 réécriture du jeu n'a été nécessaire.
 
 ## Pré-requis (à installer une seule fois sur ta machine)
@@ -20,7 +22,7 @@ réécriture du jeu n'a été nécessaire.
 ## Étapes de build
 
 ```bash
-cd jardin-idle-tauri
+cd fuzz-tauri
 
 # 1. Installe le CLI Tauri (une seule fois)
 npm install
@@ -77,10 +79,12 @@ exécutable via une future mise à jour). Ça se fait **une seule fois**, chez t
 
 ### 1. Génère ta paire de clés
 
+Depuis la racine du projet (là où se trouve `package.json`) :
 ```bash
-cd jardin-idle-tauri
-npx tauri signer generate -w ~/.tauri/jardin-idle.key
+npx tauri signer generate -w ~/.tauri/fuzz.key
 ```
+*(Le nom du fichier `.key` est libre — s'il en existe déjà un d'une version précédente,
+inutile d'en régénérer un nouveau, il reste valide indéfiniment.)*
 
 Ça te demande un mot de passe pour protéger la clé (choisis-en un, note-le). Le terminal
 affiche ensuite une **clé publique** (un long texte qui commence par `dW50cnVzdGVk...` ou
@@ -101,7 +105,7 @@ Sur `github.com/TomRolling/Fuzz` → **Settings** → **Secrets and variables** 
 
 | Nom | Valeur |
 |---|---|
-| `TAURI_SIGNING_PRIVATE_KEY` | Le contenu du fichier `~/.tauri/jardin-idle.key` (ouvre-le avec un éditeur de texte et copie tout) |
+| `TAURI_SIGNING_PRIVATE_KEY` | Le contenu de ton fichier `.key` généré à l'étape 1 (ouvre-le avec un éditeur de texte et copie tout) |
 | `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | Le mot de passe choisi à l'étape 1 |
 
 ### 4. Commit, push, tag comme d'habitude
@@ -114,7 +118,7 @@ bouton "Vérifier" dans l'app (onglet Options) le détecte et propose l'installa
 `src-tauri/tauri.conf.json` (champ `"version"`) avant de tagger — c'est ce numéro que
 l'updater compare pour savoir s'il y a du neuf.
 
-⚠️ Ne perds pas le fichier `~/.tauri/jardin-idle.key` ni le mot de passe — sans eux, impossible
+⚠️ Ne perds pas ton fichier `.key` ni son mot de passe — sans eux, impossible
 de publier une nouvelle mise à jour reconnue par les installations existantes (il faudrait
 générer une nouvelle paire de clés, ce qui casserait la mise à jour automatique pour tout le
 monde une fois).
