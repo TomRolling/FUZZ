@@ -346,6 +346,67 @@
   .tutorialBox h2 { margin-top: 0; font-size: 19px; }
   .tutorialBox p { font-size: 13px; line-height: 1.55; }
   #tutorialCloseBtn { margin-top: 10px; width: 100%; padding: 12px; border: none; border-radius: 10px; background: var(--accent); color: white; font-weight: 700; font-size: 14px; cursor: pointer; }
+
+  /* ===================================================================
+     SYSTÈME DE DIALOGUE (Leroy, Papi Feuillage, futurs personnages)
+     ===================================================================
+     .dialogueOverlay : la couche invisible plein écran qui contient la boîte.
+     pointer-events: none dessus = le joueur peut continuer à cliquer sur le
+     jardin PENDANT qu'un dialogue est affiché (pas bloquant, sauf si on
+     ajoute la classe .modal, voir plus bas).
+  */
+  .dialogueOverlay { position: fixed; inset: 0; z-index: 250; pointer-events: none; display: none; }
+  .dialogueOverlay.modal { background: rgba(0,0,0,0.4); pointer-events: auto; display: flex; align-items: center; justify-content: center; }
+
+  /* .dialogueBox : la bulle elle-même (portrait + texte).
+     C'est ICI que se joue le POSITIONNEMENT. Chaque .pos-xxx ci-dessous est
+     un "emplacement nommé" — pour changer où ça apparaît, il suffit de
+     changer le nom de la classe utilisée (voir la fonction showDialogue en JS),
+     PAS besoin de comprendre les nombres CSS pour les cas courants.
+     Si tu veux un réglage fin (décaler de quelques px), modifie directement
+     les valeurs top/bottom/left/right en pixels dans le bloc .pos-xxx concerné :
+     plus le nombre est grand, plus la boîte s'éloigne du bord correspondant. */
+  .dialogueBox {
+    position: fixed;
+    pointer-events: auto;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    max-width: min(340px, 88vw);
+    background: white;
+    border-radius: 16px;
+    padding: 14px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.25);
+    animation: dialogueIn 0.25s ease-out;
+  }
+  @keyframes dialogueIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .dialogueBox.pos-bottom-left   { left: 16px;  bottom: calc(90px + env(safe-area-inset-bottom)); }
+  .dialogueBox.pos-bottom-right  { right: 16px; bottom: calc(90px + env(safe-area-inset-bottom)); }
+  .dialogueBox.pos-top-left      { left: 16px;  top: calc(16px + env(safe-area-inset-top)); }
+  .dialogueBox.pos-top-right     { right: 16px; top: calc(16px + env(safe-area-inset-top)); }
+  .dialogueBox.pos-center        { position: static; } /* quand .modal est actif, le flex du overlay centre déjà la boîte */
+
+  /* Le rond du portrait. Change 'width'/'height' pour l'agrandir (garde les deux
+     valeurs identiques pour rester rond). 'font-size' contrôle la taille de
+     l'emoji tant qu'on n'a pas de vrai sprite — quand tu auras l'image du
+     personnage, elle prendra toute la place de ce rond automatiquement. */
+  .dialoguePortrait {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px;
+    flex-shrink: 0;
+    overflow: hidden;
+    border: 3px solid white;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+  .dialoguePortrait img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+
+  .dialogueContent { flex: 1; min-width: 0; }
+  .dialogueName { font-weight: 800; font-size: 13px; color: var(--accent-dark); margin-bottom: 3px; }
+  .dialogueText { font-size: 13.5px; line-height: 1.4; color: #23331a; }
+  .dialogueNextBtn { margin-top: 8px; padding: 6px 14px; border: none; border-radius: 20px; background: var(--accent); color: white; font-weight: 700; font-size: 12px; cursor: pointer; }
+
 </style>
 </head>
 <body class="theme-1" id="bodyEl">
@@ -398,6 +459,17 @@
     <p id="updatePromptProgress" style="display:none; font-weight:700; text-align:center;"></p>
     <button id="updatePromptInstallBtn">Mettre à jour maintenant</button>
     <button id="updatePromptLaterBtn" style="margin-top:8px; background:#eee; color:#333;">Plus tard</button>
+  </div>
+</div>
+
+<div class="dialogueOverlay" id="dialogueOverlay">
+  <div class="dialogueBox pos-bottom-left" id="dialogueBox">
+    <div class="dialoguePortrait" id="dialoguePortrait">🐸</div>
+    <div class="dialogueContent">
+      <div class="dialogueName" id="dialogueName">Leroy</div>
+      <div class="dialogueText" id="dialogueText"></div>
+      <button class="dialogueNextBtn" id="dialogueNextBtn">Suivant ▸</button>
+    </div>
   </div>
 </div>
 
@@ -590,6 +662,68 @@ function renderGarden() {
   }
   el.innerHTML = html || '<span class="gardenIcon" style="opacity:0.4;">🌱</span>';
 }
+
+// ================= SYSTÈME DE DIALOGUE (Leroy, Papi Feuillage...) =================
+//
+// COMPATIBILITÉ SPRITES (même principe que les bâtiments) :
+// Tant que `portrait` vaut null ci-dessous, l'emoji de secours (`emoji`) est utilisé.
+// Le jour où tu as le fichier du personnage, mets juste le chemin dans `portrait`
+// (ex: 'assets/characters/leroy.png') — le reste du code n'a rien à changer.
+const CHARACTERS = {
+  leroy:      { name: 'Leroy',         emoji: '🐸', color: '#8bc34a', portrait: null },
+  papi:       { name: 'Papi Feuillage', emoji: '🐢', color: '#8d6e63', portrait: null },
+};
+
+function getCharacterPortraitHtml(characterId) {
+  const c = CHARACTERS[characterId] || { emoji: '❓', color: '#999', portrait: null };
+  if (c.portrait) {
+    return `<img src="${c.portrait}" alt="" onerror="this.parentElement.textContent='${c.emoji}'">`;
+  }
+  return c.emoji;
+}
+
+let _dialogueQueue = [];
+let _dialogueOnComplete = null;
+
+// showDialogue('leroy', "Une phrase.", { position: 'bottom-left' })
+// showDialogue('papi', ["Première phrase.", "Deuxième phrase."], { position: 'top-right', modal: true, onComplete: () => {...} })
+//
+// characterId : une clé de CHARACTERS ci-dessus ('leroy', 'papi'...)
+// lines       : une phrase (string) ou plusieurs (array de strings), affichées une par une avec le bouton "Suivant"
+// options.position : 'bottom-left' (défaut) | 'bottom-right' | 'top-left' | 'top-right' | 'center'
+// options.modal     : true = bloque le jeu derrière une vitre sombre (pour un moment d'histoire important) ;
+//                      false/absent = le joueur peut continuer à jouer pendant que ça s'affiche (défaut)
+// options.onComplete: fonction optionnelle appelée quand le joueur a fermé le dialogue
+function showDialogue(characterId, lines, options = {}) {
+  const char = CHARACTERS[characterId] || { name: characterId, emoji: '❓', color: '#999' };
+  _dialogueQueue = Array.isArray(lines) ? [...lines] : [lines];
+  _dialogueOnComplete = options.onComplete || null;
+
+  const overlay = document.getElementById('dialogueOverlay');
+  const box = document.getElementById('dialogueBox');
+  const position = options.position || 'bottom-left';
+  box.className = 'dialogueBox pos-' + position;
+  overlay.className = 'dialogueOverlay' + (options.modal ? ' modal' : '');
+
+  const portraitEl = document.getElementById('dialoguePortrait');
+  portraitEl.innerHTML = getCharacterPortraitHtml(characterId);
+  portraitEl.style.background = char.color || '#8bc34a';
+  document.getElementById('dialogueName').textContent = char.name;
+
+  overlay.style.display = 'block';
+  advanceDialogue();
+}
+
+function advanceDialogue() {
+  if (_dialogueQueue.length === 0) {
+    document.getElementById('dialogueOverlay').style.display = 'none';
+    if (_dialogueOnComplete) { const fn = _dialogueOnComplete; _dialogueOnComplete = null; fn(); }
+    return;
+  }
+  document.getElementById('dialogueText').textContent = _dialogueQueue.shift();
+  document.getElementById('dialogueNextBtn').textContent = _dialogueQueue.length > 0 ? 'Suivant ▸' : 'Fermer ✕';
+}
+document.getElementById('dialogueNextBtn').addEventListener('click', advanceDialogue);
 
 // ================= CLICK UPGRADES (parallèle aux bâtiments) =================
 // 'flatMult' : multiplie le gain de clic de base
@@ -2482,6 +2616,10 @@ document.getElementById('tutorialCloseBtn').addEventListener('click', () => {
   state.tutorialSeen = true;
   document.getElementById('tutorialOverlay').style.display = 'none';
   saveGame();
+  showDialogue('leroy', [
+    "Bon... c'est parti. Juste moi, une tente, et beaucoup, beaucoup de mauvaises herbes.",
+    "Papi a dit qu'il me dérangerait pas trop. On verra bien."
+  ], { position: 'bottom-left' });
 });
 document.getElementById('offlineCloseBtn').addEventListener('click', () => {
   document.getElementById('offlineOverlay').style.display = 'none';
