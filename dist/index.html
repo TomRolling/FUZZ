@@ -47,7 +47,7 @@
   body {
     margin: 0;
     font-family: 'Poppins', 'Segoe UI', sans-serif;
-    background: radial-gradient(circle at 20% 0%, #a1e664 0%, #67a334 45%, #2c5338 100%);
+    background: radial-gradient(circle at 20% 0%, #d9dfc0 0%, #8ba668 45%, #453923 100%);
     color: #f5f1e6;
     display: flex;
     flex-direction: column;
@@ -63,7 +63,7 @@
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
   }
-  body.theme-1 { background: radial-gradient(circle at 20% 0%, #a1e664 0%, #67a334 45%, #2c5338 100%); }
+  body.theme-1 { background: radial-gradient(circle at 20% 0%, #d9dfc0 0%, #8ba668 45%, #453923 100%); }
   body.theme-2 { background: radial-gradient(circle at 20% 0%, #dff4ee 0%, #b7e0d8 45%, #8fcdbf 100%); }
   body.theme-3 { background: radial-gradient(circle at 20% 0%, #e2e7fb 0%, #cfd8f0 45%, #a9b8e8 100%); }
   body.theme-4 { background: radial-gradient(circle at 20% 0%, #4a4694 0%, #2b2f5e 60%, #1a1a3d 100%); color: #f0f0ff; }
@@ -108,13 +108,6 @@
   .invasiveBox b { color: #b71c1c; }
 
   /* ===== Full-screen click zone ===== */
-  .mainRow {
-    flex: 1;
-    display: flex;
-    min-height: 0;
-    width: 100%;
-    gap: 0;
-  }
   .clickZone {
     flex: 1;
     min-width: 0;
@@ -151,34 +144,87 @@
 
   .newBadge { display:inline-block; background:#ff7043; color:white; font-size:9px; padding:1px 5px; border-radius:8px; margin-left:4px; vertical-align:middle; }
 
-  /* ===== Bouton flèche et overlay sombre : plus nécessaires en panneau permanent,
-     gardés dans le DOM (le JS y fait toujours référence) mais invisibles. ===== */
-  .drawerArrow { display: none; }
-  .drawerOverlay { display: none; }
-
-  /* ===== Panneau latéral permanent (ex-tiroir mobile) ===== */
-  .drawer {
-    position: static;
-    width: 420px;
-    flex-shrink: 0;
-    height: auto;
+  /* ===== Boutons flottants (remplacent l'ancien tiroir) ===== */
+  .floatingButtonsTopRight {
+    position: fixed;
+    top: calc(16px + env(safe-area-inset-top));
+    right: calc(16px + env(safe-area-inset-right));
+    z-index: 170;
+    display: flex;
+    gap: 8px;
+  }
+  .floatBtn {
     background: var(--card-bg);
-    border-left: 4px solid var(--ink);
-    box-shadow: -6px 0 24px rgba(0,0,0,0.18);
-    transform: none;
+    color: var(--ink);
+    border: 3px solid var(--ink);
+    border-radius: 14px;
+    padding: 10px 14px;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    transition: transform 0.15s;
+  }
+  .floatBtn:hover { transform: translateY(-2px); }
+  .shopFloatBtn {
+    position: fixed;
+    bottom: calc(28px + env(safe-area-inset-bottom));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 170;
+    font-size: 15px;
+    font-weight: 800;
+    padding: 14px 28px;
+    background: var(--leroy);
+    border-radius: 30px;
+  }
+  .shopFloatBtn:hover { transform: translateX(-50%) translateY(-2px); }
+
+  /* ===== Modales latérales (Paramètres / Succès / Quêtes) ===== */
+  .sideModalOverlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.4);
+    display: none;
+    align-items: center; justify-content: center;
+  }
+  .sideModalOverlay.open { display: flex; }
+  .sideModal {
+    width: min(560px, 92vw);
+    max-height: 82vh;
+    background: var(--card-bg);
+    border: 4px solid var(--ink);
+    border-radius: 18px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
   }
-
-  .drawerHeader { display: none; } /* poignée + bouton Fermer : inutiles sans glissement */
-
-  .drawerTabsRow {
+  .sideModalHeader {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 18px;
+    background: var(--accent);
+    color: white;
+    font-weight: 800;
+    font-size: 16px;
+  }
+  .modalCloseBtn {
+    border: none;
+    background: rgba(255,255,255,0.25);
+    color: white;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    font-weight: 700;
+  }
+  .miniTabsRow {
     flex-shrink: 0;
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    padding: 14px 12px 10px 12px;
+    padding: 10px 14px;
     border-bottom: 3px solid var(--ink);
     background: rgba(103,163,52,0.12);
   }
@@ -203,10 +249,50 @@
   .drawerBtn.active { background: var(--accent); color: white; }
   .drawerBtn .newBadge { position: absolute; top: -4px; right: -2px; }
 
-  .drawerContent {
+  .sideModalContent {
     flex: 1;
     overflow-y: auto;
     padding: 16px 18px 24px 18px;
+  }
+
+  /* ===== Page plein écran : Magasin de Papi ===== */
+  .shopPageOverlay {
+    position: fixed; inset: 0; z-index: 210;
+    background: var(--soil);
+    display: none;
+    flex-direction: column;
+  }
+  .shopPageOverlay.open { display: flex; }
+  .shopPageHeader {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px calc(20px + env(safe-area-inset-right)) 16px calc(20px + env(safe-area-inset-left));
+    background: var(--ink);
+    color: white;
+    font-weight: 800;
+    font-size: 18px;
+  }
+  /* Emplacement réservé pour l'illustration (Papi + son magasin) — à remplacer par le vrai visuel */
+  .shopImagePlaceholder {
+    flex-shrink: 0;
+    margin: 16px 20px 0 20px;
+    padding: 30px;
+    border: 3px dashed rgba(255,255,255,0.4);
+    border-radius: 14px;
+    color: rgba(255,255,255,0.6);
+    text-align: center;
+    font-size: 13px;
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .shopPageContent {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px calc(20px + env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left));
   }
 
   .tabPanel { display: none; animation: fadeIn 0.25s ease; }
@@ -392,6 +478,39 @@
   .dialogueText { font-size: 15px; line-height: 1.45; color: #23331a; }
   .dialogueNextBtn { margin-top: 10px; padding: 8px 16px; border: none; border-radius: 20px; background: var(--accent); color: white; font-weight: 700; font-size: 13px; cursor: pointer; }
 
+  /* ===================================================================
+     SCÈNE FAÇON JRPG RÉTRO (deux personnages face à face + bande de texte)
+     Utilisée pour les vrais moments d'histoire (scène d'ouverture, etc.),
+     contrairement aux petites bulles ambiantes (.dialogueBox) réservées
+     aux apartés ponctuels d'un seul personnage. ===================================================================*/
+  .sceneOverlay { position: fixed; inset: 0; z-index: 260; display: none; background: rgba(0,0,0,0.35); }
+  .sceneOverlay.visible { display: block; }
+
+  .scenePortrait {
+    position: fixed;
+    bottom: 190px;
+    width: 240px; height: 240px;
+    transition: filter 0.3s ease, transform 0.3s ease;
+    filter: brightness(1) saturate(1);
+  }
+  .scenePortrait img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 12px 16px rgba(0,0,0,0.45)); }
+  .scenePortraitLeft { left: 40px; }
+  .scenePortraitRight { right: 40px; }
+  .scenePortrait.dimmed { filter: brightness(0.4) saturate(0.5); transform: scale(0.94); }
+
+  .sceneTextBox {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    min-height: 190px;
+    background: var(--card-bg);
+    border-top: 6px solid var(--ink);
+    padding: 20px calc(40px + env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) calc(40px + env(safe-area-inset-left));
+    box-shadow: 0 -8px 24px rgba(0,0,0,0.3);
+  }
+  .sceneName { font-weight: 800; font-size: 16px; color: var(--accent-dark); margin-bottom: 6px; }
+  .sceneText { font-size: 16px; line-height: 1.5; color: #23331a; max-width: 900px; }
+  .sceneNextBtn { margin-top: 12px; padding: 9px 20px; border: none; border-radius: 20px; background: var(--accent); color: white; font-weight: 700; font-size: 14px; cursor: pointer; }
+
 </style>
 </head>
 <body class="theme-1" id="bodyEl">
@@ -411,12 +530,19 @@
   <div class="invasiveBox" id="invasiveBox" style="display:none;"></div>
 </div>
 
-<div class="mainRow">
 <div class="clickZone" id="clickZone">
   <div class="gardenScene" id="gardenScene"></div>
   <div class="clickText" id="clickText">Clic ici pour désherber</div>
   <div class="comboBadge" id="comboBadge"></div>
 </div>
+
+<div class="floatingButtonsTopRight">
+  <button class="floatBtn" id="settingsBtn" title="Paramètres">⚙️</button>
+  <button class="floatBtn" id="achievementsBtn" title="Succès">🏆</button>
+  <button class="floatBtn" id="questsBtn" title="Quêtes &amp; Défis">📓</button>
+</div>
+<button class="floatBtn shopFloatBtn" id="shopBtn" title="Magasin de Papi">🛒 Magasin de Papi</button>
+
 <div class="toastContainer" id="toastContainer"></div>
 
 <div class="tutorialOverlay" id="tutorialOverlay" style="display:none;">
@@ -459,115 +585,162 @@
   </div>
 </div>
 
-<button class="drawerArrow" id="drawerArrowBtn">▲ Menu</button>
-<div class="drawerOverlay" id="drawerOverlay"></div>
-
-<div class="drawer" id="drawer">
-  <div class="drawerHeader" id="drawerHeader">
-    <div class="drawerHandle"></div>
-    <button id="drawerCloseBtn">Fermer ✕</button>
-  </div>
-  <div class="drawerTabsRow" id="drawerButtons"></div>
-  <div class="drawerContent" id="tabPanels">
-
-    <div class="tabPanel active" id="tab-jardin">
-      <div class="buyModeRow" id="buyModeRow"></div>
-      <div id="shop"></div>
-    </div>
-
-    <div class="tabPanel" id="tab-clic">
-      <p style="font-size:12px;opacity:0.7;">Renforce tes clics — certaines améliorations ajoutent un % de ta production/seconde à chaque clic, pour que cliquer reste utile même très loin dans la partie.</p>
-      <div id="clickShop"></div>
-    </div>
-
-    <div class="tabPanel" id="tab-special">
-      <div id="specialShop"></div>
-    </div>
-
-    <div class="tabPanel" id="tab-recherche">
-      <div id="researchShop"></div>
-    </div>
-
-    <div class="tabPanel" id="tab-prestige">
-      <div class="prestigeBox">
-        <div id="prestigeInfo" class="prestigeInfo"></div>
-        <div class="progressBarWrap" id="prestigeProgressWrap"><div class="progressBarFill" id="prestigeProgressFill" style="background:linear-gradient(90deg,var(--purple),#5e3b9c);"></div></div>
-        <div class="progressBarLabel" id="prestigeProgressLabel"></div>
-        <button id="prestigeBtn">🌍 Terraformer (Prestige)</button>
-      </div>
-      <div id="prestigeShop"></div>
-    </div>
-
-    <div class="tabPanel" id="tab-ascension">
-      <div class="prestigeBox" style="background:linear-gradient(135deg, #1a1a3d, #3d2b6e); color:#f0e9ff;">
-        <div id="ascensionInfo" class="prestigeInfo"></div>
-        <div class="progressBarWrap" id="ascensionProgressWrap"><div class="progressBarFill" id="ascensionProgressFill" style="background:linear-gradient(90deg,#ffd54f,#ff7043);"></div></div>
-        <div class="progressBarLabel" id="ascensionProgressLabel" style="color:#f0e9ff;"></div>
-        <button id="ascensionBtn">🌟 Ascensionner</button>
-      </div>
-      <div id="ascensionShop"></div>
-    </div>
-
-    <div class="tabPanel" id="tab-quetes">
-      <div id="questList"></div>
-    </div>
-
-    <div class="tabPanel" id="tab-defi">
-      <div id="defiPanel"></div>
-    </div>
-
-    <div class="tabPanel" id="tab-succes">
-      <div id="achvList"></div>
-    </div>
-
-    <div class="tabPanel" id="tab-stats">
-      <div id="statsList"></div>
-    </div>
-
-    <div class="tabPanel" id="tab-journal">
-      <p style="font-size:12px;opacity:0.7;">Historique des derniers événements de ton jardin.</p>
-      <div id="eventLogList"></div>
-    </div>
-
-    <div class="tabPanel" id="tab-options">
-      <div class="upgrade" id="updateCard" style="display:none; cursor:default;">
-        <div class="info">
-          <div class="name">🔄 Mises à jour <span id="currentVersionText" style="font-weight:400; font-size:11px; opacity:0.65;"></span></div>
-          <div class="desc" id="updateStatusText">Vérification...</div>
-        </div>
-        <div class="price"><button class="smallBtn" id="updateCheckBtn" style="margin:0;">Vérifier</button></div>
-      </div>
-      <div class="soundToggleBtn" id="soundToggleBtn">
-        <span>🔊 Sons du jeu</span>
-        <span class="state" id="soundStateLabel">Activés</span>
-      </div>
-      <div style="padding:6px 4px 14px 4px;">
-        <label for="volumeSlider" style="font-size:12px;opacity:0.75;display:flex;justify-content:space-between;"><span>Volume</span><span id="volumeValueLabel">100%</span></label>
-        <input type="range" id="volumeSlider" min="0" max="100" step="5" value="100" style="width:100%;">
-      </div>
-      <div class="soundToggleBtn" id="darkModeToggleBtn">
-        <span>🌙 Mode sombre forcé</span>
-        <span class="state" id="darkModeStateLabel">Désactivé</span>
-      </div>
-      <div class="soundToggleBtn" id="vacationToggleBtn">
-        <span>🏖️ Mode vacances (bloque les herbes invasives)</span>
-        <span class="state" id="vacationStateLabel">Désactivé</span>
-      </div>
-      <p style="font-size:12px;opacity:0.7;">Sauvegarde, partage et remise à zéro.</p>
-      <div class="footerBtns">
-        <button class="smallBtn" id="exportBtn">💾 Exporter (fichier)</button>
-        <button class="smallBtn" id="copyCodeBtn">📋 Copier mon code (autre appareil)</button>
-        <button class="smallBtn" id="importBtn">📂 Importer (fichier)</button>
-        <button class="smallBtn" id="importPasteBtn">📋 Importer (coller un code)</button>
-        <button class="smallBtn" id="restoreBackupBtn">♻️ Restaurer sauvegarde de secours</button>
-        <button class="smallBtn" id="shareBtn">📣 Partager</button>
-        <button class="smallBtn" id="resetBtn">🗑️ Reset total</button>
-      </div>
-      <input type="file" id="importFileInput" accept=".txt,.json" style="display:none;">
-    </div>
-
+<div class="sceneOverlay" id="sceneOverlay">
+  <div class="scenePortrait scenePortraitLeft" id="scenePortraitLeft"><img id="scenePortraitLeftImg" alt=""></div>
+  <div class="scenePortrait scenePortraitRight" id="scenePortraitRight"><img id="scenePortraitRightImg" alt=""></div>
+  <div class="sceneTextBox">
+    <div class="sceneName" id="sceneName"></div>
+    <div class="sceneText" id="sceneText"></div>
+    <button class="sceneNextBtn" id="sceneNextBtn">Suivant ▸</button>
   </div>
 </div>
+
+<div class="sideModalOverlay" id="settingsModalOverlay">
+  <div class="sideModal">
+    <div class="sideModalHeader">
+      <span>⚙️ Paramètres</span>
+      <button class="modalCloseBtn" id="settingsModalCloseBtn">Fermer ✕</button>
+    </div>
+    <div class="miniTabsRow" id="settingsTabsRow"></div>
+    <div class="sideModalContent">
+
+      <div class="tabPanel active" id="tab-journal">
+        <p style="font-size:12px;opacity:0.7;">Historique des derniers événements de ton jardin.</p>
+        <div id="eventLogList"></div>
+      </div>
+
+      <div class="tabPanel" id="tab-stats">
+        <div id="statsList"></div>
+      </div>
+
+      <div class="tabPanel" id="tab-options">
+        <div class="upgrade" id="updateCard" style="display:none; cursor:default;">
+          <div class="info">
+            <div class="name">🔄 Mises à jour <span id="currentVersionText" style="font-weight:400; font-size:11px; opacity:0.65;"></span></div>
+            <div class="desc" id="updateStatusText">Vérification...</div>
+          </div>
+          <div class="price"><button class="smallBtn" id="updateCheckBtn" style="margin:0;">Vérifier</button></div>
+        </div>
+        <div class="soundToggleBtn" id="soundToggleBtn">
+          <span>🔊 Sons du jeu</span>
+          <span class="state" id="soundStateLabel">Activés</span>
+        </div>
+        <div style="padding:6px 4px 14px 4px;">
+          <label for="volumeSlider" style="font-size:12px;opacity:0.75;display:flex;justify-content:space-between;"><span>Volume</span><span id="volumeValueLabel">100%</span></label>
+          <input type="range" id="volumeSlider" min="0" max="100" step="5" value="100" style="width:100%;">
+        </div>
+        <div class="soundToggleBtn" id="darkModeToggleBtn">
+          <span>🌙 Mode sombre forcé</span>
+          <span class="state" id="darkModeStateLabel">Désactivé</span>
+        </div>
+        <div class="soundToggleBtn" id="vacationToggleBtn">
+          <span>🏖️ Mode vacances (bloque les herbes invasives)</span>
+          <span class="state" id="vacationStateLabel">Désactivé</span>
+        </div>
+        <p style="font-size:12px;opacity:0.7;">Sauvegarde, partage et remise à zéro.</p>
+        <div class="footerBtns">
+          <button class="smallBtn" id="exportBtn">💾 Exporter (fichier)</button>
+          <button class="smallBtn" id="copyCodeBtn">📋 Copier mon code (autre appareil)</button>
+          <button class="smallBtn" id="importBtn">📂 Importer (fichier)</button>
+          <button class="smallBtn" id="importPasteBtn">📋 Importer (coller un code)</button>
+          <button class="smallBtn" id="restoreBackupBtn">♻️ Restaurer sauvegarde de secours</button>
+          <button class="smallBtn" id="shareBtn">📣 Partager</button>
+          <button class="smallBtn" id="resetBtn">🗑️ Reset total</button>
+        </div>
+        <input type="file" id="importFileInput" accept=".txt,.json" style="display:none;">
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="sideModalOverlay" id="achievementsModalOverlay">
+  <div class="sideModal">
+    <div class="sideModalHeader">
+      <span>🏆 Succès</span>
+      <button class="modalCloseBtn" id="achievementsModalCloseBtn">Fermer ✕</button>
+    </div>
+    <div class="sideModalContent">
+      <div class="tabPanel active" id="tab-succes">
+        <div id="achvList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="sideModalOverlay" id="questsModalOverlay">
+  <div class="sideModal">
+    <div class="sideModalHeader">
+      <span>📓 Quêtes &amp; Défis</span>
+      <button class="modalCloseBtn" id="questsModalCloseBtn">Fermer ✕</button>
+    </div>
+    <div class="miniTabsRow" id="questsTabsRow"></div>
+    <div class="sideModalContent">
+
+      <div class="tabPanel active" id="tab-quetes">
+        <div id="questList"></div>
+      </div>
+
+      <div class="tabPanel" id="tab-defi">
+        <div id="defiPanel"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="shopPageOverlay" id="shopPageOverlay">
+  <div class="shopPage">
+    <div class="shopPageHeader">
+      <span>🛒 Magasin de Papi Feuillage</span>
+      <button class="modalCloseBtn" id="shopPageCloseBtn">Quitter le magasin ✕</button>
+    </div>
+    <div class="shopImagePlaceholder" id="shopImagePlaceholder">
+      🖼️ Emplacement réservé pour l'illustration de Papi et de son magasin (à intégrer)
+    </div>
+    <div class="miniTabsRow" id="shopTabsRow"></div>
+    <div class="shopPageContent">
+
+      <div class="tabPanel active" id="tab-jardin">
+        <div class="buyModeRow" id="buyModeRow"></div>
+        <div id="shop"></div>
+      </div>
+
+      <div class="tabPanel" id="tab-clic">
+        <p style="font-size:12px;opacity:0.7;">Renforce tes clics — certaines améliorations ajoutent un % de ta production/seconde à chaque clic, pour que cliquer reste utile même très loin dans la partie.</p>
+        <div id="clickShop"></div>
+      </div>
+
+      <div class="tabPanel" id="tab-special">
+        <div id="specialShop"></div>
+      </div>
+
+      <div class="tabPanel" id="tab-recherche">
+        <div id="researchShop"></div>
+      </div>
+
+      <div class="tabPanel" id="tab-prestige">
+        <div class="prestigeBox">
+          <div id="prestigeInfo" class="prestigeInfo"></div>
+          <div class="progressBarWrap" id="prestigeProgressWrap"><div class="progressBarFill" id="prestigeProgressFill" style="background:linear-gradient(90deg,var(--purple),#5e3b9c);"></div></div>
+          <div class="progressBarLabel" id="prestigeProgressLabel"></div>
+          <button id="prestigeBtn">🌍 Terraformer (Prestige)</button>
+        </div>
+        <div id="prestigeShop"></div>
+      </div>
+
+      <div class="tabPanel" id="tab-ascension">
+        <div class="prestigeBox" style="background:linear-gradient(135deg, #1a1a3d, #3d2b6e); color:#f0e9ff;">
+          <div id="ascensionInfo" class="prestigeInfo"></div>
+          <div class="progressBarWrap" id="ascensionProgressWrap"><div class="progressBarFill" id="ascensionProgressFill" style="background:linear-gradient(90deg,#ffd54f,#ff7043);"></div></div>
+          <div class="progressBarLabel" id="ascensionProgressLabel" style="color:#f0e9ff;"></div>
+          <button id="ascensionBtn">🌟 Ascensionner</button>
+        </div>
+        <div id="ascensionShop"></div>
+      </div>
+
+    </div>
+  </div>
 </div>
 
 <script>
@@ -711,6 +884,59 @@ function advanceDialogue() {
   document.getElementById('dialogueNextBtn').textContent = _dialogueQueue.length > 0 ? 'Suivant ▸' : 'Fermer ✕';
 }
 document.getElementById('dialogueNextBtn').addEventListener('click', advanceDialogue);
+
+// showScene([{character:'papi', text:'...'}, {character:'leroy', text:'...'}, ...], { left:'papi', right:'leroy', onComplete: fn })
+// Affiche les deux personnages face à face en bas de l'écran (façon JRPG rétro) — celui qui ne
+// parle pas s'assombrit automatiquement. Réservé aux vrais moments d'histoire (scène d'ouverture...).
+let _sceneQueue = [];
+let _sceneOnComplete = null;
+let _sceneLeftChar = 'papi';
+let _sceneRightChar = 'leroy';
+
+function setScenePortraitImage(imgId, charId) {
+  const c = CHARACTERS[charId] || {};
+  const img = document.getElementById(imgId);
+  if (c.portrait) {
+    img.src = c.portrait;
+    img.style.display = '';
+    img.onerror = () => { img.style.display = 'none'; };
+  } else {
+    img.removeAttribute('src');
+    img.style.display = 'none';
+  }
+}
+
+function showScene(exchanges, options = {}) {
+  _sceneQueue = [...exchanges];
+  _sceneOnComplete = options.onComplete || null;
+  _sceneLeftChar = options.left || 'papi';
+  _sceneRightChar = options.right || 'leroy';
+
+  setScenePortraitImage('scenePortraitLeftImg', _sceneLeftChar);
+  setScenePortraitImage('scenePortraitRightImg', _sceneRightChar);
+
+  document.getElementById('sceneOverlay').classList.add('visible');
+  advanceScene();
+}
+
+function advanceScene() {
+  if (_sceneQueue.length === 0) {
+    document.getElementById('sceneOverlay').classList.remove('visible');
+    if (_sceneOnComplete) { const fn = _sceneOnComplete; _sceneOnComplete = null; fn(); }
+    return;
+  }
+  const entry = _sceneQueue.shift();
+  const charDef = CHARACTERS[entry.character] || { name: entry.character };
+  document.getElementById('sceneName').textContent = charDef.name || entry.character;
+  document.getElementById('sceneText').textContent = entry.text;
+
+  const speakerIsLeft = entry.character === _sceneLeftChar;
+  document.getElementById('scenePortraitLeft').classList.toggle('dimmed', !speakerIsLeft);
+  document.getElementById('scenePortraitRight').classList.toggle('dimmed', speakerIsLeft);
+
+  document.getElementById('sceneNextBtn').textContent = _sceneQueue.length > 0 ? 'Suivant ▸' : 'Fermer ✕';
+}
+document.getElementById('sceneNextBtn').addEventListener('click', advanceScene);
 
 // ================= CLICK UPGRADES (parallèle aux bâtiments) =================
 // 'flatMult' : multiplie le gain de clic de base
@@ -883,19 +1109,29 @@ const QUEST_POOL = ['click', 'earn', 'buy', 'golden'];
 
 // ================= ONBOARDING / UNLOCKS =================
 const TAB_DEFS = [
-  { id: 'jardin', label: 'Jardin', icon: '🌱', unlock: () => true },
-  { id: 'clic', label: 'Clic', icon: '👆', unlock: s => s.totalClicks >= 15 },
-  { id: 'special', label: 'Spécial', icon: '✨', unlock: s => (s.buildings.serre||0) >= 1 || s.totalEarned >= 8000 },
-  { id: 'recherche', label: 'Recherche', icon: '🔬', unlock: s => s.totalEarned >= 2000 },
-  { id: 'prestige', label: 'Prestige', icon: '🌍', unlock: s => s.totalEarned >= 5e4 || s.prestigeCount > 0 },
-  { id: 'ascension', label: 'Ascension', icon: '🌟', unlock: s => (s.totalSeedsEarned || 0) >= ASCENSION_SEED_DIVISOR || s.totalAscensions > 0 },
-  { id: 'quetes', label: 'Quêtes', icon: '📋', unlock: s => Object.keys(s.buildings||{}).length >= 1 },
-  { id: 'defi', label: 'Défi', icon: '🏅', unlock: s => s.prestigeCount >= 1 },
-  { id: 'succes', label: 'Succès', icon: '🏆', unlock: s => s.totalClicks >= 20 || s.totalEarned >= 500 },
-  { id: 'stats', label: 'Stats', icon: '📊', unlock: () => true },
-  { id: 'journal', label: 'Journal', icon: '📜', unlock: () => true },
-  { id: 'options', label: 'Options', icon: '⚙️', unlock: () => true },
+  { id: 'jardin', label: 'Jardin', icon: '🌱', unlock: () => true, group: 'shop' },
+  { id: 'clic', label: 'Clic', icon: '👆', unlock: s => s.totalClicks >= 15, group: 'shop' },
+  { id: 'special', label: 'Spécial', icon: '✨', unlock: s => (s.buildings.serre||0) >= 1 || s.totalEarned >= 8000, group: 'shop' },
+  { id: 'recherche', label: 'Recherche', icon: '🔬', unlock: s => s.totalEarned >= 2000, group: 'shop' },
+  { id: 'prestige', label: 'Prestige', icon: '🌍', unlock: s => s.totalEarned >= 5e4 || s.prestigeCount > 0, group: 'shop' },
+  { id: 'ascension', label: 'Ascension', icon: '🌟', unlock: s => (s.totalSeedsEarned || 0) >= ASCENSION_SEED_DIVISOR || s.totalAscensions > 0, group: 'shop' },
+  { id: 'quetes', label: 'Quêtes', icon: '📋', unlock: s => Object.keys(s.buildings||{}).length >= 1, group: 'quests' },
+  { id: 'defi', label: 'Défi', icon: '🏅', unlock: s => s.prestigeCount >= 1, group: 'quests' },
+  { id: 'succes', label: 'Succès', icon: '🏆', unlock: s => s.totalClicks >= 20 || s.totalEarned >= 500, group: 'achievements' },
+  { id: 'stats', label: 'Stats', icon: '📊', unlock: () => true, group: 'settings' },
+  { id: 'journal', label: 'Journal', icon: '📜', unlock: () => true, group: 'settings' },
+  { id: 'options', label: 'Options', icon: '⚙️', unlock: () => true, group: 'settings' },
 ];
+
+// Pour ces catégories (le "magasin"), Papi annonce lui-même le déblocage via une bulle de dialogue
+// au lieu du toast générique — 'jardin' est disponible dès le début donc jamais "nouvellement débloqué".
+const PAPI_SHOP_ANNOUNCEMENTS = {
+  clic: "Tiens, j'ai des gants renforcés qui traînaient au fond du magasin. Ça devrait t'aider à cliquer plus fort.",
+  special: "J'ai du matériel... disons, particulier, qui vient d'arriver. Jette un œil à la section Spécial du magasin.",
+  recherche: "Un pote m'a filé des bouquins de recherche. File voir ça au magasin, je te fais un prix.",
+  prestige: "T'as bien avancé, dis donc. Y'a un truc qui pourrait t'intéresser au magasin, question de repartir de zéro... en mieux.",
+  ascension: "Alors là, on passe dans la cour des grands. File voir l'étage Ascension du magasin.",
+};
 
 // ================= STATE =================
 function defaultState() {
@@ -1601,22 +1837,42 @@ function getThemeClass() {
   return 'theme-1';
 }
 
-// ================= TABS / ONBOARDING RENDER (menu tiroir) =================
+// ================= NAVIGATION (modales Paramètres/Succès/Quêtes + page Magasin) =================
 function unlockedTabs() { return TAB_DEFS.filter(t => t.unlock(state)); }
 
-function openDrawer() {
-  document.getElementById('drawer').classList.add('open');
-  document.getElementById('drawerOverlay').classList.add('open');
-  document.getElementById('drawerArrowBtn').classList.add('open');
-}
-function closeDrawer() {
-  document.getElementById('drawer').classList.remove('open');
-  document.getElementById('drawerOverlay').classList.remove('open');
-  document.getElementById('drawerArrowBtn').classList.remove('open');
-}
-function toggleDrawer() {
-  const isOpen = document.getElementById('drawer').classList.contains('open');
-  if (isOpen) closeDrawer(); else openDrawer();
+// Onglet actif par fenêtre (pas besoin d'être sauvegardé, repart sur la valeur par défaut à chaque lancement)
+let activeShopTab = 'jardin';
+let activeSettingsTab = 'journal';
+let activeQuestsTab = 'quetes';
+
+function openModal(overlayId) { document.getElementById(overlayId).classList.add('open'); }
+function closeModal(overlayId) { document.getElementById(overlayId).classList.remove('open'); }
+
+document.getElementById('settingsBtn').addEventListener('click', () => openModal('settingsModalOverlay'));
+document.getElementById('settingsModalCloseBtn').addEventListener('click', () => closeModal('settingsModalOverlay'));
+document.getElementById('achievementsBtn').addEventListener('click', () => openModal('achievementsModalOverlay'));
+document.getElementById('achievementsModalCloseBtn').addEventListener('click', () => closeModal('achievementsModalOverlay'));
+document.getElementById('questsBtn').addEventListener('click', () => openModal('questsModalOverlay'));
+document.getElementById('questsModalCloseBtn').addEventListener('click', () => closeModal('questsModalOverlay'));
+document.getElementById('shopBtn').addEventListener('click', () => openModal('shopPageOverlay'));
+document.getElementById('shopPageCloseBtn').addEventListener('click', () => closeModal('shopPageOverlay'));
+// Cliquer sur le fond sombre des modales (pas la page Magasin, en plein écran) les ferme aussi
+document.getElementById('settingsModalOverlay').addEventListener('click', (e) => { if (e.target.id === 'settingsModalOverlay') closeModal('settingsModalOverlay'); });
+document.getElementById('achievementsModalOverlay').addEventListener('click', (e) => { if (e.target.id === 'achievementsModalOverlay') closeModal('achievementsModalOverlay'); });
+document.getElementById('questsModalOverlay').addEventListener('click', (e) => { if (e.target.id === 'questsModalOverlay') closeModal('questsModalOverlay'); });
+
+function renderMiniTabsRow(containerId, group, activeId, onSelect) {
+  const unlocked = unlockedTabs().filter(t => t.group === group);
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  unlocked.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'drawerBtn' + (activeId === t.id ? ' active' : '');
+    btn.innerHTML = `<span class="icon">${t.icon}</span> ${t.label}`;
+    btn.onclick = () => { onSelect(t.id); renderAll(); };
+    container.appendChild(btn);
+  });
 }
 
 function renderTabsRow() {
@@ -1627,47 +1883,32 @@ function renderTabsRow() {
   }
   if (newlyUnlocked.length) {
     saveGame();
-    newlyUnlocked.forEach(t => showToast(`🔓 Nouvel onglet débloqué : ${t.label}`));
+    newlyUnlocked.forEach(t => {
+      if (t.group === 'shop' && t.id !== 'jardin' && PAPI_SHOP_ANNOUNCEMENTS[t.id]) {
+        showDialogue('papi', [PAPI_SHOP_ANNOUNCEMENTS[t.id]], { position: 'top-right' });
+      } else {
+        showToast(`🔓 Nouvel onglet débloqué : ${t.label}`);
+      }
+    });
   }
-  if (!unlocked.find(t => t.id === state.activeTab)) state.activeTab = 'jardin';
 
-  const drawerButtons = document.getElementById('drawerButtons');
-  drawerButtons.innerHTML = '';
-  unlocked.forEach(t => {
-    const btn = document.createElement('button');
-    btn.className = 'drawerBtn' + (state.activeTab === t.id ? ' active' : '');
-    btn.innerHTML = `<span class="icon">${t.icon}</span> ${t.label}` + (newlyUnlocked.includes(t) ? '<span class="newBadge">NEW</span>' : '');
-    btn.onclick = () => {
-      state.activeTab = t.id;
-      saveGame();
-      renderTabsRow();
-      renderPanelsVisibility();
-    };
-    drawerButtons.appendChild(btn);
-  });
+  if (!unlocked.find(t => t.id === activeShopTab && t.group === 'shop')) activeShopTab = 'jardin';
+  if (!unlocked.find(t => t.id === activeSettingsTab && t.group === 'settings')) activeSettingsTab = 'journal';
+  if (!unlocked.find(t => t.id === activeQuestsTab && t.group === 'quests')) activeQuestsTab = 'quetes';
 
+  renderMiniTabsRow('shopTabsRow', 'shop', activeShopTab, (id) => { activeShopTab = id; });
+  renderMiniTabsRow('settingsTabsRow', 'settings', activeSettingsTab, (id) => { activeSettingsTab = id; });
+  renderMiniTabsRow('questsTabsRow', 'quests', activeQuestsTab, (id) => { activeQuestsTab = id; });
 }
+
 function renderPanelsVisibility() {
   document.querySelectorAll('.tabPanel').forEach(p => p.classList.remove('active'));
-  const el = document.getElementById('tab-' + state.activeTab);
-  if (el) el.classList.add('active');
+  ['tab-' + activeShopTab, 'tab-' + activeSettingsTab, 'tab-' + activeQuestsTab, 'tab-succes'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('active');
+  });
 }
 
-document.getElementById('drawerArrowBtn').addEventListener('click', toggleDrawer);
-document.getElementById('drawerCloseBtn').addEventListener('click', closeDrawer);
-document.getElementById('drawerOverlay').addEventListener('click', closeDrawer);
-
-// ================= SWIPE-TO-CLOSE (mobile) =================
-(function setupSwipeToClose() {
-  const header = document.getElementById('drawerHeader');
-  let startY = null;
-  header.addEventListener('touchstart', (e) => { startY = e.touches[0].clientY; }, { passive: true });
-  header.addEventListener('touchmove', (e) => {
-    if (startY === null) return;
-    if (e.touches[0].clientY - startY > 60) { closeDrawer(); startY = null; }
-  }, { passive: true });
-  header.addEventListener('touchend', () => { startY = null; });
-})();
 
 // ================= RENDER =================
 function renderNextPurchaseBar() {
@@ -2600,28 +2841,19 @@ document.getElementById('resetBtn').addEventListener('click', () => {
 });
 
 // ================= TUTORIEL DE PREMIER LANCEMENT =================
-// Scène d'ouverture (Papi Feuillage + Leroy) qui joue AVANT les conseils de gameplay,
-// pour poser l'histoire avant la mécanique. Chaque showDialogue s'enchaîne via onComplete.
+// Scène d'ouverture (Papi Feuillage + Leroy face à face, façon JRPG) qui joue AVANT
+// les conseils de gameplay, pour poser l'histoire avant la mécanique.
 function startOpeningScene() {
-  showDialogue('papi', [
-    "Bon. Ce terrain, techniquement, il est à moi maintenant. Me demande pas comment.",
-    "Le souci, c'est que j'ai pas le temps de m'en occuper. Et à vrai dire, l'envie non plus.",
-    "Toi, en revanche, t'as du temps. Beaucoup de temps."
-  ], { position: 'center', modal: true, onComplete: () => {
-    showDialogue('leroy', [
-      "Papi, je cherche du travail, je—"
-    ], { position: 'center', modal: true, onComplete: () => {
-      showDialogue('papi', [
-        "Tu désherbes ce terrain, et il est à toi. T'en fais ce que tu veux.",
-        "Me dérange pas trop pendant que tu bosses. Mais si t'as un vrai problème... je repasserai."
-      ], { position: 'center', modal: true, onComplete: () => {
-        showDialogue('leroy', [
-          "...Ok. Je suppose que c'est mieux que rien."
-        ], { position: 'center', modal: true, onComplete: () => {
-          document.getElementById('tutorialOverlay').style.display = 'flex';
-        }});
-      }});
-    }});
+  showScene([
+    { character: 'papi', text: "Bon. Ce terrain, techniquement, il est à moi maintenant. Me demande pas comment." },
+    { character: 'papi', text: "Le souci, c'est que j'ai pas le temps de m'en occuper. Et à vrai dire, l'envie non plus." },
+    { character: 'papi', text: "Toi, en revanche, t'as du temps. Beaucoup de temps." },
+    { character: 'leroy', text: "Papi, je cherche du travail, je—" },
+    { character: 'papi', text: "Tu désherbes ce terrain, et il est à toi. T'en fais ce que tu veux." },
+    { character: 'papi', text: "Me dérange pas trop pendant que tu bosses. Mais si t'as un vrai problème... je repasserai." },
+    { character: 'leroy', text: "...Ok. Je suppose que c'est mieux que rien." },
+  ], { left: 'papi', right: 'leroy', onComplete: () => {
+    document.getElementById('tutorialOverlay').style.display = 'flex';
   }});
 }
 
