@@ -1,6 +1,6 @@
-# 🌱 Fuzz — Version native (Tauri)
+# 🌱 FUZZ — Version native (Tauri)
 
-Fuzz est un jeu idle de jardinage : clique, améliore, cherche, prestige, ascensionne.
+FUZZ est un jeu idle de jardinage : clique, améliore, cherche, prestige, ascensionne.
 
 Ce dossier enveloppe le jeu (`dist/index.html`, inchangé côté logique) dans une vraie
 application installable — `.exe` sur Windows, `.app`/`.dmg` sur macOS, `.deb`/`.AppImage`
@@ -100,7 +100,7 @@ et remplace par ta vraie clé publique copiée à l'étape 1.
 
 ### 3. Ajoute la clé privée comme secret GitHub (jamais dans le code !)
 
-Sur `github.com/TomRolling/Fuzz` → **Settings** → **Secrets and variables** → **Actions**
+Sur `github.com/TomRolling/FUZZ` → **Settings** → **Secrets and variables** → **Actions**
 → **New repository secret**, crée ces deux secrets :
 
 | Nom | Valeur |

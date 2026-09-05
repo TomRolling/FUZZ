@@ -6,13 +6,13 @@
 <meta name="theme-color" content="#43a047">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Fuzz">
-<meta name="description" content="Fuzz - un jeu idle de jardinage : clique, améliore, cherche, prestige.">
+<meta name="apple-mobile-web-app-title" content="FUZZ">
+<meta name="description" content="FUZZ - un jeu idle de jardinage : clique, améliore, cherche, prestige.">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="icon" type="image/png" sizes="64x64" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<title>Fuzz - MVP complet</title>
+<title>FUZZ - MVP complet</title>
 <script>
   // Calcule la hauteur RÉELLE visible (plus fiable que 100dvh seul sur iOS,
   // où la barre d'adresse de Safari et le mode PWA installé ne sont pas
@@ -351,7 +351,7 @@
 <body class="theme-1" id="bodyEl">
 
 <div class="topBar">
-  <h1>🌱 Fuzz</h1>
+  <h1>🌱 FUZZ</h1>
   <div class="weatherBadge" id="weatherBadge"></div>
   <div class="statsRow">
     <div class="statChip verdure" id="verdureCount">0</div>
@@ -374,11 +374,12 @@
 
 <div class="tutorialOverlay" id="tutorialOverlay" style="display:none;">
   <div class="tutorialBox">
-    <h2>🌱 Bienvenue dans ton jardin !</h2>
+    <h2>🐸 Bienvenue sur le terrain de Leroy !</h2>
+    <p>Papi Feuillage a "mystérieusement" gagné ce terrain vague. Trop occupé (et trop peu motivé), il a filé les clés à son petit-fils au chômage, <b>Leroy</b> : <i>"Si t'arrives à désherber, tu fais ce que tu veux du terrain. Me dérange pas trop. Mais si t'as vraiment un problème... je passerai."</i></p>
     <p>👆 <b>Clique</b> au centre de l'écran pour désherber et gagner de la Verdure 🌿.</p>
-    <p>🏪 Ouvre le <b>menu</b> en bas de l'écran pour acheter des bâtiments qui produisent de la Verdure automatiquement, même hors-ligne.</p>
+    <p>🏪 Ouvre le <b>menu</b> en bas de l'écran pour embaucher de l'aide qui produit de la Verdure automatiquement, même hors-ligne.</p>
     <p>🌍 Une fois que tu as beaucoup progressé, utilise le <b>Prestige</b> (onglet dédié) pour recommencer avec des bonus permanents et aller plus vite la fois suivante.</p>
-    <button id="tutorialCloseBtn">Compris, je me lance !</button>
+    <button id="tutorialCloseBtn">Compris, on désherbe !</button>
   </div>
 </div>
 
@@ -506,26 +507,26 @@ const SAVE_VERSION = 2;
 
 // ================= CONFIG: BUILDINGS =================
 const BUILDINGS = [
-  { id: 'stagiaire', name: 'Stagiaire motivé', desc: "Arrache les mauvaises herbes, se plaint beaucoup.", baseCost: 15, baseCps: 0.1 },
-  { id: 'voisin', name: 'Voisin recruté', desc: "Vient 'juste pour aider', reste 3h.", baseCost: 100, baseCps: 1 },
-  { id: 'tondeuse', name: 'Tondeuse motorisée', desc: "Réveille tout le quartier à 8h un dimanche.", baseCost: 1100, baseCps: 8 },
-  { id: 'serre', name: 'Serre automatisée', desc: "Pousse même la nuit, un peu flippant.", baseCost: 12000, baseCps: 47 },
-  { id: 'drone', name: 'Drone désherbeur IA', desc: "Confond parfois les mauvaises herbes et le chat.", baseCost: 130000, baseCps: 260 },
-  { id: 'usine', name: 'Usine de compost', desc: "Sent horriblement mauvais, rapporte énormément.", baseCost: 1.4e6, baseCps: 1400 },
-  { id: 'franchise', name: 'Franchise régionale', desc: "Ton papy est maintenant actionnaire.", baseCost: 1.599e7, baseCps: 7800 },
-  { id: 'labo', name: 'Laboratoire OGM', desc: "Tomates de la taille d'un ballon de basket.", baseCost: 1.849e8, baseCps: 44000 },
-  { id: 'satellite', name: "Satellite d'irrigation", desc: "Arrose ton jardin depuis l'orbite.", baseCost: 2.240e9, baseCps: 260000 },
-  { id: 'portail', name: 'Portail dimensionnel à graines', desc: "Personne ne sait vraiment d'où ça vient.", baseCost: 2.826e10, baseCps: 1.6e6 },
-  { id: 'mars', name: 'Colonie martienne verte', desc: "Le premier potager sur Mars.", baseCost: 6.5e11, baseCps: 1e7 },
-  { id: 'iaGalactique', name: 'IA jardinière galactique', desc: "Optimise la photosynthèse à l'échelle de la galaxie.", baseCost: 1.4e13, baseCps: 6.5e7 },
-  { id: 'bigbang', name: 'Fleur du Big Bang', desc: "A poussé avant l'univers. Personne ne comprend comment.", baseCost: 1.7e14, baseCps: 4.3e8 },
-  { id: 'vaisseauGraine', name: 'Vaisseau-graine intergalactique', desc: "Sème des forêts sur des exoplanètes.", baseCost: 2.2e15, baseCps: 2.8e9 },
-  { id: 'jardinQuantique', name: 'Jardin quantique', desc: "Pousse et ne pousse pas en même temps.", baseCost: 3e16, baseCps: 1.9e10 },
-  { id: 'multiversMousse', name: 'Multivers de mousse', desc: "De la mousse dans toutes les réalités possibles.", baseCost: 4.5e17, baseCps: 1.3e11 },
-  { id: 'conscienceChloro', name: 'Conscience chlorophyllienne', desc: "Les plantes ont commencé à réfléchir. C'est inquiétant.", baseCost: 6e18, baseCps: 9e11 },
-  { id: 'templeCompost', name: 'Temple du Compost Éternel', desc: "On y vénère la décomposition.", baseCost: 8e19, baseCps: 6e12 },
-  { id: 'grainePrimordiale', name: 'Graine Primordiale', desc: "La toute première graine ayant jamais existé.", baseCost: 1e21, baseCps: 4e13 },
-  { id: 'jardinHorsTemps', name: 'Jardin au-delà du temps', desc: "Il a toujours été là. Il sera toujours là.", baseCost: 1.4e22, baseCps: 3e14 },
+  { id: 'stagiaire', name: 'Cousin têtard de Leroy', desc: "Debout ce matin, motivé, ça durera pas.", baseCost: 15, baseCps: 0.1 },
+  { id: 'voisin', name: 'Tortue expérimentée', desc: "A déjà fait 3 chantiers avant celui-ci. Prend son temps, mais elle livre.", baseCost: 100, baseCps: 1 },
+  { id: 'tondeuse', name: 'Bande de lézards du coin', desc: "Personne ne sait qui les a prévenus, ils sont juste là.", baseCost: 1100, baseCps: 8 },
+  { id: 'serre', name: 'Campement agrandi', desc: "La tente de Leroy fait maintenant deux pièces. Le grand luxe.", baseCost: 12000, baseCps: 47 },
+  { id: 'drone', name: 'Libellule éclaireuse', desc: "Repère les mauvaises herbes depuis les airs, mais aussi le chat des voisins.", baseCost: 130000, baseCps: 260 },
+  { id: 'usine', name: 'Fosse à compost coopérative', desc: "Sent horriblement mauvais. Personne ne veut savoir ce qu'il y a dedans.", baseCost: 1.4e6, baseCps: 1400 },
+  { id: 'franchise', name: 'Papi Feuillage passe un coup de fil', desc: "Personne ne sait comment il a eu ce permis de construire aussi vite.", baseCost: 1.599e7, baseCps: 7800 },
+  { id: 'labo', name: 'Labo de mutation clandestin', desc: "Financé par papi, officiellement il ne sait rien.", baseCost: 1.849e8, baseCps: 44000 },
+  { id: 'satellite', name: "Réseau de satellites 'empruntés'", desc: "Leroy préfère ne pas demander d'où ils viennent.", baseCost: 2.240e9, baseCps: 260000 },
+  { id: 'portail', name: 'Portail vers la Mare Originelle', desc: "Une grenouille en est revenue changée à jamais.", baseCost: 2.826e10, baseCps: 1.6e6 },
+  { id: 'mars', name: 'Premiers martiens sur le terrain', desc: "Le terrain commence tout doucement à se décoller du sol. Personne n'ose le faire remarquer à Leroy.", baseCost: 6.5e11, baseCps: 1e7 },
+  { id: 'iaGalactique', name: 'IA grenouille galactique', desc: "Optimise le croassement à l'échelle de la galaxie.", baseCost: 1.4e13, baseCps: 6.5e7 },
+  { id: 'bigbang', name: 'Nénuphar du Big Bang', desc: "A poussé avant l'univers. Personne ne comprend comment.", baseCost: 1.7e14, baseCps: 4.3e8 },
+  { id: 'vaisseauGraine', name: 'Vaisseau-têtard intergalactique', desc: "Sème des mares sur des exoplanètes.", baseCost: 2.2e15, baseCps: 2.8e9 },
+  { id: 'jardinQuantique', name: 'Marécage quantique', desc: "Croasse et ne croasse pas en même temps.", baseCost: 3e16, baseCps: 1.9e10 },
+  { id: 'multiversMousse', name: 'Multivers de grenouilles', desc: "Une grenouille dans toutes les réalités possibles.", baseCost: 4.5e17, baseCps: 1.3e11 },
+  { id: 'conscienceChloro', name: 'Conscience batracienne collective', desc: "Les grenouilles ont commencé à réfléchir. C'est inquiétant.", baseCost: 6e18, baseCps: 9e11 },
+  { id: 'templeCompost', name: 'Temple du Nénuphar Éternel', desc: "On y vénère le grand étang originel.", baseCost: 8e19, baseCps: 6e12 },
+  { id: 'grainePrimordiale', name: 'Têtard Primordial', desc: "Le tout premier têtard ayant jamais existé.", baseCost: 1e21, baseCps: 4e13 },
+  { id: 'jardinHorsTemps', name: 'Marécage au-delà du temps', desc: "Il a toujours été là. Il sera toujours là.", baseCost: 1.4e22, baseCps: 3e14 },
 ];
 const GROWTH = 1.15;
 
@@ -631,7 +632,7 @@ const UNIQUE_BUILDINGS = [
   { id: 'bibliothequeRacines', name: 'Bibliothèque des Racines', desc: '+30% de gain de Connaissances.', cost: 5e10 },
   { id: 'meuleCosmique', name: 'Meule Cosmique', desc: '+30% de production globale supplémentaire.', cost: 8e12 },
   { id: 'coeurBraise', name: 'Cœur de Braise', desc: "Capacité active : gain instantané égal à 10 minutes de production.", cost: 5e13, active: { cooldownMs: 8 * 60000, type: 'instantGain', minutesEquivalent: 10 } },
-  { id: 'sentinelleTemporelle', name: 'Sentinelle Temporelle', desc: "Réduit de 50% l'apparition des mauvaises herbes invasives.", cost: 2e14 },
+  { id: 'sentinelleTemporelle', name: 'Sentinelle Temporelle', desc: "Réduit de 50% les visites surprises de Papi Feuillage.", cost: 2e14 },
 ];
 
 // ================= COSMÉTIQUES DE CLIC (purement visuels) =================
@@ -734,7 +735,7 @@ const ACHIEVEMENTS = [
   { id: 'a_unique8', name: 'Conservateur du jardin', desc: 'Posséder tous les bâtiments spéciaux.', bonus: 0.12, check: s => Object.keys(s.uniqueBuildings||{}).length >= UNIQUE_BUILDINGS.length, progress: s => [Object.keys(s.uniqueBuildings||{}).length, UNIQUE_BUILDINGS.length] },
   { id: 'a_quest10', name: 'Jardinier assidu', desc: 'Compléter 10 quêtes journalières.', bonus: 0.03, check: s => (s.questsCompleted||0) >= 10, progress: s => [s.questsCompleted||0, 10] },
   { id: 'a_weatherAll', name: "Prévisionniste", desc: 'Vivre les 6 types de météo.', bonus: 0.02, check: s => (s.weatherSeen||[]).length >= 6, progress: s => [(s.weatherSeen||[]).length, 6] },
-  { id: 'a_invasive10', name: "Chasseur d'invasives", desc: '10 mauvaises herbes invasives vaincues.', bonus: 0.03, check: s => (s.invasiveDefeated||0) >= 10, progress: s => [s.invasiveDefeated||0, 10] },
+  { id: 'a_invasive10', name: "Tu gères tout seul", desc: '10 fois où papi est reparti convaincu.', bonus: 0.03, check: s => (s.invasiveDefeated||0) >= 10, progress: s => [s.invasiveDefeated||0, 10] },
   { id: 'a_clickUp10', name: 'Maître du clic', desc: '10 améliorations de clic achetées.', bonus: 0.04, check: s => Object.keys(s.clickUpgrades||{}).length >= 10, progress: s => [Object.keys(s.clickUpgrades||{}).length, 10] },
   { id: 'a_clickUpAll', name: 'Clic transcendant', desc: 'Toutes les améliorations de clic achetées.', bonus: 0.1, check: s => Object.keys(s.clickUpgrades||{}).length >= 20, progress: s => [Object.keys(s.clickUpgrades||{}).length, 20] },
   { id: 'a_noBuy1', name: 'Minimaliste', desc: '1 Défi Sans-Achat réussi.', bonus: 0.02, check: s => (s.noBuyCompleted||0) >= 1, progress: s => [s.noBuyCompleted||0, 1] },
@@ -840,26 +841,44 @@ function applyLoadedState(parsed) {
   state.saveVersion = SAVE_VERSION;
 }
 
+const SAVE_KEY = 'fuzzSave';
+const SAVE_KEY_BACKUP = 'fuzzSave_backup';
+const LEGACY_SAVE_KEY = 'jardinIdleSave'; // ancien nom, avant le renommage du jeu en Fuzz
+const LEGACY_SAVE_KEY_BACKUP = 'jardinIdleSave_backup';
+
 function loadGame() {
-  const saved = localStorage.getItem('jardinIdleSave');
+  // 1. Sauvegarde déjà migrée vers la nouvelle clé (cas normal après le premier lancement post-renommage)
+  const saved = localStorage.getItem(SAVE_KEY);
   if (saved) {
     try {
       applyLoadedState(JSON.parse(saved));
       return;
     } catch(e) { console.error('Save corrompue, tentative avec la sauvegarde de secours', e); }
   }
-  const backup = localStorage.getItem('jardinIdleSave_backup');
+  const backup = localStorage.getItem(SAVE_KEY_BACKUP);
   if (backup) {
-    try { applyLoadedState(JSON.parse(backup)); } catch(e) { console.error('Sauvegarde de secours également corrompue', e); }
+    try { applyLoadedState(JSON.parse(backup)); return; } catch(e) { console.error('Sauvegarde de secours également corrompue', e); }
+  }
+  // 2. Rien sous la nouvelle clé : on cherche une ancienne sauvegarde (avant le renommage) et on la migre,
+  // SANS jamais supprimer l'ancienne clé (sécurité, au cas où).
+  const legacy = localStorage.getItem(LEGACY_SAVE_KEY) || localStorage.getItem(LEGACY_SAVE_KEY_BACKUP);
+  console.log('DEBUG legacy found:', !!legacy, legacy ? legacy.substring(0,50) : null);
+  if (legacy) {
+    try {
+      applyLoadedState(JSON.parse(legacy));
+      console.log('DEBUG after applyLoadedState, verdure=', state.verdure);
+      localStorage.setItem(SAVE_KEY, legacy); // migration immédiate vers la nouvelle clé
+      console.log('Sauvegarde migrée depuis l\'ancien format (jardinIdleSave → fuzzSave).');
+    } catch(e) { console.error('Ancienne sauvegarde corrompue, impossible de migrer', e); }
   }
 }
 function saveGame() {
   state.lastSave = Date.now();
   state.saveVersion = SAVE_VERSION;
   const json = JSON.stringify(state);
-  localStorage.setItem('jardinIdleSave', json);
+  localStorage.setItem(SAVE_KEY, json);
   if (Date.now() - (state.lastBackupTime || 0) > 5 * 60000) {
-    localStorage.setItem('jardinIdleSave_backup', json);
+    localStorage.setItem(SAVE_KEY_BACKUP, json);
     state.lastBackupTime = Date.now();
   }
 }
@@ -1384,7 +1403,7 @@ function maybeSpawnInvasive() {
   const chance = 0.02 * uniqueMultipliers().invasiveRate;
   if (Math.random() < chance) {
     state.invasiveWeed = { active: true, needed: 5, done: 0 };
-    logEvent('🐛 Une mauvaise herbe invasive est apparue !');
+    logEvent('👴 Papi Feuillage débarque à l\'improviste !');
     saveGame();
   }
 }
@@ -1395,7 +1414,7 @@ function clickInvasive() {
     state.invasiveWeed = null;
     state.invasiveDefeated += 1;
     checkAchievements();
-    showToast('✅ Mauvaise herbe invasive éliminée !');
+    showToast('✅ Papi est reparti convaincu que tu gères !');
   }
   saveGame(); renderAll();
 }
@@ -1546,7 +1565,7 @@ function renderStats() {
   const invBox = document.getElementById('invasiveBox');
   if (state.invasiveWeed && state.invasiveWeed.active) {
     invBox.style.display = 'block';
-    invBox.innerHTML = `🐛 <b>Mauvaise herbe invasive !</b> Production -30%. Clique ${state.invasiveWeed.needed - state.invasiveWeed.done} fois pour l'éliminer.`;
+    invBox.innerHTML = `👴 <b>Papi Feuillage débarque !</b> Production -30% (il te déconcentre à te regarder faire). Clique ${state.invasiveWeed.needed - state.invasiveWeed.done} fois pour lui montrer que tu gères et qu'il reparte.`;
     invBox.onclick = clickInvasive;
   } else { invBox.style.display = 'none'; }
 
@@ -1843,7 +1862,7 @@ function renderDefi() {
     <div class="defiRow"><div style="font-size:13px;">🏅 Défis Sans-Clic réussis : <b>${state.challengesCompleted || 0}</b></div></div>
     <div class="defiRow"><div style="font-size:13px;">🏅 Défis Sans-Achat réussis : <b>${state.noBuyCompleted || 0}</b></div></div>
     <div class="defiRow"><div style="font-size:13px;">🏅 Défis Éclair réussis : <b>${state.speedCompleted || 0}</b></div></div>
-    <div class="defiRow"><div style="font-size:13px;">🐛 Mauvaises herbes invasives vaincues : <b>${state.invasiveDefeated || 0}</b></div></div>
+    <div class="defiRow"><div style="font-size:13px;">👴 Visites de Papi écourtées : <b>${state.invasiveDefeated || 0}</b></div></div>
     <div class="defiRow"><div style="font-size:13px;">🌤️ Types de météo observés : <b>${(state.weatherSeen||[]).length} / 6</b></div></div>
   `;
   document.getElementById('toggleChallengeBtn').onclick = () => {
@@ -2012,7 +2031,7 @@ function renderAll() {
 
 // ================= TITRE D'ONGLET DYNAMIQUE =================
 function updateDocumentTitle() {
-  document.title = `🌱 +${formatNum(totalCps())}/s — Fuzz`;
+  document.title = `🌱 +${formatNum(totalCps())}/s — FUZZ`;
 }
 
 // ================= CLICK =================
@@ -2330,7 +2349,7 @@ async function exportSaveFile(filename, text) {
     try {
       const path = await window.__TAURI__.dialog.save({
         defaultPath: filename,
-        filters: [{ name: 'Sauvegarde Fuzz', extensions: ['txt'] }]
+        filters: [{ name: 'Sauvegarde FUZZ', extensions: ['txt'] }]
       });
       if (!path) return { ok: false, cancelled: true };
       await window.__TAURI__.fs.writeTextFile(path, text);
@@ -2396,7 +2415,7 @@ document.getElementById('importPasteBtn').addEventListener('click', () => {
   } catch(e) { alert('Code de sauvegarde invalide.'); }
 });
 document.getElementById('restoreBackupBtn').addEventListener('click', () => {
-  const backup = localStorage.getItem('jardinIdleSave_backup');
+  const backup = localStorage.getItem(SAVE_KEY_BACKUP) || localStorage.getItem(LEGACY_SAVE_KEY_BACKUP);
   if (!backup) { alert('Aucune sauvegarde de secours disponible pour le moment.'); return; }
   if (!confirm('Restaurer la sauvegarde de secours ? Ta progression actuelle sera remplacée.')) return;
   try {
@@ -2404,7 +2423,7 @@ document.getElementById('restoreBackupBtn').addEventListener('click', () => {
   } catch(e) { alert('Sauvegarde de secours corrompue.'); }
 });
 document.getElementById('shareBtn').addEventListener('click', async () => {
-  const text = `🌱 Fuzz — Mon jardin :\n` +
+  const text = `🌱 FUZZ — Mon jardin :\n` +
     `${formatNum(state.totalEarned)} Verdure gagnée\n` +
     `${state.cosmicSeeds} Graines Cosmiques\n` +
     `${state.prestigeCount} prestiges effectués\n` +
@@ -2434,9 +2453,13 @@ document.getElementById('offlineCloseBtn').addEventListener('click', () => {
 
 // ================= INIT =================
 applyOfflineProgress();
+console.log('DEBUG after applyOfflineProgress, verdure=', state.verdure);
 generateQuests();
+console.log('DEBUG after generateQuests, verdure=', state.verdure);
 checkAchievements();
+console.log('DEBUG after checkAchievements, verdure=', state.verdure);
 renderAll();
+console.log('DEBUG after renderAll, verdure=', state.verdure);
 initUpdateUI();
 
 </script>

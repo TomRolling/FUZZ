@@ -1,4 +1,4 @@
-name: Build Fuzz (multi-OS)
+name: Build FUZZ (multi-OS)
 
 # Se déclenche quand tu pousses un tag de version (ex: v1.0.0), ou manuellement
 # depuis l'onglet "Actions" de ton dépôt GitHub.
@@ -63,7 +63,7 @@ jobs:
           # Si le déclencheur est un tag (push), publie automatiquement une Release GitHub
           # avec les installeurs attachés. En déclenchement manuel, build seulement (pas de release).
           tagName: ${{ github.ref_name }}
-          releaseName: 'Fuzz ${{ github.ref_name }}'
+          releaseName: 'FUZZ ${{ github.ref_name }}'
           releaseBody: 'Installeurs générés automatiquement pour Windows, macOS et Linux.'
           releaseDraft: true
           prerelease: false

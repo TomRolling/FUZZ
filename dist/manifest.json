@@ -1,6 +1,6 @@
 {
-  "name": "Fuzz",
-  "short_name": "Fuzz",
+  "name": "FUZZ",
+  "short_name": "FUZZ",
   "description": "Un jeu idle de jardinage : clique, améliore, cherche, prestige.",
   "start_url": "./index.html",
   "scope": "./",
