@@ -33,22 +33,22 @@
   * { box-sizing: border-box; }
   html, body { height: 100%; overscroll-behavior: none; }
   :root {
-    --accent: #67a334;
-    --accent-dark: #2c5338;
-    --ink: #1c3724;
-    --soil: #452719;
-    --leroy: #f8b073;
-    --papi: #4b928b;
-    --purple: #7e57c2;
-    --blue: #1e88e5;
-    --card-bg: #fdf8ee;
+    --accent: #a8c69f;
+    --accent-dark: #7fa377;
+    --ink: #5c4a3d;
+    --soil: #3e3128;
+    --leroy: #e0a888;
+    --papi: #b8c4d9;
+    --purple: #b7a3d9;
+    --blue: #8fb8d1;
+    --card-bg: #f4ead9;
     --radius: 14px;
   }
   body {
     margin: 0;
     font-family: 'Poppins', 'Segoe UI', sans-serif;
-    background: radial-gradient(circle at 20% 0%, #d9dfc0 0%, #8ba668 45%, #453923 100%);
-    color: #f5f1e6;
+    background: radial-gradient(circle at 20% 0%, #f4ead9 0%, #d3ddc4 45%, #a8c69f 100%);
+    color: #5c4a3d;
     display: flex;
     flex-direction: column;
     position: fixed;
@@ -63,7 +63,7 @@
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
   }
-  body.theme-1 { background: radial-gradient(circle at 20% 0%, #d9dfc0 0%, #8ba668 45%, #453923 100%); }
+  body.theme-1 { background: radial-gradient(circle at 20% 0%, #f4ead9 0%, #d3ddc4 45%, #a8c69f 100%); }
   body.theme-2 { background: radial-gradient(circle at 20% 0%, #dff4ee 0%, #b7e0d8 45%, #8fcdbf 100%); }
   body.theme-3 { background: radial-gradient(circle at 20% 0%, #e2e7fb 0%, #cfd8f0 45%, #a9b8e8 100%); }
   body.theme-4 { background: radial-gradient(circle at 20% 0%, #4a4694 0%, #2b2f5e 60%, #1a1a3d 100%); color: #f0f0ff; }
@@ -125,7 +125,7 @@
     font-size: clamp(26px, 8vw, 58px);
     line-height: 1.15;
     font-weight: 900;
-    color: rgba(46, 125, 50, 0.35);
+    color: rgba(92, 74, 61, 0.3);
     animation: pulseScale 1.8s ease-in-out infinite;
     pointer-events: none;
     text-align: center;
@@ -263,6 +263,7 @@
     flex-direction: column;
   }
   .shopPageOverlay.open { display: flex; }
+  .shopPage { display: flex; flex-direction: column; width: 100%; height: 100%; min-height: 0; }
   .shopPageHeader {
     flex-shrink: 0;
     display: flex;
@@ -274,25 +275,42 @@
     font-weight: 800;
     font-size: 18px;
   }
-  /* Emplacement réservé pour l'illustration (Papi + son magasin) — à remplacer par le vrai visuel */
+  .shopPageRow {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    padding: 20px calc(20px + env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left));
+    gap: 20px;
+  }
+  /* Emplacement réservé pour l'illustration (Papi + son magasin) — à remplacer par le vrai visuel.
+     Colonne fixe à gauche, pleine hauteur. */
   .shopImagePlaceholder {
     flex-shrink: 0;
-    margin: 16px 20px 0 20px;
-    padding: 30px;
+    width: 340px;
     border: 3px dashed rgba(255,255,255,0.4);
     border-radius: 14px;
     color: rgba(255,255,255,0.6);
     text-align: center;
     font-size: 13px;
-    min-height: 120px;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 20px;
+  }
+  .shopRightCol {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--card-bg);
+    border-radius: 14px;
+    overflow: hidden;
   }
   .shopPageContent {
     flex: 1;
     overflow-y: auto;
-    padding: 16px calc(20px + env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left));
+    padding: 16px 20px 24px 20px;
   }
 
   .tabPanel { display: none; animation: fadeIn 0.25s ease; }
@@ -564,13 +582,15 @@
   </div>
 </div>
 
-<div class="tutorialOverlay" id="updatePromptOverlay" style="display:none;">
-  <div class="tutorialBox">
-    <h2>🔄 Nouvelle version disponible !</h2>
-    <p id="updatePromptBody">Une mise à jour de FUZZ est prête à être installée.</p>
-    <p id="updatePromptProgress" style="display:none; font-weight:700; text-align:center;"></p>
-    <button id="updatePromptInstallBtn">Mettre à jour maintenant</button>
-    <button id="updatePromptLaterBtn" style="margin-top:8px; background:#eee; color:#333;">Plus tard</button>
+<div class="sideModalOverlay" id="updatePromptOverlay">
+  <div class="sideModal" style="width:min(420px, 92vw);">
+    <div class="sideModalHeader"><span>🔄 Nouvelle version disponible !</span></div>
+    <div class="sideModalContent" style="text-align:center;">
+      <p id="updatePromptBody">Une mise à jour de FUZZ est prête à être installée.</p>
+      <p id="updatePromptProgress" style="display:none; font-weight:700;"></p>
+      <button id="updatePromptInstallBtn" class="smallBtn" style="background:var(--accent); color:white; width:100%; margin-bottom:8px;">Mettre à jour maintenant</button>
+      <button id="updatePromptLaterBtn" class="smallBtn" style="width:100%;">Plus tard</button>
+    </div>
   </div>
 </div>
 
@@ -695,11 +715,13 @@
       <span>🛒 Magasin de Papi Feuillage</span>
       <button class="modalCloseBtn" id="shopPageCloseBtn">Quitter le magasin ✕</button>
     </div>
-    <div class="shopImagePlaceholder" id="shopImagePlaceholder">
-      🖼️ Emplacement réservé pour l'illustration de Papi et de son magasin (à intégrer)
-    </div>
-    <div class="miniTabsRow" id="shopTabsRow"></div>
-    <div class="shopPageContent">
+    <div class="shopPageRow">
+      <div class="shopImagePlaceholder" id="shopImagePlaceholder">
+        🖼️ Emplacement réservé pour l'illustration de Papi et de son magasin (à intégrer)
+      </div>
+      <div class="shopRightCol">
+        <div class="miniTabsRow" id="shopTabsRow"></div>
+        <div class="shopPageContent">
 
       <div class="tabPanel active" id="tab-jardin">
         <div class="buyModeRow" id="buyModeRow"></div>
@@ -739,6 +761,8 @@
         <div id="ascensionShop"></div>
       </div>
 
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1123,16 +1147,6 @@ const TAB_DEFS = [
   { id: 'options', label: 'Options', icon: '⚙️', unlock: () => true, group: 'settings' },
 ];
 
-// Pour ces catégories (le "magasin"), Papi annonce lui-même le déblocage via une bulle de dialogue
-// au lieu du toast générique — 'jardin' est disponible dès le début donc jamais "nouvellement débloqué".
-const PAPI_SHOP_ANNOUNCEMENTS = {
-  clic: "Tiens, j'ai des gants renforcés qui traînaient au fond du magasin. Ça devrait t'aider à cliquer plus fort.",
-  special: "J'ai du matériel... disons, particulier, qui vient d'arriver. Jette un œil à la section Spécial du magasin.",
-  recherche: "Un pote m'a filé des bouquins de recherche. File voir ça au magasin, je te fais un prix.",
-  prestige: "T'as bien avancé, dis donc. Y'a un truc qui pourrait t'intéresser au magasin, question de repartir de zéro... en mieux.",
-  ascension: "Alors là, on passe dans la cour des grands. File voir l'étage Ascension du magasin.",
-};
-
 // ================= STATE =================
 function defaultState() {
   return {
@@ -1257,13 +1271,13 @@ function formatNum(n) {
   const sign = n < 0 ? '-' : '';
   const original = Math.abs(n);
   let n2 = original;
-  if (n2 < 1000) return sign + (Math.floor(n2*100)/100).toString();
+  if (n2 < 1000) return sign + Math.floor(n2).toString();
   const units = ['K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc','UDc','DDc','TDc','QaDc','QiDc','SxDc','SpDc','OcDc','NoDc','Vg'];
   let unitIndex = -1;
   while (n2 >= 1000 && unitIndex < units.length - 1) { n2 /= 1000; unitIndex++; }
   // Au-delà de la dernière unité nommée (~10^66), on repasse en notation scientifique plutôt que d'afficher un nombre sans suffixe.
-  if (n2 >= 1000) return sign + original.toExponential(2).replace('e+', 'e');
-  return sign + n2.toFixed(2) + (units[unitIndex] || '');
+  if (n2 >= 1000) return sign + original.toExponential(0).replace('e+', 'e');
+  return sign + Math.round(n2) + (units[unitIndex] || '');
 }
 
 function hasPrestigeUpgrade(id) { return !!state.prestigeUpgrades[id]; }
@@ -1861,6 +1875,50 @@ document.getElementById('settingsModalOverlay').addEventListener('click', (e) =>
 document.getElementById('achievementsModalOverlay').addEventListener('click', (e) => { if (e.target.id === 'achievementsModalOverlay') closeModal('achievementsModalOverlay'); });
 document.getElementById('questsModalOverlay').addEventListener('click', (e) => { if (e.target.id === 'questsModalOverlay') closeModal('questsModalOverlay'); });
 
+// Message de Papi pour chaque onglet (sauf Jardin, disponible dès le début) + fenêtre à ouvrir une fois le message lu
+const PAPI_TAB_ANNOUNCEMENTS = {
+  clic: "Tiens, j'ai des gants renforcés qui traînaient au fond du magasin. File voir ça.",
+  special: "J'ai du matériel... disons, particulier, qui vient d'arriver. Jette un œil à la section Spéciale.",
+  recherche: "Un pote m'a filé des bouquins de recherche. File voir ça, je te fais un prix.",
+  prestige: "T'as bien avancé, dis donc. Y'a un truc qui pourrait t'intéresser, question de repartir de zéro... en mieux.",
+  ascension: "Alors là, on passe dans la cour des grands. Regarde-moi ça.",
+  journal: "Tiens, note tout ce qui se passe ici, ça peut servir. Je t'ai ouvert ça.",
+  stats: "Un petit tableau de bord, pour voir où t'en es.",
+  options: "Là tu peux régler deux-trois trucs à ta sauce.",
+  quetes: "J'ai des petites missions pour toi, histoire de garder ça intéressant.",
+  defi: "Si t'es motivé, y'a des défis pour les courageux.",
+  succes: "Tiens, un registre de tes exploits. Pratique pour frimer.",
+};
+const GROUP_TO_OVERLAY = { shop: 'shopPageOverlay', settings: 'settingsModalOverlay', quests: 'questsModalOverlay', achievements: 'achievementsModalOverlay' };
+
+// Annonce les onglets nouvellement débloqués un par un (Papi parle, tu fermes, il t'emmène directement
+// au bon endroit) — enchaînés proprement si plusieurs se débloquent en même temps.
+// Empêche les annonces de Papi de se déclencher PENDANT la scène d'ouverture (les onglets
+// par défaut Stats/Journal/Options n'ont pas besoin d'être annoncés au tout premier lancement,
+// ils seraient sinon en concurrence visuelle avec la scène d'intro).
+let _suppressTabAnnouncements = !state.tutorialSeen;
+
+function announceNewTabsSequentially(tabs) {
+  if (tabs.length === 0) return;
+  const t = tabs[0];
+  const rest = tabs.slice(1);
+  if (_suppressTabAnnouncements || t.id === 'jardin') {
+    if (!_suppressTabAnnouncements) showToast(`🔓 Nouvel onglet débloqué : ${t.label}`);
+    announceNewTabsSequentially(rest);
+    return;
+  }
+  const msg = PAPI_TAB_ANNOUNCEMENTS[t.id] || `Tiens, j'ai débloqué "${t.label}" pour toi.`;
+  showDialogue('papi', [msg], { position: 'top-right', onComplete: () => {
+    if (t.group === 'shop') activeShopTab = t.id;
+    else if (t.group === 'settings') activeSettingsTab = t.id;
+    else if (t.group === 'quests') activeQuestsTab = t.id;
+    const overlayId = GROUP_TO_OVERLAY[t.group];
+    if (overlayId) openModal(overlayId);
+    renderAll();
+    announceNewTabsSequentially(rest);
+  }});
+}
+
 function renderMiniTabsRow(containerId, group, activeId, onSelect) {
   const unlocked = unlockedTabs().filter(t => t.group === group);
   const container = document.getElementById(containerId);
@@ -1883,13 +1941,7 @@ function renderTabsRow() {
   }
   if (newlyUnlocked.length) {
     saveGame();
-    newlyUnlocked.forEach(t => {
-      if (t.group === 'shop' && t.id !== 'jardin' && PAPI_SHOP_ANNOUNCEMENTS[t.id]) {
-        showDialogue('papi', [PAPI_SHOP_ANNOUNCEMENTS[t.id]], { position: 'top-right' });
-      } else {
-        showToast(`🔓 Nouvel onglet débloqué : ${t.label}`);
-      }
-    });
+    announceNewTabsSequentially(newlyUnlocked);
   }
 
   if (!unlocked.find(t => t.id === activeShopTab && t.group === 'shop')) activeShopTab = 'jardin';
@@ -2615,7 +2667,7 @@ function setUpdateProgressText(msg) {
   const optionsEl = document.getElementById('updateStatusText');
   if (optionsEl) optionsEl.textContent = msg;
   const modalEl = document.getElementById('updatePromptProgress');
-  if (modalEl && document.getElementById('updatePromptOverlay').style.display !== 'none') {
+  if (modalEl && document.getElementById('updatePromptOverlay').classList.contains('open')) {
     modalEl.style.display = 'block';
     modalEl.textContent = msg;
   }
@@ -2626,7 +2678,7 @@ function showUpdatePromptModal(version) {
   document.getElementById('updatePromptProgress').style.display = 'none';
   document.getElementById('updatePromptInstallBtn').disabled = false;
   document.getElementById('updatePromptInstallBtn').textContent = 'Mettre à jour maintenant';
-  document.getElementById('updatePromptOverlay').style.display = 'flex';
+  document.getElementById('updatePromptOverlay').classList.add('open');
 }
 
 async function initUpdateUI() {
@@ -2695,7 +2747,7 @@ async function installPendingUpdate(skipConfirm) {
 
 document.getElementById('updatePromptInstallBtn').addEventListener('click', () => installPendingUpdate(true));
 document.getElementById('updatePromptLaterBtn').addEventListener('click', () => {
-  document.getElementById('updatePromptOverlay').style.display = 'none';
+  document.getElementById('updatePromptOverlay').classList.remove('open');
 });
 
 document.getElementById('updateCheckBtn').addEventListener('click', () => {
@@ -2845,13 +2897,24 @@ document.getElementById('resetBtn').addEventListener('click', () => {
 // les conseils de gameplay, pour poser l'histoire avant la mécanique.
 function startOpeningScene() {
   showScene([
-    { character: 'papi', text: "Bon. Ce terrain, techniquement, il est à moi maintenant. Me demande pas comment." },
-    { character: 'papi', text: "Le souci, c'est que j'ai pas le temps de m'en occuper. Et à vrai dire, l'envie non plus." },
-    { character: 'papi', text: "Toi, en revanche, t'as du temps. Beaucoup de temps." },
-    { character: 'leroy', text: "Papi, je cherche du travail, je—" },
-    { character: 'papi', text: "Tu désherbes ce terrain, et il est à toi. T'en fais ce que tu veux." },
-    { character: 'papi', text: "Me dérange pas trop pendant que tu bosses. Mais si t'as un vrai problème... je repasserai." },
-    { character: 'leroy', text: "...Ok. Je suppose que c'est mieux que rien." },
+    { character: 'papi', text: "Hm hm… Petit. J'ai un cadeau pour toi." },
+    { character: 'leroy', text: "…un cadeau ?" },
+    { character: 'papi', text: "Un terrain. Immense. Magnifique. À moi, entièrement légal." },
+    { character: 'papi', text: "..." },
+    { character: 'papi', text: "Ne pose pas de questions." },
+    { character: 'leroy', text: "Je posais pas de que—" },
+    { character: 'papi', text: "Bien. Alors tu vas t'en occuper." },
+    { character: 'leroy', text: "Quoi ? Pourquoi moi ?" },
+    { character: 'papi', text: "Parce que tu fais rien de tes journées, et que ce terrain non plus. Vous êtes faits l'un pour l'autre." },
+    { character: 'leroy', text: "C'est pas très gentil…" },
+    { character: 'papi', text: "Remarque, t'es un bon petit. Enfin. T'es petit." },
+    { character: 'leroy', text: "…" },
+    { character: 'papi', text: "Bref. Ton Cousin Bramble, lui, il aurait déjà défriché la moitié en se levant. Mais bon, il a déjà son business alors… On fait avec ce qu'on a." },
+    { character: 'leroy', text: "J'ai pas vraiment le choix, si ?" },
+    { character: 'papi', text: "Tu as très bien compris. C'est ton nouveau chez toi, savoure." },
+    { character: 'papi', text: "Ah et, point positif : t'en fais ce que tu veux." },
+    { character: 'papi', text: "..." },
+    { character: 'papi', text: "Je repasserai jeter un œil, au cas où tu te fais attaquer par une herbe." },
   ], { left: 'papi', right: 'leroy', onComplete: () => {
     document.getElementById('tutorialOverlay').style.display = 'flex';
   }});
@@ -2863,7 +2926,9 @@ if (!state.tutorialSeen) {
 document.getElementById('tutorialCloseBtn').addEventListener('click', () => {
   state.tutorialSeen = true;
   document.getElementById('tutorialOverlay').style.display = 'none';
+  _suppressTabAnnouncements = false;
   saveGame();
+  renderAll();
 });
 document.getElementById('offlineCloseBtn').addEventListener('click', () => {
   document.getElementById('offlineOverlay').style.display = 'none';
