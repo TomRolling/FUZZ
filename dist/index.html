@@ -179,6 +179,30 @@
     0%, 100% { box-shadow: 0 0 0 0 rgba(255,193,7,0.9), 0 0 14px 4px rgba(255,193,7,0.8); }
     50% { box-shadow: 0 0 0 16px rgba(255,193,7,0), 0 0 22px 8px rgba(255,193,7,0.95); }
   }
+  /* Assombrit le reste de l'écran pour forcer le joueur à cliquer sur un bouton juste
+     débloqué avant de continuer — z-index sous .floatingButtonsTopRight (170) pour que les
+     boutons flottants restent visibles et cliquables par-dessus. */
+  .tutorialSpotlightOverlay { position: fixed; inset: 0; z-index: 150; background: rgba(0,0,0,0.55); display: none; }
+  .tutorialSpotlightArrow {
+    position: fixed; z-index: 401; /* au-dessus du halo featureHighlight (400) */
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    pointer-events: none;
+    animation: spotlightBounce 0.9s ease-in-out infinite;
+  }
+  .tutorialSpotlightArrowIcon { font-size: 30px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+  .tutorialSpotlightArrowLabel {
+    background: var(--accent); color: white; font-weight: 700; font-size: 12px;
+    padding: 4px 10px; border-radius: 10px; white-space: nowrap; box-shadow: 0 3px 8px rgba(0,0,0,0.35);
+  }
+  /* Le -50% de recentrage horizontal est intégré directement dans les frames (jamais
+     appliqué séparément en ligne) : un transform séparé serait écrasé par celui-ci. */
+  @keyframes spotlightBounce {
+    0%, 100% { transform: translate(-50%, 0); }
+    50% { transform: translate(-50%, -8px); }
+  }
   .shopFloatBtn {
     position: fixed;
     bottom: calc(10px + env(safe-area-inset-bottom));
@@ -356,6 +380,26 @@
 
   .upgrade { display: flex; justify-content: space-between; align-items: center; background: var(--panel-bg); border-radius: 12px; padding: 16px 18px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); cursor: pointer; border: 2px solid transparent; transition: border 0.15s, opacity 0.15s, transform 0.1s; color: var(--panel-text); gap: 12px; }
   .itemIcon { width: 44px; height: 44px; object-fit: contain; image-rendering: pixelated; flex-shrink: 0; }
+  .galleryGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; margin-top: 12px; }
+  .galleryCard { background: var(--panel-bg); border-radius: 12px; padding: 12px 8px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+  .galleryCard img { width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated; margin-bottom: 6px; }
+  .galleryCardName { font-size: 10px; font-weight: 700; color: var(--panel-text); line-height: 1.4; }
+  .galleryCard.locked { opacity: 0.5; }
+  .galleryCard.locked img { filter: brightness(0) opacity(0.35); }
+  .galleryCard.locked .galleryCardName { opacity: 0.6; }
+
+  .dailyCalendar { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; margin-top: 4px; }
+  .dailyCalendarCard { background: var(--panel-bg); border-radius: 10px; padding: 10px 6px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.08); border: 2px solid transparent; }
+  .dailyCalendarCard.today { border-color: var(--accent); }
+  .dailyCalendarCard.past { opacity: 0.5; }
+  .dailyCalendarCard .dayLabel { font-weight: 700; font-size: 11px; margin-bottom: 4px; }
+  .dailyCalendarCard .dayReward { font-size: 10px; opacity: 0.75; line-height: 1.4; }
+
+  .galleryLightboxOverlay { position: fixed; inset: 0; z-index: 360; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 20px; }
+  .galleryLightboxBox { text-align: center; max-width: 90vw; }
+  .galleryLightboxBox img { width: min(60vh, 70vw); height: min(60vh, 70vw); object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 12px 24px rgba(0,0,0,0.5)); }
+  .galleryLightboxName { font-weight: 800; font-size: 20px; color: white; margin-top: 18px; }
+  .galleryLightboxDesc { font-size: 13px; color: rgba(255,255,255,0.8); margin-top: 8px; max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.6; }
   .upgrade:hover:not(.disabled) { border-color: var(--accent); transform: translateX(2px); }
   .upgrade.disabled { opacity: 0.45; cursor: not-allowed; }
   .upgrade .info { text-align: left; }
@@ -414,6 +458,8 @@
 
   /* ===== Combo indicator ===== */
   .comboBadge { position: absolute; bottom: 14%; left: 50%; transform: translateX(-50%) scale(0.9); font-size: 13px; font-weight: 800; color: #ef6c00; background: rgba(255,255,255,0.85); padding: 4px 12px; border-radius: 20px; opacity: 0; transition: opacity 0.15s, transform 0.15s; pointer-events: none; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+  .companion { position: absolute; bottom: 8%; left: 8%; font-size: 40px; pointer-events: none; animation: companionSway 3.2s ease-in-out infinite; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2)); }
+  @keyframes companionSway { 0%, 100% { transform: rotate(-6deg) translateY(0); } 50% { transform: rotate(6deg) translateY(-4px); } }
   .comboBadge.show { opacity: 1; transform: translateX(-50%) scale(1); }
 
   /* ===== Bump feedback on stat change ===== */
@@ -485,8 +531,9 @@
   .itemPopupOverlay { position: fixed; inset: 0; z-index: 350; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
   .itemPopupBox { background: var(--card-bg); border: 4px solid var(--ink); border-radius: 18px; padding: 26px; width: min(320px, 88vw); text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.4); animation: itemPopupIn 0.3s ease-out; }
   @keyframes itemPopupIn { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
-  .itemPopupTitle { font-weight: 800; font-size: 13px; color: var(--accent-dark); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+  .itemPopupTitle { font-weight: 800; font-size: 13px; line-height: 1.5; color: var(--accent-dark); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
   .itemPopupIcon { width: 96px; height: 96px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.25)); margin-bottom: 12px; }
+  .dailyPopupIcon { font-size: 64px; margin-bottom: 8px; }
   .itemPopupName { font-weight: 700; font-size: 15px; color: var(--ink); margin-bottom: 8px; }
   .itemPopupDesc { font-size: 12px; line-height: 1.6; opacity: 0.75; color: var(--panel-text); }
 
@@ -613,6 +660,12 @@
 </head>
 <body class="theme-1" id="bodyEl">
 
+<audio id="bgMusic" preload="auto"></audio>
+<audio id="firstPurchaseSound" preload="auto">
+  <source src="assets/audio/first_purchase.m4a" type="audio/mp4">
+  <source src="assets/audio/first_purchase.mp3" type="audio/mpeg">
+</audio>
+
 <div class="splashOverlay" id="splashOverlay">
   <div class="splashSlide" id="splashSlideStudio">
     <div class="splashPlaceholder">
@@ -645,6 +698,24 @@
   </div>
 </div>
 
+<div class="itemPopupOverlay" id="dailyPopupOverlay" style="display:none;">
+  <div class="itemPopupBox">
+    <div class="itemPopupTitle">🎁 <span id="dailyPopupDay">Jour 1</span></div>
+    <div class="dailyPopupIcon">🎁</div>
+    <div class="itemPopupName" id="dailyPopupRewards"></div>
+    <div class="itemPopupDesc" id="dailyPopupStreak"></div>
+    <button class="smallBtn" id="dailyPopupCloseBtn" style="width:100%; margin-top:14px;">Super !</button>
+  </div>
+</div>
+
+<div class="galleryLightboxOverlay" id="galleryLightboxOverlay" style="display:none;">
+  <div class="galleryLightboxBox">
+    <img id="galleryLightboxImg" alt="">
+    <div class="galleryLightboxName" id="galleryLightboxName"></div>
+    <div class="galleryLightboxDesc" id="galleryLightboxDesc"></div>
+  </div>
+</div>
+
 <div class="topBar">
   <h1>🌱 FUZZ</h1>
   <div class="weatherBadge" id="weatherBadge"></div>
@@ -663,14 +734,22 @@
 <div class="clickZone" id="clickZone">
   <div class="clickText" id="clickText">Clic ici pour désherber</div>
   <div class="comboBadge" id="comboBadge"></div>
+  <div class="companion" id="companion" style="display:none;" title="Ton compagnon">🐌</div>
 </div>
 
 <div class="floatingButtonsTopRight">
   <button class="floatBtn hiddenUntilRevealed" id="settingsBtn" title="Paramètres">⚙️</button>
   <button class="floatBtn hiddenUntilRevealed" id="achievementsBtn" title="Succès">🏆</button>
   <button class="floatBtn hiddenUntilRevealed" id="questsBtn" title="Quêtes &amp; Défis">📓</button>
+  <button class="floatBtn hiddenUntilRevealed" id="dailyRewardBtn" title="Récompense quotidienne">🎁</button>
 </div>
 <button class="floatBtn shopFloatBtn" id="shopBtn" title="Magasin de Papi"><img src="assets/shop_button.png" alt="Shop" class="shopFloatBtnImg"></button>
+
+<div class="tutorialSpotlightOverlay" id="tutorialSpotlightOverlay"></div>
+<div class="tutorialSpotlightArrow" id="tutorialSpotlightArrow">
+  <div class="tutorialSpotlightArrowIcon">👆</div>
+  <div class="tutorialSpotlightArrowLabel" id="tutorialSpotlightArrowLabel">Clique ici !</div>
+</div>
 
 <div class="toastContainer" id="toastContainer"></div>
 
@@ -746,6 +825,11 @@
         <div id="statsList"></div>
       </div>
 
+      <div class="tabPanel" id="tab-galerie">
+        <p style="font-size:12px;opacity:0.7;" data-i18n="galleryIntro">Tous les objets illustrés que tu as croisés jusqu'ici. Continue à jouer pour en débloquer d'autres !</p>
+        <div class="galleryGrid" id="galleryGrid"></div>
+      </div>
+
       <div class="tabPanel" id="tab-options">
         <div class="settingsCard" id="updateCard" style="display:none;">
           <div class="settingsCardLabel"><span data-i18n="updatesLabel">🔄 Mises à jour</span> <span id="currentVersionText" class="settingsCardVersion"></span></div>
@@ -800,6 +884,22 @@
         </div>
       </div>
 
+    </div>
+  </div>
+</div>
+
+<div class="sideModalOverlay" id="dailyRewardModalOverlay">
+  <div class="sideModal">
+    <div class="sideModalHeader">
+      <span data-i18n="dailyRewardTitle">🎁 Récompense quotidienne</span>
+      <button class="modalCloseBtn" id="dailyRewardModalCloseBtn" data-i18n="close">Fermer ✕</button>
+    </div>
+    <div class="sideModalContent">
+      <div class="tabPanel active" id="tab-dailyreward">
+        <p style="font-size:12px;opacity:0.7;" id="dailyRewardStatus"></p>
+        <button class="smallBtn" id="dailyRewardClaimBtn" style="width:100%; margin-bottom:14px; display:none;">Réclamer</button>
+        <div id="dailyRewardCalendar"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -911,13 +1011,23 @@ const SAVE_VERSION = 2;
 // Tant qu'un id n'a pas d'entrée ici, l'article s'affiche simplement sans icône (pas de
 // cassure visuelle) — il suffit d'ajouter une ligne ici quand un nouveau sprite arrive.
 const ITEM_SPRITES = {
-  stagiaire: 'assets/sprites/stagiaire.png',
-  c1: 'assets/sprites/c1.png',
+  stagiaire: { src: 'assets/sprites/stagiaire.png', kind: 'building' },
+  c1: { src: 'assets/sprites/c1.png', kind: 'clickUpgrade' },
 };
 function getItemIconHtml(id) {
-  const src = ITEM_SPRITES[id];
-  if (!src) return '';
-  return `<img src="${src}" class="itemIcon" alt="" onerror="this.remove()">`;
+  const entry = ITEM_SPRITES[id];
+  if (!entry) return '';
+  return `<img src="${entry.src}" class="itemIcon" alt="" onerror="this.remove()">`;
+}
+// Retrouve la définition (nom/desc) et le statut de possession d'un objet illustré, quel
+// que soit le tableau auquel il appartient — utilisé par le pop-up de révélation et la galerie.
+function findSpriteItem(id, kind) {
+  const arr = kind === 'building' ? BUILDINGS : kind === 'clickUpgrade' ? CLICK_UPGRADES : UNIQUE_BUILDINGS;
+  const item = arr.find(x => x.id === id);
+  const owned = kind === 'building' ? (state.buildings[id] || 0) > 0
+    : kind === 'clickUpgrade' ? hasClickUpgrade(id)
+    : hasUnique(id);
+  return { item, owned };
 }
 
 // Affiche un petit pop-up de révélation la toute première fois qu'un objet est acquis —
@@ -930,11 +1040,13 @@ function maybeShowItemAcquiredPopup(id, kind) {
   const item = kind === 'building' ? BUILDINGS.find(x => x.id === id) : CLICK_UPGRADES.find(x => x.id === id);
   if (!item) return;
   document.getElementById('itemPopupTitle').textContent = state.lang === 'en' ? 'New item!' : 'Nouvel objet !';
-  document.getElementById('itemPopupIcon').src = ITEM_SPRITES[id];
+  document.getElementById('itemPopupIcon').style.display = '';
+  document.getElementById('itemPopupIcon').src = ITEM_SPRITES[id].src;
   document.getElementById('itemPopupName').textContent = L(item, 'name');
   document.getElementById('itemPopupDesc').textContent = L(item, 'desc');
   document.getElementById('itemPopupCloseBtn').textContent = state.lang === 'en' ? 'Nice!' : 'Super !';
   document.getElementById('itemPopupOverlay').style.display = 'flex';
+  playFirstPurchaseSound();
 }
 document.getElementById('itemPopupCloseBtn').addEventListener('click', () => {
   document.getElementById('itemPopupOverlay').style.display = 'none';
@@ -979,7 +1091,7 @@ const UI_STRINGS = {
     tabSucces: 'Succès', tabStats: 'Stats', tabJournal: 'Journal', tabOptions: 'Options',
     max: 'MAX', acquired: '✔ Acquis', active: '✔ Actif', owned: 'Possédé', free: 'Gratuit', use: 'Utiliser',
     activate: 'Activer', locked: '(nécessite une autre amélioration avant)',
-    settingsTitle: '⚙️ Paramètres', achievementsTitle: '🏆 Succès', questsTitle: '📓 Quêtes & Défis',
+    settingsTitle: '⚙️ Paramètres', achievementsTitle: '🏆 Succès', questsTitle: '📓 Quêtes & Défis', dailyRewardTitle: '🎁 Récompense quotidienne',
     shopTitle: '🛒 Magasin de Papi Feuillage', shopBtnLabel: '🛒 Magasin de Papi', shopImgPlaceholder: "🖼️ Emplacement réservé pour l'illustration de Papi et de son magasin (à intégrer)",
     soundLabel: '🔊 Sons du jeu', enabled: 'Activés', disabled: 'Désactivés', enabledSingular: 'Activé', disabledSingular: 'Désactivé', volumeLabel: 'Volume',
     darkModeLabel: '🌙 Mode sombre forcé', vacationLabel: '🏖️ Mode vacances (bloque les herbes invasives)',
@@ -990,8 +1102,11 @@ const UI_STRINGS = {
     restoreBackupBtn: '♻️ Restaurer sauvegarde de secours', shareBtn: '📣 Partager', resetBtn: '🗑️ Reset total', quitGameBtn: '🚪 Quitter le jeu',
     updatesLabel: '🔄 Mises à jour', checkBtn: 'Vérifier', installBtn: 'Installer', updateNow: 'Mettre à jour maintenant', laterBtn: 'Plus tard', checkingLabel: 'Vérification...',
     journalIntro: "Historique des derniers événements de ton jardin.", noEvents: "Aucun événement pour l'instant.",
+    galleryIntro: "Tous les objets illustrés que tu as croisés jusqu'ici. Continue à jouer pour en débloquer d'autres !",
     clickShopIntro: "Renforce tes clics — certaines améliorations ajoutent un % de ta production/seconde à chaque clic, pour que cliquer reste utile même très loin dans la partie.",
     researchIntro: "Dépense tes Connaissances 📚 (gagnées passivement) sur un arbre permanent, indépendant du prestige.",
+    researchInfiniteIntro: "Recherches infinies : rachetables indéfiniment, coût croissant à chaque niveau — le puits sans fond pour tes Connaissances en fin de partie.",
+    level: 'Niveau',
     ascensionShopIntro: "Améliorations permanentes achetées avec les Éclats Stellaires — jamais perdues, même en Ascensionnant à nouveau.",
     specialCosmeticsIntro: "🎨 Cosmétiques de clic (Graines Cosmiques, purement visuels).",
     specialUniqueIntro: "Bâtiments uniques, un seul exemplaire possible chacun, effets puissants.",
@@ -1009,7 +1124,7 @@ const UI_STRINGS = {
     tabSucces: 'Achievements', tabStats: 'Stats', tabJournal: 'Log', tabOptions: 'Options',
     max: 'MAX', acquired: '✔ Owned', active: '✔ Active', owned: 'Owned', free: 'Free', use: 'Use',
     activate: 'Activate', locked: '(requires another upgrade first)',
-    settingsTitle: '⚙️ Settings', achievementsTitle: '🏆 Achievements', questsTitle: '📓 Quests & Challenges',
+    settingsTitle: '⚙️ Settings', achievementsTitle: '🏆 Achievements', questsTitle: '📓 Quests & Challenges', dailyRewardTitle: '🎁 Daily Reward',
     shopTitle: '🛒 Gramps Weeds\' Shop', shopBtnLabel: '🛒 Shop', shopImgPlaceholder: "🖼️ Placeholder for Gramps' illustration and shop art (to be added)",
     soundLabel: '🔊 Game sounds', enabled: 'On', disabled: 'Off', enabledSingular: 'On', disabledSingular: 'Off', volumeLabel: 'Volume',
     darkModeLabel: '🌙 Force dark mode', vacationLabel: '🏖️ Vacation mode (blocks invasive weeds)',
@@ -1020,8 +1135,11 @@ const UI_STRINGS = {
     restoreBackupBtn: '♻️ Restore backup save', shareBtn: '📣 Share', resetBtn: '🗑️ Full reset', quitGameBtn: '🚪 Quit game',
     updatesLabel: '🔄 Updates', checkBtn: 'Check', installBtn: 'Install', updateNow: 'Update now', laterBtn: 'Later', checkingLabel: 'Checking...',
     journalIntro: "History of the latest events on your land.", noEvents: "No events yet.",
+    galleryIntro: "All the illustrated items you've come across so far. Keep playing to unlock more!",
     clickShopIntro: "Boost your clicks — some upgrades add a % of your production/second to each click, so clicking stays useful even very late in the game.",
     researchIntro: "Spend your Knowledge 📚 (earned passively) on a permanent tree, independent of prestige.",
+    researchInfiniteIntro: "Infinite research: repeatable forever, cost grows with each level — the bottomless sink for your Knowledge in the late game.",
+    level: 'Level',
     ascensionShopIntro: "Permanent upgrades bought with Stellar Shards — never lost, even after Ascending again.",
     specialCosmeticsIntro: "🎨 Click cosmetics (Cosmic Seeds, purely visual).",
     specialUniqueIntro: "Unique buildings, only one of each possible, powerful effects.",
@@ -1606,6 +1724,36 @@ const RESEARCH = [
   { id: 'r_prod2', name: { fr: 'Biodiversité contrôlée', en: 'Controlled Biodiversity' }, desc: { fr: '+15% production globale supplémentaire.', en: '+15% additional global production.' }, cost: 20, type: 'prodMult', value: 1.15, requires: 'r_prod1' },
   { id: 'r_prod3', name: { fr: 'Harmonie du jardin', en: 'Garden Harmony' }, desc: { fr: '+25% production globale supplémentaire.', en: '+25% additional global production.' }, cost: 35, type: 'prodMult', value: 1.25, requires: 'r_prod2' },
   { id: 'r_clickCps1', name: { fr: 'Résonance verte', en: 'Green Resonance' }, desc: { fr: '+8% de production/seconde ajoutée à chaque clic.', en: '+8% of production/second added to each click.' }, cost: 15, type: 'clickCpsPercent', value: 0.08, requires: 'r_click1' },
+
+  // ===== Palier 2 : début de la boucle de prestige (coûts 60-200) =====
+  { id: 'r_prod4', name: { fr: 'Permaculture', en: 'Permaculture' }, desc: { fr: '+20% production globale supplémentaire.', en: '+20% additional global production.' }, cost: 60, type: 'prodMult', value: 1.20, requires: 'r_prod3' },
+  { id: 'r_click2', name: { fr: 'Gant sur-mesure', en: 'Custom-Fit Glove' }, desc: { fr: '+75% Verdure par clic supplémentaire.', en: '+75% additional Greenery per click.' }, cost: 80, type: 'clickMult', value: 1.75, requires: 'r_click1' },
+  { id: 'r_cheap2', name: { fr: 'Négociation de gros', en: 'Bulk Negotiation' }, desc: { fr: '-6% supplémentaire sur le coût des bâtiments.', en: '-6% additional on building costs.' }, cost: 100, type: 'cheaper', value: 0.94, requires: 'r_cheap1' },
+  { id: 'r_synergy2', name: { fr: 'Réseau racinaire', en: 'Root Network' }, desc: { fr: '+75% supplémentaire sur les effets de synergie.', en: '+75% additional on synergy effects.' }, cost: 150, type: 'synergyMult', value: 1.75, requires: 'r_synergy1' },
+  { id: 'r_knowledge2', name: { fr: 'Journal de bord', en: 'Logbook' }, desc: { fr: '+75% de gain de Connaissances supplémentaire.', en: '+75% additional Knowledge gain.' }, cost: 130, type: 'knowledgeMult', value: 1.75, requires: 'r_knowledge1' },
+  { id: 'r_clickCps2', name: { fr: 'Réflexe conditionné', en: 'Conditioned Reflex' }, desc: { fr: '+10% supplémentaire de production/seconde ajoutée à chaque clic.', en: '+10% additional production/second added to each click.' }, cost: 200, type: 'clickCpsPercent', value: 0.10, requires: 'r_clickCps1' },
+
+  // ===== Palier 3 : plusieurs prestiges (coûts 1 000-3 000) =====
+  { id: 'r_prod5', name: { fr: 'Ingénierie du sol', en: 'Soil Engineering' }, desc: { fr: '+35% production globale supplémentaire.', en: '+35% additional global production.' }, cost: 1000, type: 'prodMult', value: 1.35, requires: 'r_prod4' },
+  { id: 'r_click3', name: { fr: 'Gant bionique', en: 'Bionic Glove' }, desc: { fr: '+125% Verdure par clic supplémentaire.', en: '+125% additional Greenery per click.' }, cost: 1500, type: 'clickMult', value: 2.25, requires: 'r_click2' },
+  { id: 'r_offline2', name: { fr: 'Arrosage automatique', en: 'Automatic Watering' }, desc: { fr: "+25% d'efficacité hors-ligne supplémentaire.", en: "+25% additional offline efficiency." }, cost: 2000, type: 'offlineBonus', value: 0.25, requires: 'r_offline1' },
+  { id: 'r_knowledge3', name: { fr: 'Bibliothèque de poche', en: 'Pocket Library' }, desc: { fr: '+100% de gain de Connaissances supplémentaire.', en: '+100% additional Knowledge gain.' }, cost: 3000, type: 'knowledgeMult', value: 2.0, requires: 'r_knowledge2' },
+  { id: 'r_quest2', name: { fr: 'Planning hebdomadaire', en: 'Weekly Planner' }, desc: { fr: '+100% de récompenses de quêtes supplémentaire.', en: '+100% additional daily quest rewards.' }, cost: 2500, type: 'questMult', value: 2.0, requires: 'r_quest1' },
+
+  // ===== Palier 4 : début de l'ascension (coûts 25 000-150 000) =====
+  { id: 'r_prod6', name: { fr: 'Optimisation totale', en: 'Total Optimization' }, desc: { fr: '+60% production globale supplémentaire.', en: '+60% additional global production.' }, cost: 25000, type: 'prodMult', value: 1.60, requires: 'r_prod5' },
+  { id: 'r_synergy3', name: { fr: 'Réseau mycorhizien', en: 'Mycorrhizal Network' }, desc: { fr: '+150% supplémentaire sur les effets de synergie.', en: '+150% additional on synergy effects.' }, cost: 40000, type: 'synergyMult', value: 2.5, requires: 'r_synergy2' },
+  { id: 'r_clickCps3', name: { fr: 'Instinct de jardinier', en: "Gardener's Instinct" }, desc: { fr: '+15% supplémentaire de production/seconde ajoutée à chaque clic.', en: '+15% additional production/second added to each click.' }, cost: 60000, type: 'clickCpsPercent', value: 0.15, requires: 'r_clickCps2' },
+  { id: 'r_knowledge4', name: { fr: 'Archives secrètes', en: 'Secret Archives' }, desc: { fr: '+150% de gain de Connaissances supplémentaire.', en: '+150% additional Knowledge gain.' }, cost: 150000, type: 'knowledgeMult', value: 2.5, requires: 'r_knowledge3' },
+];
+
+// Recherches infinies : rachetables indéfiniment (coût croissant à chaque niveau, comme
+// les bâtiments), pour que les Connaissances restent utiles même très loin dans la partie —
+// c'est LE puits sans fond une fois l'arbre normal terminé.
+const RESEARCH_INFINITE = [
+  { id: 'ri_prod', name: { fr: 'Compost éternel', en: 'Eternal Compost' }, desc: { fr: '+2% production globale par niveau.', en: '+2% global production per level.' }, baseCost: 500000, growth: 1.4, type: 'prodMult', value: 1.02 },
+  { id: 'ri_click', name: { fr: 'Réflexes infinis', en: 'Infinite Reflexes' }, desc: { fr: '+1.5% Verdure par clic par niveau.', en: '+1.5% Greenery per click per level.' }, baseCost: 700000, growth: 1.4, type: 'clickMult', value: 1.015 },
+  { id: 'ri_knowledge', name: { fr: 'Mémoire ancestrale', en: 'Ancestral Memory' }, desc: { fr: '+3% de gain de Connaissances par niveau.', en: '+3% Knowledge gain per level.' }, baseCost: 1000000, growth: 1.45, type: 'knowledgeMult', value: 1.03 },
 ];
 
 // ================= ASCENSION UPGRADES (Éclats Stellaires — ne reset JAMAIS, même par une nouvelle Ascension) =================
@@ -1709,11 +1857,15 @@ const TAB_DEFS = [
   { id: 'recherche', label: { fr: 'Recherche', en: 'Research' }, icon: '🔬', unlock: s => s.totalEarned >= 2000, group: 'shop' },
   { id: 'prestige', label: { fr: 'Prestige', en: 'Prestige' }, icon: '🌍', unlock: s => s.totalEarned >= 5e4 || s.prestigeCount > 0, group: 'shop' },
   { id: 'ascension', label: { fr: 'Ascension', en: 'Ascension' }, icon: '🌟', unlock: s => (s.totalSeedsEarned || 0) >= ASCENSION_SEED_DIVISOR || s.totalAscensions > 0, group: 'shop' },
-  { id: 'quetes', label: { fr: 'Quêtes', en: 'Quests' }, icon: '📋', unlock: s => Object.keys(s.buildings||{}).length >= 1, group: 'quests' },
+  // La dépendance à tabsSeen.succes garantit l'ordre Paramètres -> Succès -> Quêtes -> Bonus
+  // quotidien même si l'équilibrage change plus tard (aujourd'hui déjà garanti en pratique,
+  // le 1er bâtiment coûtant plus cher que le seuil des 20 clics des Succès).
+  { id: 'quetes', label: { fr: 'Quêtes', en: 'Quests' }, icon: '📋', unlock: s => Object.keys(s.buildings||{}).length >= 1 && !!s.tabsSeen.succes, group: 'quests' },
   { id: 'defi', label: { fr: 'Défi', en: 'Challenge' }, icon: '🏅', unlock: s => s.prestigeCount >= 1, group: 'quests' },
   { id: 'succes', label: { fr: 'Succès', en: 'Achievements' }, icon: '🏆', unlock: s => s.totalClicks >= 20 || s.totalEarned >= 500, group: 'achievements' },
   { id: 'stats', label: { fr: 'Stats', en: 'Stats' }, icon: '📊', unlock: () => true, group: 'settings' },
   { id: 'journal', label: { fr: 'Journal', en: 'Log' }, icon: '📜', unlock: () => true, group: 'settings' },
+  { id: 'galerie', label: { fr: 'Galerie', en: 'Gallery' }, icon: '🖼️', unlock: () => true, group: 'settings' },
   { id: 'options', label: { fr: 'Options', en: 'Options' }, icon: '⚙️', unlock: () => true, group: 'settings' },
 ];
 
@@ -1733,6 +1885,7 @@ function defaultState() {
     buildings: {},
     uniqueBuildings: {},
     researchUpgrades: {},
+    researchInfiniteLevels: {},
     prestigeUpgrades: {},
     clickUpgrades: {},
     achievements: {},
@@ -1770,6 +1923,10 @@ function defaultState() {
     langChosen: false,
     hasEverPurchased: false,
     itemPopupsShown: {},
+    dailyLoginStreak: 0,
+    lastDailyLoginDate: null,
+    companionUnlocked: false,
+    dailyRewardFeatureUnlocked: false,
     lastActionTime: Date.now(),
     inactivityAnnounced: false,
     lastBackupTime: 0,
@@ -1795,6 +1952,12 @@ function applyLoadedState(parsed) {
   state.ownedSkins = { ...defaultState().ownedSkins, ...(parsed.ownedSkins || {}) };
   state.eventLog = Array.isArray(parsed.eventLog) ? parsed.eventLog : [];
   // Migration douce : les sauvegardes plus anciennes récupèrent simplement les nouveaux champs par défaut ci-dessus.
+  // Cas particulier : companionUnlocked n'est mis à true qu'au moment précis où prestigeCount PASSE à 1
+  // (voir doPrestige). Un joueur qui avait déjà prestigé au moins une fois avant l'ajout de cette
+  // fonctionnalité ne repassera jamais par ce cas (son prestigeCount ne redeviendra jamais 1 exactement),
+  // donc sans ce rattrapage il ne débloquerait JAMAIS le compagnon. On ne rejoue pas le pop-up de
+  // révélation ici (ce n'est pas un vrai nouveau déblocage), on l'accorde juste silencieusement.
+  if (parsed.companionUnlocked === undefined && (state.prestigeCount || 0) >= 1) state.companionUnlocked = true;
   state.saveVersion = SAVE_VERSION;
 }
 
@@ -1858,6 +2021,20 @@ function formatNum(n) {
   return sign + n2.toFixed(2) + units[unitIndex];
 }
 
+// Comme formatNum, mais pour des TAUX (par seconde) plutôt que des quantités. formatNum
+// arrondit tout nombre sous 1000 à l'entier (Math.floor) — parfait pour un montant de
+// Verdure, mais ça cache complètement un petit taux comme 0.01/s en l'affichant "0/s",
+// donnant l'impression à tort que le gain est nul. formatRate garde 2 décimales tant que
+// le nombre est sous 1000, pour que même un taux minuscule reste visible et compréhensible.
+function formatRate(n) {
+  if (n === Infinity) return '∞';
+  const sign = n < 0 ? '-' : '';
+  const original = Math.abs(n);
+  if (original === 0) return '0';
+  if (original < 1000) return sign + original.toFixed(2);
+  return formatNum(n);
+}
+
 function hasPrestigeUpgrade(id) { return !!state.prestigeUpgrades[id]; }
 function hasResearch(id) { return !!state.researchUpgrades[id]; }
 function hasUnique(id) { return !!state.uniqueBuildings[id]; }
@@ -1882,6 +2059,15 @@ function combinedUpgradeValue(type) {
       else if (type === 'questMult') result = Math.max(result, u.value);
       else if (type === 'uniqueDiscount') result = Math.min(result || 1, u.value);
     }
+  }
+  // Recherches infinies : effet composé selon le niveau acheté (même logique que le
+  // multiplicateur de Graines Cosmiques) — c'est ce qui les rend utiles à l'infini.
+  for (const ri of RESEARCH_INFINITE) {
+    if (ri.type !== type) continue;
+    const level = state.researchInfiniteLevels[ri.id] || 0;
+    if (level <= 0) continue;
+    if (type === 'prodMult' || type === 'clickMult' || type === 'synergyMult' || type === 'knowledgeMult') result *= Math.pow(ri.value, level);
+    else if (type === 'offlineBonus' || type === 'clickCpsPercent') result += ri.value * level;
   }
   return result;
 }
@@ -1938,7 +2124,8 @@ function totalProdMultiplier() {
     * uniqueMultipliers().prod
     * weatherMultiplier()
     * invasivePenalty()
-    * activeBoostMultiplier();
+    * activeBoostMultiplier()
+    * (state.companionUnlocked ? 1.05 : 1);
 }
 function totalClickFlatMultiplier() {
   return combinedUpgradeValue('clickMult') * uniqueMultipliers().click * clickShopFlatMult();
@@ -1979,7 +2166,11 @@ function clickGain() {
 }
 
 function knowledgeRate() {
-  return Math.max(0.01, totalCps() * 0.0015) * (combinedUpgradeValue('knowledgeMult') || 1) * uniqueMultipliers().knowledge;
+  // Échelle en racine carrée (pas linéaire) : la production peut atteindre des sommets
+  // astronomiques en fin de partie (prestige/ascension), alors que le gain de Connaissances
+  // doit rester progressif pour que l'arbre étendu (et les recherches infinies) gardent un
+  // rythme d'achat raisonnable du début à la toute fin.
+  return Math.max(0.01, Math.sqrt(totalCps()) * 0.02) * (combinedUpgradeValue('knowledgeMult') || 1) * uniqueMultipliers().knowledge;
 }
 
 function buildingCost(b, n) {
@@ -2100,6 +2291,22 @@ function buyResearch(id) {
   saveGame(); renderAll();
 }
 
+function researchInfiniteCost(item) {
+  const level = state.researchInfiniteLevels[item.id] || 0;
+  return Math.ceil(item.baseCost * Math.pow(item.growth, level));
+}
+function buyResearchInfinite(id) {
+  const item = RESEARCH_INFINITE.find(x => x.id === id);
+  if (!item) return;
+  const cost = researchInfiniteCost(item);
+  if (state.knowledge < cost) return;
+  state.knowledge -= cost;
+  state.researchInfiniteLevels[id] = (state.researchInfiniteLevels[id] || 0) + 1;
+  playBuySound();
+  checkAchievements();
+  saveGame(); renderAll();
+}
+
 function prestigeGainAmount() {
   const boost = 1 + (combinedUpgradeValue('prestigeSeedMult') || 0);
   return Math.floor(Math.cbrt((state.totalEarned * boost) / 1e9));
@@ -2122,6 +2329,8 @@ function doPrestige() {
   state.totalSeedsEarned += gain;
   state.seedsSinceAscension = (state.seedsSinceAscension || 0) + gain;
   state.prestigeCount += 1;
+  const justUnlockedCompanion = !state.companionUnlocked && state.prestigeCount === 1;
+  if (justUnlockedCompanion) state.companionUnlocked = true;
   let badges = [];
   if (noClickSuccess) { state.challengesCompleted = (state.challengesCompleted || 0) + 1; badges.push(state.lang === 'en' ? '🏅 No-Click' : '🏅 Sans-Clic'); }
   if (noBuySuccess) { state.noBuyCompleted = (state.noBuyCompleted || 0) + 1; badges.push(state.lang === 'en' ? '🏅 No-Buy' : '🏅 Sans-Achat'); }
@@ -2139,6 +2348,7 @@ function doPrestige() {
   showToast(state.lang === 'en'
     ? `🌍 Terraforming successful! +${gain} Cosmic Seed(s)` + (badges.length ? ' ' + badges.join(' ') + ' completed!' : '')
     : `🌍 Terraformation réussie ! +${gain} Graine(s) Cosmique(s)` + (badges.length ? ' ' + badges.join(' ') + ' réussi(s) !' : ''));
+  if (justUnlockedCompanion) setTimeout(() => showCompanionRevealPopup(), 600);
 }
 
 const ASCENSION_SEED_DIVISOR = 80; // validé par simulation : ~80 graines cumulées pour le 1er Éclat
@@ -2290,6 +2500,111 @@ function ensureAudioCtx() {
   if (_audioCtx.state === 'suspended') _audioCtx.resume().catch(()=>{});
   return _audioCtx;
 }
+// ================= MUSIQUE DE FOND =================
+// Plusieurs pistes d'ambiance possibles : à chaque lancement puis à chaque fin de piste,
+// une piste est repiochée au hasard dans AMBIENT_TRACKS (jamais deux fois la même à la
+// suite), plutôt qu'une seule piste qui boucle indéfiniment sur elle-même.
+// Fondu à l'entrée (premier démarrage / changement de piste) et à la sortie (dès que le
+// son est coupé). Suit le même interrupteur et le même volume que les effets sonores.
+const AMBIENT_TRACKS = ['night_theme', 'a_beautiful_day_picking_weeds_with_a_terrible_grandpa'];
+let _currentAmbientTrack = null;
+function pickRandomAmbientTrack(excludeCurrent) {
+  const pool = (excludeCurrent && AMBIENT_TRACKS.length > 1)
+    ? AMBIENT_TRACKS.filter(t => t !== _currentAmbientTrack)
+    : AMBIENT_TRACKS;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+function loadAmbientTrack(name) {
+  const audio = document.getElementById('bgMusic');
+  if (!audio) return;
+  _currentAmbientTrack = name;
+  audio.innerHTML = `<source src="assets/audio/${name}.m4a" type="audio/mp4">` +
+    `<source src="assets/audio/${name}.mp3" type="audio/mpeg">`;
+  audio.load();
+}
+let _musicStarted = false;
+let _musicFadeInterval = null;
+function fadeAudioTo(audioEl, targetVolume, durationMs) {
+  clearInterval(_musicFadeInterval);
+  const steps = 30;
+  const stepTime = Math.max(16, durationMs / steps);
+  const startVolume = audioEl.volume;
+  const delta = (targetVolume - startVolume) / steps;
+  let count = 0;
+  _musicFadeInterval = setInterval(() => {
+    count++;
+    const next = startVolume + delta * count;
+    audioEl.volume = Math.max(0, Math.min(1, next));
+    if (count >= steps) {
+      clearInterval(_musicFadeInterval);
+      audioEl.volume = Math.max(0, Math.min(1, targetVolume));
+      if (targetVolume <= 0) audioEl.pause();
+    }
+  }, stepTime);
+}
+function musicTargetVolume() {
+  if (!state.soundEnabled) return 0;
+  const vol = (state.soundVolume === undefined ? 100 : state.soundVolume) / 100;
+  return vol * 0.3; // toujours un peu en retrait par rapport aux effets sonores
+}
+function startBackgroundMusic() {
+  const audio = document.getElementById('bgMusic');
+  if (!audio || _musicStarted) return;
+  _musicStarted = true;
+  if (!state.soundEnabled) return; // respecte une préférence déjà désactivée, ne joue rien
+  loadAmbientTrack(pickRandomAmbientTrack(false));
+  audio.volume = 0;
+  audio.play().catch(() => {});
+  fadeAudioTo(audio, musicTargetVolume(), 2500);
+}
+// Dès qu'une piste se termine, on en repioche une autre au hasard (jamais deux fois de
+// suite la même s'il y en a plusieurs) plutôt que de boucler sur elle-même.
+document.getElementById('bgMusic').addEventListener('ended', () => {
+  if (!state.soundEnabled) return;
+  const audio = document.getElementById('bgMusic');
+  loadAmbientTrack(pickRandomAmbientTrack(true));
+  audio.volume = 0;
+  audio.play().catch(() => {});
+  fadeAudioTo(audio, musicTargetVolume(), 1500);
+});
+function updateMusicVolume() {
+  const audio = document.getElementById('bgMusic');
+  if (!audio || !_musicStarted) return;
+  if (state.soundEnabled && (audio.paused || audio.ended)) {
+    if (audio.ended || !_currentAmbientTrack) loadAmbientTrack(pickRandomAmbientTrack(true));
+    audio.play().catch(() => {});
+  }
+  fadeAudioTo(audio, musicTargetVolume(), 700);
+}
+// Démarre la musique au tout premier geste de l'utilisateur, où qu'il clique — les
+// navigateurs bloquent l'autoplay audio tant qu'aucune interaction réelle n'a eu lieu.
+// Profite du même geste pour "réveiller" le son de première acquisition (lecture à volume
+// nul puis pause immédiate) : sans ça, le tout premier play() d'un <audio> a un vrai délai
+// de démarrage, ce qui le faisait sonner en retard par rapport à l'apparition du pop-up.
+function primeAudioElement(id) {
+  const audio = document.getElementById(id);
+  if (!audio) return;
+  const originalVolume = audio.volume;
+  audio.volume = 0;
+  audio.play().then(() => {
+    audio.pause();
+    audio.currentTime = 0;
+    audio.volume = originalVolume;
+  }).catch(() => { audio.volume = originalVolume; });
+}
+(function setupMusicAutoStart() {
+  const start = () => {
+    startBackgroundMusic();
+    primeAudioElement('firstPurchaseSound');
+    document.removeEventListener('click', start);
+    document.removeEventListener('touchstart', start);
+    document.removeEventListener('keydown', start);
+  };
+  document.addEventListener('click', start, { once: true });
+  document.addEventListener('touchstart', start, { once: true });
+  document.addEventListener('keydown', start, { once: true });
+})();
+
 function playTone(freq, duration = 0.08, type = 'sine', vol = 0.04) {
   if (!state.soundEnabled) return;
   const volume = (state.soundVolume === undefined ? 100 : state.soundVolume) / 100;
@@ -2309,6 +2624,17 @@ function playTone(freq, duration = 0.08, type = 'sine', vol = 0.04) {
 }
 function playClickSound() { playTone(560 + Math.random() * 90, 0.05, 'sine', 0.025); }
 function playBuySound() { playTone(320, 0.1, 'triangle', 0.045); }
+// Petit jingle enregistré (pas un son synthétisé comme les autres) — ne joue que la toute
+// première fois qu'un objet illustré est révélé, jamais ensuite pour ce même objet.
+function playFirstPurchaseSound() {
+  if (!state.soundEnabled) return;
+  const audio = document.getElementById('firstPurchaseSound');
+  if (!audio) return;
+  const vol = (state.soundVolume === undefined ? 100 : state.soundVolume) / 100;
+  audio.volume = vol;
+  audio.currentTime = 0;
+  audio.play().catch(() => {});
+}
 function playAchievementSound() { playTone(520, 0.09, 'sine', 0.05); setTimeout(() => playTone(760, 0.14, 'sine', 0.05), 90); }
 function playPrestigeSound() { playTone(220, 0.15, 'sawtooth', 0.04); setTimeout(() => playTone(440, 0.2, 'sine', 0.05), 120); setTimeout(() => playTone(660, 0.25, 'sine', 0.04), 260); }
 function playGoldenSound() { playTone(700, 0.06, 'sine', 0.05); setTimeout(() => playTone(900, 0.1, 'sine', 0.05), 70); }
@@ -2415,6 +2741,169 @@ function clickInvasive() {
 
 // ================= DAILY QUESTS =================
 function todayStr() { const d = new Date(); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; }
+
+// ================= RÉCOMPENSE DE CONNEXION QUOTIDIENNE =================
+// Cycle de 7 jours, qui recommence indéfiniment (le palier 7 est un petit bonus, avec une
+// Graine Cosmique si le joueur a déjà fait au moins un prestige). Les montants de Verdure
+// sont proportionnels à la production actuelle, pour rester pertinents à tout stade de jeu.
+function dateStrForOffset(daysAgo) {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+function dailyRewardForDay(day) {
+  const cps = Math.max(1, totalCps());
+  switch (day) {
+    case 1: return { verdure: Math.max(50, cps * 20) };
+    case 2: return { verdure: Math.max(100, cps * 40) };
+    case 3: return { knowledge: 5 };
+    case 4: return { verdure: Math.max(200, cps * 80) };
+    case 5: return { knowledge: 10 };
+    case 6: return { verdure: Math.max(400, cps * 150) };
+    case 7: return { verdure: Math.max(800, cps * 300), seeds: state.prestigeCount > 0 ? 1 : 0 };
+    default: return { verdure: Math.max(50, cps * 20) };
+  }
+}
+function checkDailyLoginReward() {
+  if (!state.dailyRewardFeatureUnlocked) return;
+  const today = todayStr();
+  if (state.lastDailyLoginDate === today) return;
+  const yesterday = dateStrForOffset(1);
+  state.dailyLoginStreak = (state.lastDailyLoginDate === yesterday) ? (state.dailyLoginStreak || 0) + 1 : 1;
+  state.lastDailyLoginDate = today;
+  const day = ((state.dailyLoginStreak - 1) % 7) + 1;
+  const reward = dailyRewardForDay(day);
+  if (reward.verdure) { state.verdure += reward.verdure; state.totalEarned += reward.verdure; }
+  if (reward.knowledge) { state.knowledge += reward.knowledge; }
+  if (reward.seeds) { state.cosmicSeeds += reward.seeds; state.totalSeedsEarned += reward.seeds; }
+  saveGame();
+  renderAll();
+  showDailyLoginPopup(day, reward);
+}
+// Vrai une fois que les 3 menus principaux (Paramètres, Succès, Quêtes) ont été présentés
+// par Papi — la récompense quotidienne n'apparaît qu'à partir de là, pour ne pas surcharger
+// l'arrivée du joueur avec encore un système de plus avant qu'il ait vu les bases.
+function coreMenusIntroduced() {
+  return ['settingsBtn', 'achievementsBtn', 'questsBtn'].every(id => {
+    const el = document.getElementById(id);
+    return el && el.classList.contains('revealed');
+  });
+}
+function checkDailyRewardFeatureUnlock() {
+  if (state.dailyRewardFeatureUnlocked) return;
+  if (!coreMenusIntroduced()) return;
+  if (isMainScreenBlocked()) return;
+  // Un spotlight forcé (Paramètres/Succès/Quêtes) est peut-être encore affiché, en attente
+  // d'un clic — on retentera au prochain rendu (rappelé à chaque tick) une fois libéré, pour
+  // ne jamais annoncer le Bonus quotidien par-dessus un spotlight précédent pas encore ouvert.
+  if (_tabSpotlightPending) return;
+  state.dailyRewardFeatureUnlocked = true;
+  // Verrouille exactement comme highlightNewFeature (voir _tabSpotlightPending plus bas) : tant que
+  // ce spotlight forcé attend son clic, aucune autre annonce d'onglet ne doit démarrer par-dessus —
+  // sinon les deux se disputeraient le même overlay/flèche partagés (tutorialSpotlightOverlay/Arrow).
+  _tabSpotlightPending = true;
+  const btn = document.getElementById('dailyRewardBtn');
+  btn.classList.add('revealed');
+  const line = state.lang === 'en'
+    ? "Oh, and I almost forgot — swing by every day, I leave you something on the porch."
+    : "Oh, et j'ai failli oublier — passe tous les jours, je te laisse un truc sur le perron.";
+  showDialogue('papi', [line], { position: 'top-right', onComplete: () => {
+    btn.classList.add('featureHighlight');
+    showTutorialSpotlight(btn, () => {
+      btn.classList.remove('featureHighlight');
+      saveGame();
+      checkDailyLoginReward();
+      // Comme pour highlightNewFeature : on attend la fermeture réelle de la fenêtre Bonus
+      // quotidien avant de débloquer d'éventuelles annonces suivantes restées en attente.
+      waitForModalClose('dailyRewardModalOverlay', () => {
+        _tabSpotlightPending = false;
+        if (_pendingTabAnnouncements.length) announceNewTabsSequentially(_pendingTabAnnouncements.splice(0));
+      });
+    });
+  }});
+}
+function showDailyLoginPopup(day, reward) {
+  const en = state.lang === 'en';
+  document.getElementById('dailyPopupDay').textContent = (en ? 'Day ' : 'Jour ') + day;
+  const parts = [];
+  if (reward.verdure) parts.push(`+${formatNum(reward.verdure)} ${en ? 'Greenery' : 'Verdure'} 🌿`);
+  if (reward.knowledge) parts.push(`+${formatNum(reward.knowledge)} ${en ? 'Knowledge' : 'Connaissances'} 📚`);
+  if (reward.seeds) parts.push(`+${reward.seeds} ${en ? 'Cosmic Seed' : 'Graine Cosmique'} 🌌`);
+  document.getElementById('dailyPopupRewards').innerHTML = parts.map(p => `<div>${p}</div>`).join('');
+  document.getElementById('dailyPopupStreak').textContent = en
+    ? `${state.dailyLoginStreak} day streak — come back tomorrow for more!`
+    : `${state.dailyLoginStreak} jour(s) d'affilée — reviens demain pour la suite !`;
+  document.getElementById('dailyPopupCloseBtn').textContent = en ? 'Nice!' : 'Super !';
+  document.getElementById('dailyPopupOverlay').style.display = 'flex';
+}
+document.getElementById('dailyPopupCloseBtn').addEventListener('click', () => {
+  document.getElementById('dailyPopupOverlay').style.display = 'none';
+  // Le panneau "Bonus quotidien" peut être resté ouvert en dessous (ex: premier déblocage, où le
+  // clic sur le bouton flottant ouvre le panneau ET déclenche l'auto-réclamation) — sans ce
+  // rafraîchissement il continuerait à afficher "prête à réclamer" alors que c'est déjà fait.
+  const modalOverlay = document.getElementById('dailyRewardModalOverlay');
+  if (modalOverlay && modalOverlay.classList.contains('open')) renderDailyRewardModal();
+});
+
+// Panneau consultable n'importe quand : statut du jour + calendrier de prévisualisation
+// des 7 paliers (montants recalculés sur la production actuelle, donc réalistes).
+function renderDailyRewardModal() {
+  const en = state.lang === 'en';
+  const today = todayStr();
+  const alreadyClaimedToday = state.lastDailyLoginDate === today;
+  // Si la récompense n'a pas encore été réclamée aujourd'hui, le jour à mettre en évidence dépend
+  // de la continuité de la série (comme dans checkDailyLoginReward) : une série cassée (un jour
+  // manqué) repart à 1, elle ne continue pas simplement à +1 — sinon le calendrier mettrait en
+  // avant un jour différent de celui qui sera réellement accordé au clic sur "Réclamer".
+  let currentDay;
+  if (alreadyClaimedToday) {
+    currentDay = ((state.dailyLoginStreak - 1) % 7) + 1;
+  } else {
+    const yesterday = dateStrForOffset(1);
+    const streakIfClaimedNow = (state.lastDailyLoginDate === yesterday) ? (state.dailyLoginStreak || 0) + 1 : 1;
+    currentDay = ((streakIfClaimedNow - 1) % 7) + 1;
+  }
+
+  const statusEl = document.getElementById('dailyRewardStatus');
+  const claimBtn = document.getElementById('dailyRewardClaimBtn');
+  if (alreadyClaimedToday) {
+    statusEl.textContent = en
+      ? `✅ Already claimed today. ${state.dailyLoginStreak} day streak — come back tomorrow!`
+      : `✅ Déjà réclamée aujourd'hui. ${state.dailyLoginStreak} jour(s) d'affilée — reviens demain !`;
+    claimBtn.style.display = 'none';
+  } else {
+    statusEl.textContent = en ? "Today's reward is ready!" : "La récompense du jour est prête !";
+    claimBtn.style.display = 'block';
+    claimBtn.textContent = en ? '🎁 Claim' : '🎁 Réclamer';
+  }
+
+  const cal = document.getElementById('dailyRewardCalendar');
+  cal.innerHTML = '';
+  cal.className = 'dailyCalendar';
+  for (let d = 1; d <= 7; d++) {
+    const reward = dailyRewardForDay(d);
+    const parts = [];
+    if (reward.verdure) parts.push(`+${formatNum(reward.verdure)} 🌿`);
+    if (reward.knowledge) parts.push(`+${formatNum(reward.knowledge)} 📚`);
+    if (reward.seeds) parts.push(`+${reward.seeds} 🌌`);
+    const isToday = d === currentDay;
+    const isPast = !isToday && (alreadyClaimedToday ? d < currentDay || (currentDay === 7 && d !== 7) : d < currentDay);
+    const card = document.createElement('div');
+    card.className = 'dailyCalendarCard' + (isToday ? ' today' : '') + (isPast ? ' past' : '');
+    card.innerHTML = `<div class="dayLabel">${en ? 'Day' : 'Jour'} ${d}</div><div class="dayReward">${parts.join('<br>')}</div>`;
+    cal.appendChild(card);
+  }
+}
+document.getElementById('dailyRewardBtn').addEventListener('click', () => {
+  document.getElementById('dailyRewardBtn').classList.remove('featureHighlight');
+  renderDailyRewardModal();
+  openModal('dailyRewardModalOverlay');
+});
+document.getElementById('dailyRewardModalCloseBtn').addEventListener('click', () => closeModal('dailyRewardModalOverlay'));
+document.getElementById('dailyRewardClaimBtn').addEventListener('click', () => {
+  checkDailyLoginReward();
+  renderDailyRewardModal();
+});
 function generateQuests() {
   const today = todayStr();
   if (state.dailyQuests && state.dailyQuests.date === today) return;
@@ -2498,14 +2987,24 @@ function openModal(overlayId) {
     _dialogueOnComplete = null;
   }
 }
+// Callbacks à exécuter la prochaine fois qu'une fenêtre précise (par id d'overlay) se ferme —
+// utilisé pour ne présenter la fonctionnalité suivante qu'une fois la fenêtre actuelle
+// réellement refermée par le joueur, jamais pendant qu'elle est encore ouverte à l'écran.
+let _onModalCloseCallbacks = {};
+function waitForModalClose(overlayId, cb) {
+  (_onModalCloseCallbacks[overlayId] = _onModalCloseCallbacks[overlayId] || []).push(cb);
+}
 function closeModal(overlayId) {
   document.getElementById(overlayId).classList.remove('open');
   flushPendingPapiCategories();
+  if (_onModalCloseCallbacks[overlayId] && _onModalCloseCallbacks[overlayId].length) {
+    _onModalCloseCallbacks[overlayId].splice(0).forEach(cb => cb());
+  }
 }
 // Vrai si une modale (Paramètres/Succès/Quêtes) ou la page Magasin est actuellement ouverte —
 // sert à n'afficher les répliques ambiantes de Papi que sur l'écran principal, jamais par-dessus un menu.
 function isAnyModalOpen() {
-  return ['settingsModalOverlay', 'achievementsModalOverlay', 'questsModalOverlay', 'shopPageOverlay']
+  return ['settingsModalOverlay', 'achievementsModalOverlay', 'questsModalOverlay', 'shopPageOverlay', 'dailyRewardModalOverlay']
     .some(id => { const el = document.getElementById(id); return el && el.classList.contains('open'); });
 }
 // Vrai si N'IMPORTE QUOI empêche de considérer qu'on est tranquillement sur l'écran principal :
@@ -2582,8 +3081,19 @@ const GROUP_TO_OVERLAY = { shop: 'shopPageOverlay', settings: 'settingsModalOver
 // ils seraient sinon en concurrence visuelle avec la scène d'intro).
 let _suppressTabAnnouncements = !state.tutorialSeen;
 
+// Tant qu'un spotlight forcé (voir showTutorialSpotlight) attend d'être cliqué, TOUTE
+// nouvelle annonce d'onglet doit patienter — sinon un bouton "quêtes" ou "bonus quotidien"
+// peut se déclencher pendant qu'un spotlight précédent (ex: "succès") est encore affiché et
+// pas encore cliqué, ce qui casse le côté "un seul à la fois, forcé" voulu par le joueur.
+// Contrairement à _dialogueBusy (qui ne suit que le TEXTE affiché et se libère dès que le
+// joueur a fini de lire, bien avant que le spotlight soit cliqué), ce verrou reste actif
+// jusqu'au clic réel sur le bouton.
+let _tabSpotlightPending = false;
+let _pendingTabAnnouncements = [];
+
 function announceNewTabsSequentially(tabs) {
   if (tabs.length === 0) return;
+  if (_tabSpotlightPending) { _pendingTabAnnouncements.push(...tabs); return; }
   const t = tabs[0];
   const rest = tabs.slice(1);
   if (_suppressTabAnnouncements || t.id === 'jardin') {
@@ -2595,29 +3105,76 @@ function announceNewTabsSequentially(tabs) {
   const reaction = pickPapiLine('bigUpgrade');
   const lines = reaction ? [reaction, specificMsg] : [specificMsg];
   showDialogue('papi', lines, { position: 'top-right', onComplete: () => {
-    if (t.group === 'shop') activeShopTab = t.id;
-    else if (t.group === 'settings') activeSettingsTab = t.id;
-    else if (t.group === 'quests') activeQuestsTab = t.id;
+    // On ne bascule PLUS automatiquement sur le nouvel onglet ici (activeShopTab / etc.) —
+    // avec le spotlight + la flèche qui indiquent où cliquer, c'est au joueur de naviguer
+    // lui-même jusqu'au nouvel onglet, qui reste signalé par son propre halo pulsant
+    // (_highlightedTabIds) une fois le menu ouvert, jusqu'à ce qu'il clique vraiment dessus.
     renderAll();
-    highlightNewFeature(t.group, t.id);
-    announceNewTabsSequentially(rest);
+    // On ne passe au bouton suivant (ni aux annonces mises en attente) qu'une fois que le
+    // joueur a réellement cliqué sur celui-ci (voir showTutorialSpotlight) — jamais après un
+    // simple délai.
+    highlightNewFeature(t.group, t.id, () => {
+      announceNewTabsSequentially(rest);
+      if (_pendingTabAnnouncements.length) announceNewTabsSequentially(_pendingTabAnnouncements.splice(0));
+    });
   }});
 }
 
 const GROUP_TO_FLOAT_BTN = { shop: 'shopBtn', settings: 'settingsBtn', quests: 'questsBtn', achievements: 'achievementsBtn' };
-// Met temporairement en évidence (halo pulsant) le bouton flottant concerné et l'onglet
-// correspondant dans la fenêtre qui vient de s'ouvrir, pour que le joueur repère facilement
-// où se trouve la nouvelle fonctionnalité.
-function highlightNewFeature(group, tabId) {
+// Assombrit l'écran et affiche une flèche pointant vers targetEl pour forcer le joueur à
+// cliquer dessus avant de continuer — le reste de l'écran (assombri) devient inerte car
+// l'overlay est cliqué à sa place, sauf les boutons flottants qui restent au-dessus (z-index).
+function showTutorialSpotlight(targetEl, onClicked) {
+  const overlay = document.getElementById('tutorialSpotlightOverlay');
+  const arrow = document.getElementById('tutorialSpotlightArrow');
+  const position = () => {
+    const rect = targetEl.getBoundingClientRect();
+    arrow.style.left = (rect.left + rect.width / 2) + 'px';
+    arrow.style.top = (rect.bottom + 8) + 'px';
+  };
+  position();
+  overlay.style.display = 'block';
+  arrow.style.display = 'flex';
+  window.addEventListener('resize', position);
+  targetEl.addEventListener('click', () => {
+    overlay.style.display = 'none';
+    arrow.style.display = 'none';
+    window.removeEventListener('resize', position);
+    if (onClicked) onClicked();
+  }, { once: true });
+}
+// Met en évidence (halo pulsant) le bouton flottant concerné et l'onglet correspondant dans
+// la fenêtre qui vient de s'ouvrir. Pour les boutons du haut à droite (Paramètres / Succès /
+// Quêtes / Bonus quotidien), on ajoute le spotlight forcé : onOpened n'est appelé qu'une fois
+// le bouton réellement cliqué. Le Magasin garde son ancien halo "doux" (auto-disparition, pas
+// de clic obligatoire) car c'est déjà l'écran principal du jeu, pas un menu caché à découvrir.
+function highlightNewFeature(group, tabId, onOpened) {
   const floatBtnId = GROUP_TO_FLOAT_BTN[group];
   const floatBtn = floatBtnId && document.getElementById(floatBtnId);
-  if (floatBtn) {
-    floatBtn.classList.add('revealed', 'featureHighlight');
-    setTimeout(() => floatBtn.classList.remove('featureHighlight'), 20000);
-  }
   _highlightedTabIds.add(tabId);
   renderAll();
-  setTimeout(() => { _highlightedTabIds.delete(tabId); renderAll(); }, 20000);
+  if (!floatBtn) { if (onOpened) onOpened(); return; }
+  floatBtn.classList.add('revealed', 'featureHighlight');
+  // Le halo du mini-onglet lui-même (_highlightedTabIds) n'est PAS retiré ici : seul le clic
+  // sur ce mini-onglet précis (voir renderMiniTabsRow) doit l'éteindre, pour que le joueur le
+  // voie encore une fois le menu ouvert, plutôt que de le trouver déjà éteint.
+  if (group === 'shop') {
+    setTimeout(() => { floatBtn.classList.remove('featureHighlight'); }, 20000);
+    if (onOpened) onOpened();
+    return;
+  }
+  _tabSpotlightPending = true;
+  showTutorialSpotlight(floatBtn, () => {
+    // Le spotlight (écran assombri + flèche) disparaît dès le clic sur le bouton, mais on
+    // n'annonce la fonctionnalité SUIVANTE qu'une fois cette fenêtre-ci vraiment refermée par
+    // le joueur — sinon Papi se met à parler d'autre chose alors que la fenêtre actuelle est
+    // encore ouverte à l'écran (signalé par le joueur).
+    floatBtn.classList.remove('featureHighlight');
+    renderAll();
+    const overlayId = GROUP_TO_OVERLAY[group];
+    const release = () => { _tabSpotlightPending = false; if (onOpened) onOpened(); };
+    if (overlayId) waitForModalClose(overlayId, release); else release();
+  });
 }
 
 // Suivi persistant des onglets actuellement mis en évidence — nécessaire car
@@ -2661,17 +3218,24 @@ function renderTabsRow() {
   renderMiniTabsRow('settingsTabsRow', 'settings', activeSettingsTab, (id) => { activeSettingsTab = id; });
   renderMiniTabsRow('questsTabsRow', 'quests', activeQuestsTab, (id) => { activeQuestsTab = id; });
 
-  // Pour un joueur qui recharge une partie déjà avancée : les boutons dont au moins un
-  // onglet a déjà été vu doivent être visibles tout de suite, sans attendre une nouvelle
-  // annonce (le halo de mise en évidence, lui, ne se joue que pour un VRAI nouveau déblocage).
-  if (!_suppressTabAnnouncements) {
-    ['settings', 'quests', 'achievements'].forEach(group => {
-      const groupTabs = TAB_DEFS.filter(t => t.group === group);
-      const anySeen = groupTabs.some(t => state.tabsSeen[t.id]);
-      const btnId = GROUP_TO_FLOAT_BTN[group];
-      if (anySeen && btnId) document.getElementById(btnId).classList.add('revealed');
-    });
-  }
+  checkDailyRewardFeatureUnlock();
+}
+
+// Pour un joueur qui recharge une partie déjà avancée : les boutons dont au moins un onglet
+// a déjà été vu doivent être visibles tout de suite, sans attendre une nouvelle annonce (le
+// halo de mise en évidence, lui, ne se joue que pour un VRAI nouveau déblocage). Appelé UNE
+// SEULE FOIS au chargement (voir INIT plus bas) — surtout pas depuis renderTabsRow(), qui
+// tourne en continu : state.tabsSeen[id] passe à true dès la détection du déblocage (avant
+// même que l'annonce de Papi ait joué), donc rechecker ce flag à chaque rendu révélait les
+// boutons instantanément au lieu d'attendre highlightNewFeature().
+function syncRevealedButtonsOnLoad() {
+  if (_suppressTabAnnouncements) return;
+  ['settings', 'quests', 'achievements'].forEach(group => {
+    const groupTabs = TAB_DEFS.filter(t => t.group === group);
+    const anySeen = groupTabs.some(t => state.tabsSeen[t.id]);
+    const btnId = GROUP_TO_FLOAT_BTN[group];
+    if (anySeen && btnId) document.getElementById(btnId).classList.add('revealed');
+  });
 }
 
 function renderPanelsVisibility() {
@@ -2703,7 +3267,7 @@ function renderStats() {
   const currentCps = totalCps();
   if (currentCps > state.bestCpsEver) state.bestCpsEver = currentCps;
   document.getElementById('verdureCount').textContent = formatNum(state.verdure);
-  document.getElementById('rateText').textContent = `+${formatNum(currentCps)} / ${state.lang === 'en' ? 'second' : 'seconde'}`;
+  document.getElementById('rateText').textContent = `+${formatRate(currentCps)} / ${state.lang === 'en' ? 'second' : 'seconde'}`;
   const seedsChip = document.getElementById('seedsText');
   if (state.prestigeCount > 0 || state.cosmicSeeds > 0) {
     seedsChip.style.display = '';
@@ -2711,7 +3275,7 @@ function renderStats() {
   } else {
     seedsChip.style.display = 'none';
   }
-  document.getElementById('knowledgeText').textContent = `${formatNum(state.knowledge)} ${state.lang === 'en' ? 'Knowledge' : 'Connaissances'} 📚 (+${formatNum(knowledgeRate())}/s)`;
+  document.getElementById('knowledgeText').textContent = `${formatNum(state.knowledge)} ${state.lang === 'en' ? 'Knowledge' : 'Connaissances'} 📚 (+${formatRate(knowledgeRate())}/s)`;
   const w = WEATHERS[state.weather] || WEATHERS.soleil;
   document.getElementById('weatherBadge').textContent = `${L(w,'label')} — production x${weatherMultiplier().toFixed(2)}`;
   const bodyEl = document.getElementById('bodyEl');
@@ -2883,6 +3447,23 @@ function renderResearch() {
       <div class="price">${owned ? '' : formatNum(r.cost) + ' 📚'}</div>
     `;
     if (!owned && !locked) div.onclick = () => buyResearch(r.id);
+    shop.appendChild(div);
+  }
+  shop.insertAdjacentHTML('beforeend', `<p style="font-size:12px;opacity:0.7;margin-top:16px;">${tr('researchInfiniteIntro')}</p>`);
+  for (const ri of RESEARCH_INFINITE) {
+    const level = state.researchInfiniteLevels[ri.id] || 0;
+    const cost = researchInfiniteCost(ri);
+    const canAfford = state.knowledge >= cost;
+    const div = document.createElement('div');
+    div.className = 'upgrade' + (canAfford ? '' : ' disabled');
+    div.innerHTML = `
+      <div class="info">
+        <div class="name">${L(ri,'name')} <span class="owned">${tr('level')} ${level}</span></div>
+        <div class="desc">${L(ri,'desc')}</div>
+      </div>
+      <div class="price">${formatNum(cost)} 📚</div>
+    `;
+    div.onclick = () => buyResearchInfinite(ri.id);
     shop.appendChild(div);
   }
 }
@@ -3119,13 +3700,71 @@ function mostOwnedBuilding() {
   return best ? `${L(best,'name')} (${bestN})` : 'Aucun';
 }
 
+// Galerie : un objet non encore possédé s'affiche en silhouette grisée (mystère à
+// débloquer) plutôt que d'être caché, pour donner envie de continuer à jouer.
+// ================= COMPAGNON =================
+// Débloqué au premier prestige, purement décoratif + un tout petit bonus de production.
+// 🐌 est un emoji de secours en attendant un vrai sprite dessiné — remplacer simplement
+// le contenu de #companion par une balise <img> le jour où l'illustration arrive.
+function renderCompanion() {
+  const el = document.getElementById('companion');
+  if (!el) return;
+  el.style.display = state.companionUnlocked ? 'block' : 'none';
+}
+function showCompanionRevealPopup() {
+  const en = state.lang === 'en';
+  document.getElementById('itemPopupTitle').textContent = en ? 'New companion!' : 'Nouveau compagnon !';
+  document.getElementById('itemPopupIcon').style.display = 'none';
+  document.getElementById('itemPopupName').textContent = en ? 'Snail buddy' : 'Escargot compagnon';
+  document.getElementById('itemPopupDesc').textContent = en
+    ? "He'll hang around your garden from now on, and gives +5% production just by being there."
+    : "Il va traîner dans ton jardin à partir de maintenant, et donne +5% de production rien qu'en étant là.";
+  document.getElementById('itemPopupCloseBtn').textContent = en ? 'Nice!' : 'Super !';
+  document.getElementById('itemPopupOverlay').style.display = 'flex';
+}
+
+// Vue agrandie d'un objet de la galerie — plein écran, se ferme au clic n'importe où.
+function showGalleryLightbox(src, name, desc) {
+  document.getElementById('galleryLightboxImg').src = src;
+  document.getElementById('galleryLightboxName').textContent = name;
+  document.getElementById('galleryLightboxDesc').textContent = desc;
+  document.getElementById('galleryLightboxOverlay').style.display = 'flex';
+}
+document.getElementById('galleryLightboxOverlay').addEventListener('click', () => {
+  document.getElementById('galleryLightboxOverlay').style.display = 'none';
+});
+
+function renderGallery() {
+  const grid = document.getElementById('galleryGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  const ids = Object.keys(ITEM_SPRITES);
+  if (ids.length === 0) {
+    grid.innerHTML = `<p style="font-size:12px;opacity:0.6;">${state.lang === 'en' ? 'No items illustrated yet.' : "Aucun objet illustré pour l'instant."}</p>`;
+    return;
+  }
+  for (const id of ids) {
+    const entry = ITEM_SPRITES[id];
+    const { item, owned } = findSpriteItem(id, entry.kind);
+    if (!item) continue;
+    const card = document.createElement('div');
+    card.className = 'galleryCard' + (owned ? '' : ' locked');
+    card.innerHTML = `
+      <img src="${entry.src}" alt="" onerror="this.remove()">
+      <div class="galleryCardName">${owned ? L(item, 'name') : '???'}</div>
+    `;
+    if (owned) card.onclick = () => showGalleryLightbox(entry.src, L(item, 'name'), L(item, 'desc'));
+    grid.appendChild(card);
+  }
+}
+
 function renderStatsTab() {
   const list = document.getElementById('statsList');
   const en = state.lang === 'en';
   const rows = [
     [en ? 'Current Greenery' : 'Verdure actuelle', formatNum(state.verdure)],
     [en ? 'Total Greenery earned (this life)' : 'Verdure totale gagnée (cette vie)', formatNum(state.totalEarned)],
-    [en ? 'Current production' : 'Production actuelle', formatNum(totalCps()) + '/s'],
+    [en ? 'Current production' : 'Production actuelle', formatRate(totalCps()) + '/s'],
     [en ? 'Gain per click (total)' : 'Gain par clic (total)', formatNum(clickGain())],
     [en ? '— fixed part' : '— dont part fixe', formatNum(1 * totalProdMultiplier() * totalClickFlatMultiplier())],
     [en ? '— % of production/s' : '— dont % de la production/s', formatNum(totalCps() * totalClickCpsPercent()) + ` (${(totalClickCpsPercent()*100).toFixed(0)}% ${en ? 'of production' : 'de la prod'})`],
@@ -3141,7 +3780,7 @@ function renderStatsTab() {
     [en ? 'Total play time' : 'Temps de jeu total', formatPlayTime(state.totalPlayTimeSec || 0)],
     [en ? 'Clicks per minute (average)' : 'Clics par minute (moyenne)', formatNum((state.totalClicks || 0) / Math.max(1, (state.totalPlayTimeSec || 1) / 60))],
     [en ? 'Most owned building' : 'Bâtiment le plus nombreux', mostOwnedBuilding()],
-    [en ? '🏅 Best production/s record' : '🏅 Record de production/s', formatNum(state.bestCpsEver || 0) + '/s'],
+    [en ? '🏅 Best production/s record' : '🏅 Record de production/s', formatRate(state.bestCpsEver || 0) + '/s'],
     [en ? '🏅 Fastest prestige' : '🏅 Prestige le plus rapide', state.fastestPrestigeSec ? formatPlayTime(state.fastestPrestigeSec) : (en ? 'None (do 2 prestiges to unlock)' : 'Aucun (fais 2 prestiges pour débloquer)')],
     [en ? '🌟 Stellar Shards' : '🌟 Éclats Stellaires', formatNum(state.stellarShards || 0) + ` (x${shardMultiplier().toFixed(2)} ${en ? 'production' : 'production'})`],
     [en ? '🌟 Ascensions completed' : '🌟 Ascensions effectuées', state.totalAscensions || 0],
@@ -3213,6 +3852,8 @@ function renderAll() {
   renderAchievements();
   renderNextGoal();
   renderStatsTab();
+  renderGallery();
+  renderCompanion();
   renderSoundToggle();
   applyStaticTranslations();
   renderLangToggle();
@@ -3554,11 +4195,13 @@ document.getElementById('updateCheckBtn').addEventListener('click', () => {
 document.getElementById('soundToggleBtn').addEventListener('click', () => {
   state.soundEnabled = !state.soundEnabled;
   if (state.soundEnabled) playTone(600, 0.06, 'sine', 0.04);
+  updateMusicVolume();
   saveGame(); renderSoundToggle();
 });
 document.getElementById('volumeSlider').addEventListener('input', (e) => {
   state.soundVolume = parseInt(e.target.value, 10);
   document.getElementById('volumeValueLabel').textContent = state.soundVolume + '%';
+  updateMusicVolume();
 });
 document.getElementById('volumeSlider').addEventListener('change', () => {
   saveGame();
@@ -3700,7 +4343,19 @@ document.getElementById('resetBtn').addEventListener('click', () => {
 // fait un petit fondu vers noir, puis rejoue la séquence de lancement depuis après le choix
 // de langue (vérification de MAJ puis scène d'ouverture), comme au tout premier lancement.
 function performFullReset() {
-  ['settingsModalOverlay', 'achievementsModalOverlay', 'questsModalOverlay', 'shopPageOverlay'].forEach(closeModal);
+  // Vidé AVANT de fermer les fenêtres ci-dessous : sinon un callback "à la fermeture" resté en
+  // attente (ex: annonce suivante différée, voir waitForModalClose) se déclencherait pendant le
+  // reset lui-même et ferait parler Papi d'autre chose en pleine réinitialisation.
+  _onModalCloseCallbacks = {};
+  ['settingsModalOverlay', 'achievementsModalOverlay', 'questsModalOverlay', 'shopPageOverlay', 'dailyRewardModalOverlay'].forEach(closeModal);
+  // Un spotlight forcé (voir showTutorialSpotlight) peut être affiché, en attente d'un clic, au
+  // moment du reset : sans ça, _tabSpotlightPending resterait bloqué à true pour toujours (plus
+  // aucun élément ne le remettra à false), empêchant silencieusement toute future annonce
+  // d'onglet après le reset.
+  _tabSpotlightPending = false;
+  _pendingTabAnnouncements = [];
+  document.getElementById('tutorialSpotlightOverlay').style.display = 'none';
+  document.getElementById('tutorialSpotlightArrow').style.display = 'none';
   const overlay = document.getElementById('splashOverlay');
   document.getElementById('splashSlideStudio').style.display = 'none';
   document.getElementById('splashSlideLogo').style.display = 'none';
@@ -3763,12 +4418,14 @@ document.getElementById('tutorialCloseBtn').addEventListener('click', () => {
   saveGame();
   renderAll();
   // Petit délai avant que Papi commence à annoncer les onglets, pour laisser une vraie
-  // respiration après l'intro plutôt que d'enchaîner immédiatement.
+  // respiration après l'intro plutôt que d'enchaîner immédiatement. Options reçoit une
+  // vraie présentation (comme Succès/Quêtes) au lieu d'apparaître sans rien dire.
   setTimeout(() => {
     _suppressTabAnnouncements = false;
-    document.getElementById('settingsBtn').classList.add('revealed');
-    renderAll();
+    const optionsTab = TAB_DEFS.find(t => t.id === 'options');
+    if (optionsTab) announceNewTabsSequentially([optionsTab]);
   }, 1200);
+  setTimeout(() => { checkDailyLoginReward(); }, 3000);
 });
 let _shouldShowReturnLine = false;
 document.getElementById('offlineCloseBtn').addEventListener('click', () => {
@@ -3780,6 +4437,7 @@ document.getElementById('offlineCloseBtn').addEventListener('click', () => {
 applyOfflineProgress();
 generateQuests();
 checkAchievements();
+syncRevealedButtonsOnLoad();
 renderAll();
 
 // ---- Séquence de lancement : splash (studio → logo) → choix de langue (1re fois
@@ -3843,7 +4501,8 @@ function proceedToUpdateCheck(reveal) {
 }
 
 function runOpeningIfNeeded() {
-  if (!state.tutorialSeen) startOpeningScene();
+  if (!state.tutorialSeen) { startOpeningScene(); return; }
+  checkDailyLoginReward();
 }
 
 runSplashScreen((reveal) => runLanguageChoiceIfNeeded(reveal));
