@@ -289,6 +289,7 @@
   }
   .drawerBtn .icon { font-size: 18px; }
   .drawerBtn.active { background: var(--accent); color: white; }
+  .drawerBtn.locked { opacity: 0.4; cursor: not-allowed; }
   .drawerBtn .newBadge { position: absolute; top: -4px; right: -2px; }
 
   .sideModalContent {
@@ -333,6 +334,18 @@
     color: white;
     font-weight: 800;
     font-size: 18px;
+  }
+  /* Ressource pertinente pour l'onglet actif du magasin (Verdure/Connaissances/Graines/Éclats) —
+     sans ça, impossible de savoir combien on a en poche une fois dans le magasin plein écran. */
+  .shopResourceBar {
+    flex-shrink: 0;
+    padding: 10px calc(20px + env(safe-area-inset-right)) 10px calc(20px + env(safe-area-inset-left));
+    background: var(--accent-dark);
+    border-bottom: 3px solid var(--ink);
+    font-weight: 800;
+    font-size: 15px;
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.35);
   }
   .shopPageRow {
     flex: 1;
@@ -380,6 +393,7 @@
 
   .upgrade { display: flex; justify-content: space-between; align-items: center; background: var(--panel-bg); border-radius: 12px; padding: 16px 18px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); cursor: pointer; border: 2px solid transparent; transition: border 0.15s, opacity 0.15s, transform 0.1s; color: var(--panel-text); gap: 12px; }
   .itemIcon { width: 44px; height: 44px; object-fit: contain; image-rendering: pixelated; flex-shrink: 0; }
+  .itemIcon-masked { filter: brightness(0) opacity(0.28); }
   .galleryGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; margin-top: 12px; }
   .galleryCard { background: var(--panel-bg); border-radius: 12px; padding: 12px 8px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
   .galleryCard img { width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated; margin-bottom: 6px; }
@@ -626,6 +640,13 @@
   .scenePortraitLeft { left: 40px; }
   .scenePortraitRight { right: 40px; }
   .scenePortrait.dimmed { filter: brightness(0.4) saturate(0.5); transform: scale(0.94); }
+  .sceneSkipBtn {
+    position: absolute; top: calc(16px + env(safe-area-inset-top)); right: calc(16px + env(safe-area-inset-right));
+    z-index: 10;
+    background: rgba(0,0,0,0.5); color: white; border: 2px solid rgba(255,255,255,0.5);
+    border-radius: 10px; padding: 8px 14px; font-size: 12px; font-weight: 700; cursor: pointer;
+  }
+  .sceneSkipBtn:hover { background: rgba(0,0,0,0.7); }
 
   /* Bulle de dialogue façon sprite pixel art, plein bas d'écran façon vieux Pokémon — une image
      pour le perso de gauche (encoche à gauche), une pour celui de droite (encoche à droite).
@@ -798,6 +819,7 @@
 </div>
 
 <div class="sceneOverlay" id="sceneOverlay">
+  <button class="sceneSkipBtn" id="sceneSkipBtn" data-i18n="skipBtn">Passer ⏭️</button>
   <div class="scenePortrait scenePortraitLeft" id="scenePortraitLeft"><img id="scenePortraitLeftImg" alt=""></div>
   <div class="scenePortrait scenePortraitRight" id="scenePortraitRight"><img id="scenePortraitRightImg" alt=""></div>
   <div class="sceneBubble speaker-left" id="sceneBubble">
@@ -945,6 +967,7 @@
       <span data-i18n="shopTitle">🛒 Magasin de Papi Feuillage</span>
       <button class="modalCloseBtn" id="shopPageCloseBtn" data-i18n="exitShop">Quitter le magasin ✕</button>
     </div>
+    <div class="shopResourceBar" id="shopResourceBar"></div>
     <div class="shopComment" id="shopComment" style="display:none;">
       <div class="shopCommentName" id="shopCommentName">Papi Feuillage</div>
       <div class="shopCommentText" id="shopCommentText"></div>
@@ -1011,13 +1034,68 @@ const SAVE_VERSION = 2;
 // Tant qu'un id n'a pas d'entrée ici, l'article s'affiche simplement sans icône (pas de
 // cassure visuelle) — il suffit d'ajouter une ligne ici quand un nouveau sprite arrive.
 const ITEM_SPRITES = {
+  // Bâtiments (placeholders générés — à remplacer par du vrai pixel art au fil de l'eau)
   stagiaire: { src: 'assets/sprites/stagiaire.png', kind: 'building' },
+  voisin: { src: 'assets/sprites/voisin.png', kind: 'building' },
+  tondeuse: { src: 'assets/sprites/tondeuse.png', kind: 'building' },
+  serre: { src: 'assets/sprites/serre.png', kind: 'building' },
+  drone: { src: 'assets/sprites/drone.png', kind: 'building' },
+  usine: { src: 'assets/sprites/usine.png', kind: 'building' },
+  franchise: { src: 'assets/sprites/franchise.png', kind: 'building' },
+  labo: { src: 'assets/sprites/labo.png', kind: 'building' },
+  satellite: { src: 'assets/sprites/satellite.png', kind: 'building' },
+  portail: { src: 'assets/sprites/portail.png', kind: 'building' },
+  mars: { src: 'assets/sprites/mars.png', kind: 'building' },
+  iaGalactique: { src: 'assets/sprites/iaGalactique.png', kind: 'building' },
+  bigbang: { src: 'assets/sprites/bigbang.png', kind: 'building' },
+  vaisseauGraine: { src: 'assets/sprites/vaisseauGraine.png', kind: 'building' },
+  jardinQuantique: { src: 'assets/sprites/jardinQuantique.png', kind: 'building' },
+  multiversMousse: { src: 'assets/sprites/multiversMousse.png', kind: 'building' },
+  conscienceChloro: { src: 'assets/sprites/conscienceChloro.png', kind: 'building' },
+  templeCompost: { src: 'assets/sprites/templeCompost.png', kind: 'building' },
+  grainePrimordiale: { src: 'assets/sprites/grainePrimordiale.png', kind: 'building' },
+  jardinHorsTemps: { src: 'assets/sprites/jardinHorsTemps.png', kind: 'building' },
+  // Améliorations de clic (placeholders générés)
   c1: { src: 'assets/sprites/c1.png', kind: 'clickUpgrade' },
+  c2: { src: 'assets/sprites/c2.png', kind: 'clickUpgrade' },
+  c3: { src: 'assets/sprites/c3.png', kind: 'clickUpgrade' },
+  c4: { src: 'assets/sprites/c4.png', kind: 'clickUpgrade' },
+  c5: { src: 'assets/sprites/c5.png', kind: 'clickUpgrade' },
+  c6: { src: 'assets/sprites/c6.png', kind: 'clickUpgrade' },
+  c7: { src: 'assets/sprites/c7.png', kind: 'clickUpgrade' },
+  c8: { src: 'assets/sprites/c8.png', kind: 'clickUpgrade' },
+  c9: { src: 'assets/sprites/c9.png', kind: 'clickUpgrade' },
+  c10: { src: 'assets/sprites/c10.png', kind: 'clickUpgrade' },
+  c11: { src: 'assets/sprites/c11.png', kind: 'clickUpgrade' },
+  c12: { src: 'assets/sprites/c12.png', kind: 'clickUpgrade' },
+  c13: { src: 'assets/sprites/c13.png', kind: 'clickUpgrade' },
+  c14: { src: 'assets/sprites/c14.png', kind: 'clickUpgrade' },
+  c15: { src: 'assets/sprites/c15.png', kind: 'clickUpgrade' },
+  c16: { src: 'assets/sprites/c16.png', kind: 'clickUpgrade' },
+  c17: { src: 'assets/sprites/c17.png', kind: 'clickUpgrade' },
+  c18: { src: 'assets/sprites/c18.png', kind: 'clickUpgrade' },
+  c19: { src: 'assets/sprites/c19.png', kind: 'clickUpgrade' },
+  c20: { src: 'assets/sprites/c20.png', kind: 'clickUpgrade' },
+  // Objets uniques (placeholders générés)
+  arbreAncestral: { src: 'assets/sprites/arbreAncestral.png', kind: 'unique' },
+  chatJardin: { src: 'assets/sprites/chatJardin.png', kind: 'unique' },
+  fontaineMagique: { src: 'assets/sprites/fontaineMagique.png', kind: 'unique' },
+  gnomeDeJardin: { src: 'assets/sprites/gnomeDeJardin.png', kind: 'unique' },
+  horlogeSolaire: { src: 'assets/sprites/horlogeSolaire.png', kind: 'unique' },
+  grelotVent: { src: 'assets/sprites/grelotVent.png', kind: 'unique' },
+  bibliothequeRacines: { src: 'assets/sprites/bibliothequeRacines.png', kind: 'unique' },
+  collaborationFamiliale: { src: 'assets/sprites/collaborationFamiliale.png', kind: 'unique' },
+  meuleCosmique: { src: 'assets/sprites/meuleCosmique.png', kind: 'unique' },
+  coeurBraise: { src: 'assets/sprites/coeurBraise.png', kind: 'unique' },
+  sentinelleTemporelle: { src: 'assets/sprites/sentinelleTemporelle.png', kind: 'unique' },
 };
-function getItemIconHtml(id) {
+function getItemIconHtml(id, masked) {
   const entry = ITEM_SPRITES[id];
   if (!entry) return '';
-  return `<img src="${entry.src}" class="itemIcon" alt="" onerror="this.remove()">`;
+  // Masqué (silhouette sombre) tant que le joueur n'a pas assez d'argent pour l'acheter — le
+  // sprite ne se révèle qu'une fois l'achat à sa portée, pour garder un peu de découverte.
+  const maskClass = masked ? ' itemIcon-masked' : '';
+  return `<img src="${entry.src}" class="itemIcon${maskClass}" alt="" onerror="this.remove()">`;
 }
 // Retrouve la définition (nom/desc) et le statut de possession d'un objet illustré, quel
 // que soit le tableau auquel il appartient — utilisé par le pop-up de révélation et la galerie.
@@ -1114,6 +1192,7 @@ const UI_STRINGS = {
     tutorialTitle: '🐸 Bienvenue sur le terrain de Leroy !',
     tutorialBody: `<p>Papi Feuillage a "mystérieusement" gagné ce terrain vague. Trop occupé (et trop peu motivé), il a filé les clés à son petit-fils au chômage, <b>Leroy</b> : <i>"Si t'arrives à désherber, tu fais ce que tu veux du terrain. Me dérange pas trop. Mais si t'as vraiment un problème... je passerai."</i></p><p>👆 <b>Clique</b> au centre de l'écran pour désherber et gagner de la Verdure 🌿.</p><p>🏪 Ouvre le <b>menu</b> en bas de l'écran pour embaucher de l'aide qui produit de la Verdure automatiquement, même hors-ligne.</p><p>🌍 Une fois que tu as beaucoup progressé, utilise le <b>Prestige</b> (onglet dédié) pour recommencer avec des bonus permanents et aller plus vite la fois suivante.</p>`,
     tutorialCloseBtn: 'Compris, on désherbe !',
+    skipBtn: 'Passer ⏭️',
     creditsGeneric: "FUZZ<br>Un jeu créé par [Ton nom]<br>Écriture & histoire : [Ton nom]<br>Illustrations : [Ton nom]<br>Développement assisté par Claude (Anthropic)<br>Merci d'avoir joué ! 🐸",
   },
   en: {
@@ -1147,6 +1226,7 @@ const UI_STRINGS = {
     tutorialTitle: "🐸 Welcome to Leroy's plot!",
     tutorialBody: `<p>Gramps Weeds "mysteriously" won this vacant lot. Too busy (and not motivated enough), he handed the keys to his unemployed grandson, <b>Leroy</b>: <i>"If you manage to weed it, do whatever you want with the place. Don't bother me too much. But if you really have a problem... I'll come by."</i></p><p>👆 <b>Click</b> the center of the screen to weed and earn Greenery 🌿.</p><p>🏪 Open the <b>menu</b> at the bottom of the screen to hire help that produces Greenery automatically, even offline.</p><p>🌍 Once you've progressed a lot, use <b>Prestige</b> (dedicated tab) to start over with permanent bonuses and go faster next time.</p>`,
     tutorialCloseBtn: "Got it, let's weed!",
+    skipBtn: 'Skip ⏭️',
     creditsGeneric: "FUZZ<br>A game by [Your name]<br>Writing & story: [Your name]<br>Art: [Your name]<br>Development assisted by Claude (Anthropic)<br>Thanks for playing! 🐸",
   },
 };
@@ -1492,6 +1572,11 @@ document.getElementById('shopComment').addEventListener('click', () => {
 
 let _dialogueQueue = [];
 let _dialogueOnComplete = null;
+// Vrai pendant une bulle "verrouillée" (voir showDialogue({blockAdvance:true})) : le joueur ne
+// peut PAS cliquer sur la bulle pour l'avancer/fermer, seul dismissDialogue() (appelé quand il
+// clique sur la vraie cible indiquée) le peut — sinon un joueur qui clique vite "zappe" la
+// bulle avant même de voir le spotlight, et enchaîne plusieurs annonces d'un coup.
+let _dialogueBlockAdvance = false;
 
 // showDialogue('leroy', "Une phrase.", { position: 'bottom-left' })
 // showDialogue('papi', ["Première phrase.", "Deuxième phrase."], { position: 'top-right', modal: true, onComplete: () => {...} })
@@ -1506,14 +1591,14 @@ let _dialogueOnComplete = null;
 // Un clic sur "Suivant" pendant que ça défile affiche le texte en entier d'un coup (comme
 // dans les vrais JRPG) ; un clic une fois le texte entièrement affiché passe à la réplique suivante.
 let _typewriterTimer = null;
-function typewriterEffect(el, text, speed = 20) {
+function typewriterEffect(el, text, speed = 20, onDone) {
   if (_typewriterTimer) { clearInterval(_typewriterTimer); _typewriterTimer = null; }
   el.textContent = '';
   let i = 0;
   _typewriterTimer = setInterval(() => {
     el.textContent += text[i];
     i++;
-    if (i >= text.length) { clearInterval(_typewriterTimer); _typewriterTimer = null; }
+    if (i >= text.length) { clearInterval(_typewriterTimer); _typewriterTimer = null; if (onDone) onDone(); }
   }, speed);
 }
 // Renvoie true si un texte était en train de défiler (et l'affiche alors en entier sans avancer) ;
@@ -1533,6 +1618,12 @@ function skipTypewriterIfActive(el, fullText) {
 // (ce qui donnait l'impression qu'un message "se passait tout seul" sans qu'on ait pu le lire).
 let _dialogueBusy = false;
 let _dialogueCallQueue = [];
+// Délai (ms) après lequel la bulle avance TOUTE SEULE une fois le texte entièrement affiché —
+// voir showDialogue({autoAdvanceMs: ...}). null = comportement normal (avance seulement au clic).
+let _dialogueAutoAdvanceMs = null;
+let _autoAdvanceTimer = null;
+// Vitesse de la machine à écrire (ms par caractère) — voir showDialogue({typeSpeed: ...}).
+let _dialogueTypeSpeed = 20;
 
 function showDialogue(characterId, lines, options = {}) {
   if (_dialogueBusy) {
@@ -1553,6 +1644,9 @@ function showDialogue(characterId, lines, options = {}) {
   const char = CHARACTERS[characterId] || { name: characterId, emoji: '❓', color: '#999' };
   _dialogueQueue = Array.isArray(lines) ? [...lines] : [lines];
   _dialogueOnComplete = finalOptions.onComplete;
+  _dialogueBlockAdvance = !!finalOptions.blockAdvance;
+  _dialogueAutoAdvanceMs = finalOptions.autoAdvanceMs || null;
+  _dialogueTypeSpeed = finalOptions.typeSpeed || 20;
 
   const overlay = document.getElementById('dialogueOverlay');
   const box = document.getElementById('dialogueBox');
@@ -1571,6 +1665,7 @@ function showDialogue(characterId, lines, options = {}) {
 
 let _dialogueCurrentFullText = '';
 function advanceDialogue() {
+  if (_autoAdvanceTimer) { clearTimeout(_autoAdvanceTimer); _autoAdvanceTimer = null; }
   const textEl = document.getElementById('dialogueText');
   if (_dialogueQueue.length === 0) {
     document.getElementById('dialogueOverlay').classList.remove('visible');
@@ -1579,12 +1674,31 @@ function advanceDialogue() {
   }
   const nextLine = _dialogueQueue.shift();
   _dialogueCurrentFullText = nextLine;
-  typewriterEffect(textEl, nextLine);
+  typewriterEffect(textEl, nextLine, _dialogueTypeSpeed, () => {
+    // Une fois le texte entièrement affiché, avance tout seul après un temps de lecture — le
+    // joueur peut toujours cliquer avant pour aller plus vite, mais n'y est plus obligé.
+    if (_dialogueAutoAdvanceMs) {
+      _autoAdvanceTimer = setTimeout(() => { _autoAdvanceTimer = null; advanceDialogue(); }, _dialogueAutoAdvanceMs);
+    }
+  });
 }
 document.getElementById('dialogueBox').addEventListener('click', () => {
+  if (_dialogueBlockAdvance) return; // voir dismissDialogue() : seul le clic sur la vraie cible ferme cette bulle
   const textEl = document.getElementById('dialogueText');
   if (!skipTypewriterIfActive(textEl, _dialogueCurrentFullText)) advanceDialogue();
 });
+// Ferme de force une bulle "verrouillée" (blockAdvance) — appelé quand le joueur clique sur la
+// cible réelle indiquée par le spotlight plutôt que sur la bulle elle-même. Sans effet sur une
+// bulle normale (celles-là se ferment via le clic dessus, voir ci-dessus).
+function dismissDialogue() {
+  if (!_dialogueBlockAdvance) return;
+  _dialogueBlockAdvance = false;
+  if (_typewriterTimer) { clearInterval(_typewriterTimer); _typewriterTimer = null; }
+  if (_autoAdvanceTimer) { clearTimeout(_autoAdvanceTimer); _autoAdvanceTimer = null; }
+  _dialogueQueue = [];
+  document.getElementById('dialogueOverlay').classList.remove('visible');
+  if (_dialogueOnComplete) { const fn = _dialogueOnComplete; _dialogueOnComplete = null; fn(); }
+}
 
 // showScene([{character:'papi', text:'...'}, {character:'leroy', text:'...'}, ...], { left:'papi', right:'leroy', onComplete: fn })
 // Affiche les deux personnages face à face en bas de l'écran (façon JRPG rétro) — celui qui ne
@@ -1646,6 +1760,13 @@ function advanceScene() {
 document.getElementById('sceneOverlay').addEventListener('click', () => {
   const textEl = document.getElementById('sceneText');
   if (!skipTypewriterIfActive(textEl, _sceneCurrentFullText)) advanceScene();
+});
+// Permet de passer directement à la fin de la scène (dialogue d'ouverture Papi/Leroy, ou toute
+// future scène) plutôt que de devoir cliquer ligne par ligne jusqu'au bout.
+document.getElementById('sceneSkipBtn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  _sceneQueue = [];
+  advanceScene();
 });
 
 // ================= CLICK UPGRADES (parallèle aux bâtiments) =================
@@ -1862,11 +1983,18 @@ const TAB_DEFS = [
   // le 1er bâtiment coûtant plus cher que le seuil des 20 clics des Succès).
   { id: 'quetes', label: { fr: 'Quêtes', en: 'Quests' }, icon: '📋', unlock: s => Object.keys(s.buildings||{}).length >= 1 && !!s.tabsSeen.succes, group: 'quests' },
   { id: 'defi', label: { fr: 'Défi', en: 'Challenge' }, icon: '🏅', unlock: s => s.prestigeCount >= 1, group: 'quests' },
-  { id: 'succes', label: { fr: 'Succès', en: 'Achievements' }, icon: '🏆', unlock: s => s.totalClicks >= 20 || s.totalEarned >= 500, group: 'achievements' },
+  // Dépend de settingsIntroDone (pas juste tabsSeen.options, qui peut déjà être vrai en
+  // silence pour un joueur existant AVANT même que Papi ait montré Paramètres à l'écran) pour
+  // garantir que Succès n'apparaît jamais avant la toute première fois où la fenêtre
+  // Paramètres a été ouverte ET refermée — y compris pour une sauvegarde déjà avancée qui
+  // découvre ce système de tutoriel pour la première fois.
+  { id: 'succes', label: { fr: 'Succès', en: 'Achievements' }, icon: '🏆', unlock: s => (s.totalClicks >= 20 || s.totalEarned >= 500) && !!s.settingsIntroDone, group: 'achievements' },
+  // Options en premier (donc tout à gauche dans le menu) : c'est le tout premier onglet que
+  // Papi présente au joueur, juste après avoir ouvert Paramètres.
+  { id: 'options', label: { fr: 'Options', en: 'Options' }, icon: '⚙️', unlock: () => true, group: 'settings' },
   { id: 'stats', label: { fr: 'Stats', en: 'Stats' }, icon: '📊', unlock: () => true, group: 'settings' },
   { id: 'journal', label: { fr: 'Journal', en: 'Log' }, icon: '📜', unlock: () => true, group: 'settings' },
   { id: 'galerie', label: { fr: 'Galerie', en: 'Gallery' }, icon: '🖼️', unlock: () => true, group: 'settings' },
-  { id: 'options', label: { fr: 'Options', en: 'Options' }, icon: '⚙️', unlock: () => true, group: 'settings' },
 ];
 
 // ================= STATE =================
@@ -1931,6 +2059,7 @@ function defaultState() {
     inactivityAnnounced: false,
     lastBackupTime: 0,
     tutorialSeen: false,
+    settingsIntroDone: false,
     maxIdleGapSec: 0,
     maxClicksIn5s: 0,
     fastestPrestigeSec: null,
@@ -2545,7 +2674,7 @@ function fadeAudioTo(audioEl, targetVolume, durationMs) {
 function musicTargetVolume() {
   if (!state.soundEnabled) return 0;
   const vol = (state.soundVolume === undefined ? 100 : state.soundVolume) / 100;
-  return vol * 0.3; // toujours un peu en retrait par rapport aux effets sonores
+  return vol * 0.18; // toujours un peu en retrait par rapport aux effets sonores
 }
 function startBackgroundMusic() {
   const audio = document.getElementById('bgMusic');
@@ -2793,15 +2922,17 @@ function checkDailyRewardFeatureUnlock() {
   if (state.dailyRewardFeatureUnlocked) return;
   if (!coreMenusIntroduced()) return;
   if (isMainScreenBlocked()) return;
-  // Un spotlight forcé (Paramètres/Succès/Quêtes) est peut-être encore affiché, en attente
-  // d'un clic — on retentera au prochain rendu (rappelé à chaque tick) une fois libéré, pour
-  // ne jamais annoncer le Bonus quotidien par-dessus un spotlight précédent pas encore ouvert.
-  if (_tabSpotlightPending) return;
+  // Un spotlight forcé (Paramètres/Succès/Quêtes) est peut-être encore affiché ou sa fenêtre
+  // encore ouverte — on retentera au prochain rendu (rappelé à chaque tick) une fois libéré,
+  // pour ne jamais annoncer le Bonus quotidien par-dessus un spotlight précédent.
+  if (_pendingSpotlightGroup) return;
   state.dailyRewardFeatureUnlocked = true;
-  // Verrouille exactement comme highlightNewFeature (voir _tabSpotlightPending plus bas) : tant que
-  // ce spotlight forcé attend son clic, aucune autre annonce d'onglet ne doit démarrer par-dessus —
-  // sinon les deux se disputeraient le même overlay/flèche partagés (tutorialSpotlightOverlay/Arrow).
-  _tabSpotlightPending = true;
+  // Verrouille exactement comme highlightNewFeature (voir _pendingSpotlightGroup plus bas) :
+  // tant que cette fenêtre reste ouverte, aucune autre annonce d'onglet ne doit démarrer par-
+  // dessus — sinon les deux se disputeraient le même overlay/flèche partagés
+  // (tutorialSpotlightOverlay/Arrow). "dailyReward" n'est pas un vrai groupe de TAB_DEFS, mais
+  // sert de jeton pour ce verrou partagé.
+  _pendingSpotlightGroup = 'dailyReward';
   const btn = document.getElementById('dailyRewardBtn');
   btn.classList.add('revealed');
   const line = state.lang === 'en'
@@ -2816,8 +2947,10 @@ function checkDailyRewardFeatureUnlock() {
       // Comme pour highlightNewFeature : on attend la fermeture réelle de la fenêtre Bonus
       // quotidien avant de débloquer d'éventuelles annonces suivantes restées en attente.
       waitForModalClose('dailyRewardModalOverlay', () => {
-        _tabSpotlightPending = false;
+        _pendingSpotlightGroup = null;
+        _lockedToTabId = null;
         if (_pendingTabAnnouncements.length) announceNewTabsSequentially(_pendingTabAnnouncements.splice(0));
+        flushPendingPapiCategories();
       });
     });
   }});
@@ -3011,6 +3144,11 @@ function isAnyModalOpen() {
 // une modale, la fenêtre de mise à jour, le splash, le popup de langue, la scène d'ouverture ou
 // le tutoriel. Les répliques ambiantes de Papi ne doivent JAMAIS apparaître par-dessus l'un de ces écrans.
 function isMainScreenBlocked() {
+  // Un tutoriel forcé (spotlight en cours, avant même que le joueur ait ouvert la fenêtre
+  // visée) doit bloquer exactement comme un menu ouvert — sinon un événement aléatoire (Papi
+  // qui débarque, herbe dorée, papillons...) peut apparaître par-dessus et perturber le
+  // tutoriel, qui doit rester la SEULE chose à l'écran tant qu'il est en cours.
+  if (_pendingSpotlightGroup) return true;
   if (isAnyModalOpen()) return true;
   const updateOverlay = document.getElementById('updatePromptOverlay');
   if (updateOverlay && updateOverlay.classList.contains('open')) return true;
@@ -3028,15 +3166,22 @@ function isMainScreenBlocked() {
 // La plupart des achats se font DANS le magasin (une fenêtre) — ces réactions de Papi doivent
 // donc attendre que le joueur revienne à l'écran principal plutôt que d'apparaître par-dessus.
 let _pendingPapiCategories = [];
+// Tant qu'un tutoriel (annonce de nouvel onglet) est en cours — texte affiché OU spotlight/
+// fenêtre encore en attente —, aucune autre réplique de Papi (achievement, commentaire de
+// boutique, etc.) ne doit se mélanger : le joueur ne doit voir QUE le tutoriel pendant cette
+// période. Ces répliques sont simplement mises en attente, comme pour un menu ouvert.
+function tutorialInProgress() {
+  return _dialogueBusy || !!_pendingSpotlightGroup;
+}
 function queueOrShowPapi(category, options = {}) {
-  if (isMainScreenBlocked()) {
+  if (isMainScreenBlocked() || tutorialInProgress()) {
     if (!_pendingPapiCategories.includes(category)) _pendingPapiCategories.push(category);
     return;
   }
   papiSaysFromCategory(category, options);
 }
 function flushPendingPapiCategories() {
-  if (isMainScreenBlocked() || _pendingPapiCategories.length === 0) return;
+  if (isMainScreenBlocked() || tutorialInProgress() || _pendingPapiCategories.length === 0) return;
   const cat = _pendingPapiCategories.shift();
   papiSaysFromCategory(cat, { onComplete: flushPendingPapiCategories });
 }
@@ -3080,20 +3225,58 @@ const GROUP_TO_OVERLAY = { shop: 'shopPageOverlay', settings: 'settingsModalOver
 // par défaut Stats/Journal/Options n'ont pas besoin d'être annoncés au tout premier lancement,
 // ils seraient sinon en concurrence visuelle avec la scène d'intro).
 let _suppressTabAnnouncements = !state.tutorialSeen;
+// Bloque le clic de désherbage entre la fin de la scène d'ouverture et la fin du tout premier
+// pas du tutoriel de Papi (ouverture puis fermeture de Paramètres) — voir tutorialCloseBtn.
+let _clickZoneLockedForTutorial = false;
 
-// Tant qu'un spotlight forcé (voir showTutorialSpotlight) attend d'être cliqué, TOUTE
-// nouvelle annonce d'onglet doit patienter — sinon un bouton "quêtes" ou "bonus quotidien"
-// peut se déclencher pendant qu'un spotlight précédent (ex: "succès") est encore affiché et
-// pas encore cliqué, ce qui casse le côté "un seul à la fois, forcé" voulu par le joueur.
+// Tant qu'un menu est "possédé" par une annonce forcée (spotlight cliqué mais fenêtre pas
+// encore refermée), _pendingSpotlightGroup retient QUEL groupe (shop/settings/quests/...) —
+// toute nouvelle annonce d'un AUTRE groupe doit patienter, sinon un bouton "quêtes" ou "bonus
+// quotidien" pourrait se déclencher pendant qu'un spotlight précédent est encore affiché ou que
+// sa fenêtre est encore ouverte. En revanche, une annonce du MÊME groupe est autorisée à
+// s'enchaîner tout de suite (voir highlightNewFeature) : si le tuto suivant concerne le menu
+// déjà ouvert, pas question de faire ressortir puis rerentrer le joueur pour rien.
 // Contrairement à _dialogueBusy (qui ne suit que le TEXTE affiché et se libère dès que le
-// joueur a fini de lire, bien avant que le spotlight soit cliqué), ce verrou reste actif
-// jusqu'au clic réel sur le bouton.
-let _tabSpotlightPending = false;
+// joueur a fini de lire, bien avant que le spotlight soit cliqué ou la fenêtre refermée), ce
+// verrou reste actif jusqu'à la fermeture réelle de la fenêtre concernée.
+let _pendingSpotlightGroup = null;
 let _pendingTabAnnouncements = [];
+
+// Le descriptif d'un onglet (ce qu'il contient/permet) n'est plus dit dans l'annonce de
+// déblocage — seulement une fois que le joueur a VRAIMENT ouvert cet onglet précis (clic sur le
+// mini-onglet, ou sur le bouton flottant si le groupe n'a qu'un seul onglet — ex: Succès).
+let _pendingTabDescriptions = {};
+function revealPendingDescription(tabId, onDone) {
+  const msg = _pendingTabDescriptions[tabId];
+  if (!msg) { if (onDone) onDone(); return; }
+  delete _pendingTabDescriptions[tabId];
+  // Une fois dans le bon onglet, le descriptif disparaît tout seul après un temps de lecture
+  // (le joueur peut toujours cliquer avant pour aller plus vite) — pas besoin de cliquer pour
+  // passer à l'onglet suivant.
+  const autoAdvanceMs = Math.max(1100, msg.length * 30);
+  showDialogue('papi', [msg], { position: 'top-right', onComplete: onDone, autoAdvanceMs });
+}
+// Onglet suivant à présenter, un par un, dans un groupe multi-onglets (Paramètres/Quêtes/
+// Magasin) : rempli quand un onglet est mis en évidence, vidé + appelé quand le joueur clique
+// sur CE mini-onglet précis (voir renderMiniTabsRow) — jamais avant, pour ne jamais illuminer
+// plusieurs mini-onglets à la fois.
+let _pendingTabOpenedCallbacks = {};
+// Bascule sur l'onglet interne indiqué pour ce groupe — utilisé uniquement pour le tout
+// premier onglet présenté après l'ouverture d'un menu (voir highlightNewFeature) : le joueur
+// vient d'ouvrir le menu, donc afficher directement le bon onglet plutôt que de le laisser sur
+// l'onglet précédemment actif.
+function setActiveTabForGroup(group, tabId) {
+  if (group === 'shop') activeShopTab = tabId;
+  else if (group === 'settings') activeSettingsTab = tabId;
+  else if (group === 'quests') activeQuestsTab = tabId;
+}
 
 function announceNewTabsSequentially(tabs) {
   if (tabs.length === 0) return;
-  if (_tabSpotlightPending) { _pendingTabAnnouncements.push(...tabs); return; }
+  if (_pendingSpotlightGroup && tabs[0].group !== _pendingSpotlightGroup) {
+    _pendingTabAnnouncements.push(...tabs);
+    return;
+  }
   const t = tabs[0];
   const rest = tabs.slice(1);
   if (_suppressTabAnnouncements || t.id === 'jardin') {
@@ -3101,23 +3284,21 @@ function announceNewTabsSequentially(tabs) {
     announceNewTabsSequentially(rest);
     return;
   }
-  const specificMsg = (PAPI_TAB_ANNOUNCEMENTS_BI[t.id] && (PAPI_TAB_ANNOUNCEMENTS_BI[t.id][state.lang] || PAPI_TAB_ANNOUNCEMENTS_BI[t.id].fr)) || (state.lang === 'en' ? `Hey, I unlocked "${L(t,'label')}" for you.` : `Tiens, j'ai débloqué "${L(t,'label')}" pour toi.`);
+  const specificMsg = (PAPI_TAB_ANNOUNCEMENTS_BI[t.id] && (PAPI_TAB_ANNOUNCEMENTS_BI[t.id][state.lang] || PAPI_TAB_ANNOUNCEMENTS_BI[t.id].fr)) || (state.lang === 'en' ? `This is "${L(t,'label')}".` : `Voici "${L(t,'label')}".`);
+  _pendingTabDescriptions[t.id] = specificMsg;
+  // Annonce de déblocage : dit juste QU'il y a une nouveauté et où cliquer (le spotlight +
+  // la flèche font le reste) — jamais CE QUE ça contient, ça c'est pour quand il l'ouvrira.
   const reaction = pickPapiLine('bigUpgrade');
-  const lines = reaction ? [reaction, specificMsg] : [specificMsg];
-  showDialogue('papi', lines, { position: 'top-right', onComplete: () => {
-    // On ne bascule PLUS automatiquement sur le nouvel onglet ici (activeShopTab / etc.) —
-    // avec le spotlight + la flèche qui indiquent où cliquer, c'est au joueur de naviguer
-    // lui-même jusqu'au nouvel onglet, qui reste signalé par son propre halo pulsant
-    // (_highlightedTabIds) une fois le menu ouvert, jusqu'à ce qu'il clique vraiment dessus.
-    renderAll();
-    // On ne passe au bouton suivant (ni aux annonces mises en attente) qu'une fois que le
-    // joueur a réellement cliqué sur celui-ci (voir showTutorialSpotlight) — jamais après un
-    // simple délai.
-    highlightNewFeature(t.group, t.id, () => {
-      announceNewTabsSequentially(rest);
-      if (_pendingTabAnnouncements.length) announceNewTabsSequentially(_pendingTabAnnouncements.splice(0));
-    });
-  }});
+  const revealMsg = state.lang === 'en' ? `Hey, I unlocked "${L(t,'label')}" for you.` : `Tiens, j'ai débloqué "${L(t,'label')}" pour toi.`;
+
+  // Boutons forcés (Magasin/Paramètres/Succès/Quêtes) : la bulle et le spotlight apparaissent EN MÊME
+  // TEMPS, et la bulle n'est PAS cliquable pour avancer (voir dismissDialogue) — seul le clic
+  // sur le bouton indiqué la fait disparaître. Sans ça, un joueur qui clique vite sur la bulle
+  // pouvait enchaîner plusieurs annonces d'un coup avant même de voir le spotlight.
+  const combined = reaction ? `${reaction} ${revealMsg}` : revealMsg;
+  showDialogue('papi', [combined], { position: 'top-right', blockAdvance: true });
+  renderAll();
+  highlightNewFeature(t.group, t.id, () => announceNewTabsSequentially(rest));
 }
 
 const GROUP_TO_FLOAT_BTN = { shop: 'shopBtn', settings: 'settingsBtn', quests: 'questsBtn', achievements: 'achievementsBtn' };
@@ -3136,44 +3317,90 @@ function showTutorialSpotlight(targetEl, onClicked) {
   overlay.style.display = 'block';
   arrow.style.display = 'flex';
   window.addEventListener('resize', position);
+
+  // Le halo pulsant (.featureHighlight) déborde visuellement bien au-delà de la vraie zone
+  // cliquable du bouton (jusqu'à ~16px de box-shadow, qui n'agrandit pas la zone de clic
+  // réelle) — un joueur qui vise ce halo plutôt que le bouton pile clique alors sur l'écran
+  // assombri, qui ne fait rien : ça donne l'impression que le clic "n'a pas pris". On élargit
+  // donc la zone cliquable perçue en transférant au bouton tout clic sur l'overlay assez proche.
+  const CLICK_MARGIN = 24;
+  const onOverlayClick = (e) => {
+    const rect = targetEl.getBoundingClientRect();
+    const within = e.clientX >= rect.left - CLICK_MARGIN && e.clientX <= rect.right + CLICK_MARGIN &&
+                   e.clientY >= rect.top - CLICK_MARGIN && e.clientY <= rect.bottom + CLICK_MARGIN;
+    if (within) targetEl.click();
+  };
+  overlay.addEventListener('click', onOverlayClick);
+
   targetEl.addEventListener('click', () => {
     overlay.style.display = 'none';
     arrow.style.display = 'none';
     window.removeEventListener('resize', position);
+    overlay.removeEventListener('click', onOverlayClick);
     if (onClicked) onClicked();
   }, { once: true });
 }
-// Met en évidence (halo pulsant) le bouton flottant concerné et l'onglet correspondant dans
-// la fenêtre qui vient de s'ouvrir. Pour les boutons du haut à droite (Paramètres / Succès /
-// Quêtes / Bonus quotidien), on ajoute le spotlight forcé : onOpened n'est appelé qu'une fois
-// le bouton réellement cliqué. Le Magasin garde son ancien halo "doux" (auto-disparition, pas
-// de clic obligatoire) car c'est déjà l'écran principal du jeu, pas un menu caché à découvrir.
+// Met en évidence (halo pulsant + spotlight forcé) le bouton flottant concerné et l'onglet
+// correspondant dans la fenêtre qui vient de s'ouvrir, pour n'importe quel groupe (Magasin /
+// Paramètres / Succès / Quêtes) — onOpened n'est appelé qu'une fois le bouton réellement cliqué.
 function highlightNewFeature(group, tabId, onOpened) {
   const floatBtnId = GROUP_TO_FLOAT_BTN[group];
   const floatBtn = floatBtnId && document.getElementById(floatBtnId);
   _highlightedTabIds.add(tabId);
+  _lockedToTabId = tabId;
   renderAll();
   if (!floatBtn) { if (onOpened) onOpened(); return; }
   floatBtn.classList.add('revealed', 'featureHighlight');
   // Le halo du mini-onglet lui-même (_highlightedTabIds) n'est PAS retiré ici : seul le clic
   // sur ce mini-onglet précis (voir renderMiniTabsRow) doit l'éteindre, pour que le joueur le
   // voie encore une fois le menu ouvert, plutôt que de le trouver déjà éteint.
-  if (group === 'shop') {
-    setTimeout(() => { floatBtn.classList.remove('featureHighlight'); }, 20000);
-    if (onOpened) onOpened();
+  const overlayId = GROUP_TO_OVERLAY[group];
+  if (_pendingSpotlightGroup === group) {
+    // La fenêtre de ce groupe est déjà ouverte (l'annonce précédente portait sur le même
+    // menu) : pas de nouveau spotlight ni de clic à refaire sur le bouton flottant déjà
+    // trouvé — pour CET onglet-ci (pas le tout premier de la fenêtre), on attend le clic sur
+    // le bon mini-onglet avant de continuer, pour ne jamais illuminer deux mini-onglets à la
+    // fois. onOpened est appelé depuis ce clic (voir renderMiniTabsRow).
+    floatBtn.classList.remove('featureHighlight');
+    _pendingTabOpenedCallbacks[tabId] = onOpened;
     return;
   }
-  _tabSpotlightPending = true;
+  _pendingSpotlightGroup = group;
   showTutorialSpotlight(floatBtn, () => {
-    // Le spotlight (écran assombri + flèche) disparaît dès le clic sur le bouton, mais on
-    // n'annonce la fonctionnalité SUIVANTE qu'une fois cette fenêtre-ci vraiment refermée par
-    // le joueur — sinon Papi se met à parler d'autre chose alors que la fenêtre actuelle est
-    // encore ouverte à l'écran (signalé par le joueur).
+    // Le spotlight (écran assombri + flèche) disparaît dès le clic sur le bouton. On ne
+    // libère ce groupe pour les AUTRES annonces qu'à la fermeture réelle de la fenêtre, sinon
+    // Papi se mettrait à parler d'autre chose alors qu'une fenêtre de CE groupe est encore
+    // ouverte à l'écran (signalé par le joueur).
     floatBtn.classList.remove('featureHighlight');
+    // Le clic sur le bouton ferme aussi la bulle "verrouillée" (voir dismissDialogue) — le
+    // joueur a trouvé le bon endroit, la bulle a fait son travail.
+    dismissDialogue();
+    // Ce tout PREMIER onglet du groupe est déjà "ouvert" par ce même clic sur le bouton
+    // flottant (le joueur est déjà dedans) — pas besoin d'un second clic dessus : on l'affiche
+    // directement et Papi donne son descriptif tout de suite. Seuls les onglets SUIVANTS (une
+    // fois la fenêtre déjà ouverte) demanderont un clic sur leur mini-onglet.
+    setActiveTabForGroup(group, tabId);
+    // Le halo de CE mini-onglet s'éteint tout de suite, au même moment que pour un clic
+    // normal sur un mini-onglet (voir miniTabClick) — sinon il reste allumé pendant tout le
+    // descriptif, donnant l'impression (fausse) qu'il faut encore cliquer dessus.
+    _highlightedTabIds.delete(tabId);
     renderAll();
-    const overlayId = GROUP_TO_OVERLAY[group];
-    const release = () => { _tabSpotlightPending = false; if (onOpened) onOpened(); };
-    if (overlayId) waitForModalClose(overlayId, release); else release();
+    revealPendingDescription(tabId, () => { renderAll(); if (onOpened) onOpened(); });
+    if (overlayId) {
+      waitForModalClose(overlayId, () => {
+        _pendingSpotlightGroup = null;
+        _lockedToTabId = null;
+        // Marque le tout premier passage par Paramètres comme fait — c'est ce qui autorise
+        // Succès (puis, en cascade, Quêtes et le Bonus quotidien) à apparaître. Voir la
+        // dépendance settingsIntroDone sur le tab 'succes' dans TAB_DEFS.
+        if (group === 'settings' && !state.settingsIntroDone) { state.settingsIntroDone = true; saveGame(); }
+        if (_pendingTabAnnouncements.length) announceNewTabsSequentially(_pendingTabAnnouncements.splice(0));
+        flushPendingPapiCategories();
+      });
+    } else {
+      _pendingSpotlightGroup = null;
+      _lockedToTabId = null;
+    }
   });
 }
 
@@ -3181,18 +3408,57 @@ function highlightNewFeature(group, tabId, onOpened) {
 // renderMiniTabsRow() reconstruit entièrement les boutons à chaque rendu (plusieurs fois
 // par seconde), ce qui effacerait une classe ajoutée directement sur l'élément.
 let _highlightedTabIds = new Set();
+// Onglet actuellement présenté par Papi dans le groupe en cours (_pendingSpotlightGroup) —
+// distinct du halo (_highlightedTabIds, purement visuel et déjà éteint dès le clic) : celui-ci
+// verrouille TOUS LES AUTRES mini-onglets du menu tant que Papi n'a pas fini de présenter
+// celui-ci (y compris pendant le descriptif, après que son halo se soit déjà éteint).
+let _lockedToTabId = null;
 
+function miniTabClick(t, onSelect) {
+  _highlightedTabIds.delete(t.id);
+  onSelect(t.id);
+  dismissDialogue();
+  revealPendingDescription(t.id, () => {
+    const cb = _pendingTabOpenedCallbacks[t.id];
+    if (cb) { delete _pendingTabOpenedCallbacks[t.id]; cb(); }
+  });
+  renderAll();
+}
 function renderMiniTabsRow(containerId, group, activeId, onSelect) {
   const unlocked = unlockedTabs().filter(t => t.group === group);
   const container = document.getElementById(containerId);
   if (!container) return;
+  // Pendant tout le temps où Papi présente un onglet de ce groupe (_lockedToTabId — que ce
+  // soit son annonce ou son descriptif, halo allumé ou déjà éteint), tous les AUTRES
+  // mini-onglets du même menu sont désactivés : le joueur ne peut rien faire d'autre que
+  // cliquer sur celui indiqué.
+  const isGroupLocked = _pendingSpotlightGroup === group && !!_lockedToTabId;
+  const ids = unlocked.map(t => t.id);
+  const existingButtons = [...container.children];
+  const sameSet = existingButtons.length === ids.length && existingButtons.every((btn, i) => btn.dataset.tabId === ids[i]);
+  if (sameSet) {
+    // Le jeu re-rend cette rangée plusieurs fois par seconde (tick, clics...) — si le même
+    // ensemble d'onglets est déjà affiché, on se contente de mettre à jour les classes des
+    // boutons EXISTANTS plutôt que de tout détruire/recréer à chaque fois. Sans ça, un clic du
+    // joueur pouvait tomber pile au moment où son bouton était remplacé par un nouveau nœud
+    // DOM identique, et le clic ne "prenait" pas (il fallait recliquer).
+    existingButtons.forEach((btn, i) => {
+      const t = unlocked[i];
+      const locked = isGroupLocked && t.id !== _lockedToTabId;
+      btn.className = 'drawerBtn' + (activeId === t.id ? ' active' : '') + (_highlightedTabIds.has(t.id) ? ' featureHighlight' : '') + (locked ? ' locked' : '');
+      btn.disabled = locked;
+    });
+    return;
+  }
   container.innerHTML = '';
   unlocked.forEach(t => {
     const btn = document.createElement('button');
-    btn.className = 'drawerBtn' + (activeId === t.id ? ' active' : '') + (_highlightedTabIds.has(t.id) ? ' featureHighlight' : '');
+    const locked = isGroupLocked && t.id !== _lockedToTabId;
+    btn.className = 'drawerBtn' + (activeId === t.id ? ' active' : '') + (_highlightedTabIds.has(t.id) ? ' featureHighlight' : '') + (locked ? ' locked' : '');
     btn.dataset.tabId = t.id;
+    btn.disabled = locked;
     btn.innerHTML = `<span class="icon">${t.icon}</span> ${L(t,'label')}`;
-    btn.onclick = () => { _highlightedTabIds.delete(t.id); onSelect(t.id); renderAll(); };
+    btn.onclick = () => miniTabClick(t, onSelect);
     container.appendChild(btn);
   });
 }
@@ -3296,6 +3562,9 @@ function renderStats() {
   if (state.challengeNoClick) {
     clickZone.classList.add('disabled');
     clickText.textContent = state.lang === 'en' ? '🚫 No-Click Challenge active' : '🚫 Défi Sans-Clic actif';
+  } else if (_clickZoneLockedForTutorial) {
+    clickZone.classList.add('disabled');
+    clickText.textContent = state.lang === 'en' ? '👆 Follow Papi\'s tutorial first' : "👆 Suis d'abord le tuto de Papi";
   } else {
     clickZone.classList.remove('disabled');
     clickText.textContent = state.lang === 'en' ? 'Click' : 'Clic';
@@ -3329,6 +3598,27 @@ function bestRoiBuildingId() {
   return bestId;
 }
 
+// Affiche la ressource pertinente pour l'onglet actuellement ouvert dans le magasin (Verdure
+// pour Jardin/Clic/Spécial, Connaissances pour Recherche, Graines Cosmiques pour Prestige,
+// Éclats Stellaires pour Ascension) — sans ça, impossible de savoir ce qu'on a en poche une
+// fois dans le magasin plein écran, qui masque le reste de l'interface.
+function renderShopResourceBar() {
+  const bar = document.getElementById('shopResourceBar');
+  if (!bar) return;
+  const en = state.lang === 'en';
+  let icon, value, label;
+  if (activeShopTab === 'recherche') {
+    icon = '📚'; value = formatNum(state.knowledge); label = en ? 'Knowledge' : 'Connaissances';
+  } else if (activeShopTab === 'prestige') {
+    icon = '🌌'; value = formatNum(state.cosmicSeeds); label = en ? 'Cosmic Seeds' : 'Graines Cosmiques';
+  } else if (activeShopTab === 'ascension') {
+    icon = '✨'; value = formatNum(state.stellarShards || 0); label = en ? 'Stellar Shards' : 'Éclats Stellaires';
+  } else {
+    icon = '🌿'; value = formatNum(state.verdure); label = en ? 'Greenery' : 'Verdure';
+  }
+  bar.textContent = `${icon} ${value} ${label}`;
+}
+
 function renderShop() {
   const shop = document.getElementById('shop');
   shop.innerHTML = '';
@@ -3342,7 +3632,7 @@ function renderShop() {
     const div = document.createElement('div');
     div.className = 'upgrade' + (canAfford ? '' : ' disabled');
     div.innerHTML = `
-      ${getItemIconHtml(b.id)}
+      ${getItemIconHtml(b.id, !owned && !canAfford)}
       <div class="info">
         <div class="name">${L(b,'name')} <span class="owned">${owned}</span></div>
         <div class="desc">${L(b,'desc')} — ${formatNum(b.baseCps)}/s ${tr('each')}</div>
@@ -3365,7 +3655,7 @@ function renderClickShop() {
     const div = document.createElement('div');
     div.className = 'upgrade' + (canAfford || owned ? '' : ' disabled');
     div.innerHTML = `
-      ${getItemIconHtml(c.id)}
+      ${getItemIconHtml(c.id, !owned && !canAfford)}
       <div class="info">
         <div class="name">${L(c,'name')} ${owned ? `<span class="owned">${tr('acquired')}</span>` : ''}</div>
         <div class="desc">${L(c,'desc')}</div>
@@ -3840,6 +4130,7 @@ function renderAll() {
   renderTabsRow();
   renderPanelsVisibility();
   renderStats();
+  renderShopResourceBar();
   renderBuyModeRow();
   renderShop();
   renderClickShop();
@@ -3872,7 +4163,7 @@ function updateDocumentTitle() {
 let _lastClickTime = null;
 let _recentClickTimes = [];
 document.getElementById('clickZone').addEventListener('click', (e) => {
-  if (state.challengeNoClick) return;
+  if (state.challengeNoClick || _clickZoneLockedForTutorial) return;
   state.lastActionTime = Date.now();
   state.inactivityAnnounced = false;
   registerCombo();
@@ -3943,6 +4234,7 @@ function spawnGoldenWeed() {
   setTimeout(() => { if (el.parentNode) el.remove(); }, 8000);
 }
 setInterval(() => {
+  if (isMainScreenBlocked()) return; // pas pendant un menu ouvert ni un tutoriel en cours
   if (Date.now() - state.lastGoldenSpawn > 45000 + Math.random() * 45000) {
     state.lastGoldenSpawn = Date.now();
     spawnGoldenWeed();
@@ -3968,6 +4260,7 @@ function spawnButterflies() {
   setTimeout(() => { if (el.parentNode) el.remove(); }, 8000);
 }
 setInterval(() => {
+  if (isMainScreenBlocked()) return; // pas pendant un menu ouvert ni un tutoriel en cours
   if (Date.now() - (state.lastButterflySpawn||0) > 90000 + Math.random() * 90000) {
     state.lastButterflySpawn = Date.now();
     spawnButterflies();
@@ -4349,24 +4642,64 @@ function performFullReset() {
   _onModalCloseCallbacks = {};
   ['settingsModalOverlay', 'achievementsModalOverlay', 'questsModalOverlay', 'shopPageOverlay', 'dailyRewardModalOverlay'].forEach(closeModal);
   // Un spotlight forcé (voir showTutorialSpotlight) peut être affiché, en attente d'un clic, au
-  // moment du reset : sans ça, _tabSpotlightPending resterait bloqué à true pour toujours (plus
-  // aucun élément ne le remettra à false), empêchant silencieusement toute future annonce
+  // moment du reset : sans ça, _pendingSpotlightGroup resterait bloqué pour toujours (plus
+  // aucun élément ne le remettra à null), empêchant silencieusement toute future annonce
   // d'onglet après le reset.
-  _tabSpotlightPending = false;
+  _pendingSpotlightGroup = null;
+  _lockedToTabId = null;
+  _highlightedTabIds = new Set();
   _pendingTabAnnouncements = [];
+  _pendingTabDescriptions = {};
+  _pendingTabOpenedCallbacks = {};
+  _pendingPapiCategories = [];
+  _clickZoneLockedForTutorial = false;
+  // _suppressTabAnnouncements n'est normalement calculé qu'une fois, au chargement de la page
+  // (!state.tutorialSeen à ce moment-là) — un reset ne recharge pas la page, donc sans cette
+  // ligne il restait bloqué à sa valeur d'AVANT le reset. Pour un joueur qui avait déjà terminé
+  // le tutoriel puis reset en cours de partie, ça valait déjà "false", ce qui faisait déclencher
+  // DEUX annonces indépendantes pour les mêmes onglets de Paramètres juste après le reset (le
+  // tick de jeu normal ET l'appel explicite programmé par tutorialCloseBtn) — d'où le bug
+  // intermittent où Papi répétait/mélangeait ses présentations d'onglets après un reset.
+  _suppressTabAnnouncements = true;
+  // Une bulle de dialogue (verrouillée ou en train d'avancer toute seule) peut être affichée au
+  // moment du reset : sans ce nettoyage, elle resterait visible par-dessus le nouvel écran, ou
+  // un minuteur d'auto-avance encore actif se déclencherait plus tard avec des références
+  // périmées (l'onglet suivant d'avant le reset).
+  document.getElementById('dialogueOverlay').classList.remove('visible');
+  if (_typewriterTimer) { clearInterval(_typewriterTimer); _typewriterTimer = null; }
+  if (_autoAdvanceTimer) { clearTimeout(_autoAdvanceTimer); _autoAdvanceTimer = null; }
+  _dialogueBusy = false;
+  _dialogueBlockAdvance = false;
+  _dialogueAutoAdvanceMs = null;
+  _dialogueOnComplete = null;
+  _dialogueQueue = [];
+  _dialogueCallQueue = [];
   document.getElementById('tutorialSpotlightOverlay').style.display = 'none';
   document.getElementById('tutorialSpotlightArrow').style.display = 'none';
+  // Les boutons flottants (Paramètres/Succès/Quêtes/Bonus quotidien/Magasin) ne perdent JAMAIS
+  // leur classe "revealed"/"featureHighlight" toutes seules (elle n'est retirée qu'au clic sur
+  // la cible, jamais réévaluée depuis l'état) — sans ce nettoyage explicite, ils restaient
+  // débloqués à l'écran après un reset alors que la sauvegarde, elle, repartait bien à zéro.
+  ['settingsBtn', 'achievementsBtn', 'questsBtn', 'dailyRewardBtn', 'shopBtn'].forEach(id => {
+    document.getElementById(id).classList.remove('revealed', 'featureHighlight');
+  });
   const overlay = document.getElementById('splashOverlay');
   document.getElementById('splashSlideStudio').style.display = 'none';
   document.getElementById('splashSlideLogo').style.display = 'none';
   overlay.style.display = 'flex';
   overlay.classList.remove('hidden');
   setTimeout(() => {
-    const preservedLang = state.lang;
-    const preservedLangChosen = state.langChosen;
+    // Un reset total ne doit garder QUE les vraies préférences d'app (langue, son, thème) —
+    // tout le reste (progression, onglets débloqués, skins, succès...) repart à zéro.
+    const preserved = {
+      lang: state.lang,
+      langChosen: state.langChosen,
+      soundEnabled: state.soundEnabled,
+      soundVolume: state.soundVolume,
+      forceDarkMode: state.forceDarkMode,
+    };
     state = defaultState();
-    state.lang = preservedLang;
-    state.langChosen = preservedLangChosen;
+    Object.assign(state, preserved);
     saveGame();
     renderAll();
     proceedToUpdateCheck(() => {
@@ -4415,15 +4748,25 @@ function startOpeningScene() {
 document.getElementById('tutorialCloseBtn').addEventListener('click', () => {
   state.tutorialSeen = true;
   document.getElementById('tutorialOverlay').style.display = 'none';
+  // Bloque le clic de désherbage jusqu'à ce que le joueur ait fait le tout premier pas du
+  // tutoriel de Papi (ouvrir puis refermer Paramètres) — pour qu'il fasse ça d'abord, plutôt
+  // que de se mettre à cliquer avant même que Papi ait fini de se présenter.
+  _clickZoneLockedForTutorial = true;
   saveGame();
   renderAll();
+  waitForModalClose('settingsModalOverlay', () => {
+    _clickZoneLockedForTutorial = false;
+    renderStats();
+  });
   // Petit délai avant que Papi commence à annoncer les onglets, pour laisser une vraie
-  // respiration après l'intro plutôt que d'enchaîner immédiatement. Options reçoit une
-  // vraie présentation (comme Succès/Quêtes) au lieu d'apparaître sans rien dire.
+  // respiration après l'intro plutôt que d'enchaîner immédiatement. Tous les onglets de
+  // Paramètres reçoivent une vraie présentation, un par un, de gauche à droite (dans l'ordre
+  // où ils apparaissent dans le menu : Stats, Journal, Galerie, Options) — pas seulement
+  // Options en dernier, sinon le premier onglet mis en évidence serait celui tout à droite.
   setTimeout(() => {
     _suppressTabAnnouncements = false;
-    const optionsTab = TAB_DEFS.find(t => t.id === 'options');
-    if (optionsTab) announceNewTabsSequentially([optionsTab]);
+    const settingsTabs = TAB_DEFS.filter(t => t.group === 'settings');
+    if (settingsTabs.length) announceNewTabsSequentially(settingsTabs);
   }, 1200);
   setTimeout(() => { checkDailyLoginReward(); }, 3000);
 });
