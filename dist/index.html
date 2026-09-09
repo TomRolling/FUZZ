@@ -45,13 +45,22 @@
     --panel-bg: #ffffff;
     --panel-text: #23331a;
     --radius: 14px;
+    /* Réservée au wordmark "FUZZ" (voir .wordmark plus bas) — "FUZZ" n'a pas de lettre ambiguë
+       dans cette police, contrairement au reste de l'interface qui utilise Silkscreen (nette à
+       toutes les tailles utilisées dans le jeu, mais dessinée en capitales seulement — le texte
+       en minuscules s'affiche quand même, juste rendu avec des formes de capitale). */
+    --font-wordmark: 'Dogica', 'Segoe UI', sans-serif;
   }
-  @font-face { font-family: 'Dogica'; src: url('assets/fonts/dogica.ttf') format('truetype'); font-weight: 400; font-display: swap; }
+  /* Seul le poids 700 est chargé : les deux usages du wordmark (h1 et .splashLogoText, voir
+     .wordmark plus bas) s'affichent en gras (700/900), jamais en régulier. */
   @font-face { font-family: 'Dogica'; src: url('assets/fonts/dogicabold.ttf') format('truetype'); font-weight: 700; font-display: swap; }
+  .wordmark { font-family: var(--font-wordmark); }
+  @font-face { font-family: 'Silkscreen'; src: url('assets/fonts/silkscreen-regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+  @font-face { font-family: 'Silkscreen'; src: url('assets/fonts/silkscreen-bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
   button, input, select, textarea { font-family: inherit; }
   body {
     margin: 0;
-    font-family: 'Dogica', 'Poppins', 'Segoe UI', sans-serif;
+    font-family: 'Silkscreen', 'Segoe UI', sans-serif;
     background: radial-gradient(circle at 20% 0%, #f4ead9 0%, #d3ddc4 45%, #a8c69f 100%);
     color: #5c4a3d;
     display: flex;
@@ -75,6 +84,7 @@
   body.theme-3 { background: radial-gradient(circle at 20% 0%, #e2e7fb 0%, #cfd8f0 45%, #a9b8e8 100%); }
   body.theme-4 { background: radial-gradient(circle at 20% 0%, #4a4694 0%, #2b2f5e 60%, #1a1a3d 100%); color: #f0f0ff; }
   body.theme-5 { background: radial-gradient(circle at 20% 0%, #5b2a9e 0%, #2a0d55 55%, #0d0221 100%); color: #f3e9ff; }
+
 
   /* ===== Top bar (compact stats) ===== */
   .topBar {
@@ -556,10 +566,19 @@
   .itemPopupDesc { font-size: 12px; line-height: 1.6; opacity: 0.75; color: var(--panel-text); }
 
   .tutorialOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 300; display: flex; align-items: center; justify-content: center; padding: calc(20px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left)); }
-  .tutorialBox { background: var(--panel-bg); color: var(--panel-text); border-radius: 16px; padding: 24px; max-width: 540px; box-shadow: 0 8px 30px rgba(0,0,0,0.3); text-align: left; animation: fadeIn 0.3s ease; }
-  .tutorialBox h2 { margin-top: 0; font-size: 17px; line-height: 1.4; }
+  .tutorialBox { background: var(--panel-bg); color: var(--panel-text); border-radius: 20px; padding: 26px; max-width: 560px; box-shadow: 0 10px 34px rgba(0,0,0,0.32); border: 3px solid var(--accent); text-align: left; animation: fadeIn 0.3s ease; }
+  .tutorialBox h2 { margin: 0; font-size: 17px; line-height: 1.35; }
   .tutorialBox p { font-size: 12px; line-height: 1.65; }
-  #tutorialCloseBtn { margin-top: 10px; width: 100%; padding: 12px; border: none; border-radius: 10px; background: var(--accent); color: white; font-weight: 700; font-size: 14px; cursor: pointer; }
+  .tutorialBoxHeader { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+  .tutorialBoxPortrait { width: 56px; height: 56px; flex-shrink: 0; border-radius: 50%; overflow: hidden; background: var(--card-bg); display: flex; align-items: center; justify-content: center; font-size: 28px; border: 2px solid var(--accent); }
+  .tutorialBoxPortrait img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+  .tutorialBox .tutorialIntro { font-size: 13px; line-height: 1.6; opacity: 0.8; margin: 0 0 16px 0; }
+  .tutorialTips { list-style: none; margin: 0 0 18px 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .tutorialTips li { display: flex; align-items: flex-start; gap: 10px; background: var(--card-bg); border-radius: 12px; padding: 10px 12px; }
+  .tutorialTips li span { font-size: 18px; flex-shrink: 0; line-height: 1.5; }
+  .tutorialTips li div { font-size: 12.5px; line-height: 1.5; }
+  #tutorialCloseBtn { margin-top: 0; width: 100%; padding: 12px; border: none; border-radius: 10px; background: var(--accent); color: white; font-weight: 700; font-size: 14px; cursor: pointer; }
+  #tutorialCloseBtn:hover { background: var(--accent-dark); }
 
   /* ===================================================================
      SYSTÈME DE DIALOGUE (Leroy, Papi Feuillage, futurs personnages)
@@ -701,7 +720,7 @@
   </div>
   <div class="splashSlide" id="splashSlideLogo" style="display:none;">
     <img src="assets/logo.png" alt="FUZZ" class="splashLogoImg">
-    <div class="splashLogoText">FUZZ</div>
+    <div class="splashLogoText wordmark">FUZZ</div>
   </div>
 </div>
 
@@ -742,7 +761,7 @@
 </div>
 
 <div class="topBar">
-  <h1>🌱 FUZZ</h1>
+  <h1 class="wordmark">🌱 FUZZ</h1>
   <div class="weatherBadge" id="weatherBadge"></div>
   <div class="statsRow">
     <div class="statChip verdure" id="verdureCount">0</div>
@@ -780,13 +799,11 @@
 
 <div class="tutorialOverlay" id="tutorialOverlay" style="display:none;">
   <div class="tutorialBox">
-    <h2 data-i18n="tutorialTitle">🐸 Bienvenue sur le terrain de Leroy !</h2>
-    <div data-i18n="tutorialBody">
-    <p>Papi Feuillage a "mystérieusement" gagné ce terrain vague. Trop occupé (et trop peu motivé), il a filé les clés à son petit-fils au chômage, <b>Leroy</b> : <i>"Si t'arrives à désherber, tu fais ce que tu veux du terrain. Me dérange pas trop. Mais si t'as vraiment un problème... je passerai."</i></p>
-    <p>👆 <b>Clique</b> au centre de l'écran pour désherber et gagner de la Verdure 🌿.</p>
-    <p>🏪 Ouvre le <b>menu</b> en bas de l'écran pour embaucher de l'aide qui produit de la Verdure automatiquement, même hors-ligne.</p>
-    <p>🌍 Une fois que tu as beaucoup progressé, utilise le <b>Prestige</b> (onglet dédié) pour recommencer avec des bonus permanents et aller plus vite la fois suivante.</p>
+    <div class="tutorialBoxHeader">
+      <div class="tutorialBoxPortrait" id="tutorialBoxPortrait"></div>
+      <h2 data-i18n="tutorialTitle">🐸 Bienvenue sur le terrain de Leroy !</h2>
     </div>
+    <div data-i18n="tutorialBody"></div>
     <button id="tutorialCloseBtn" data-i18n="tutorialCloseBtn">Compris, on désherbe !</button>
   </div>
 </div>
@@ -1041,22 +1058,30 @@ const ITEM_SPRITES = {
   // Bâtiments (placeholders générés — à remplacer par du vrai pixel art au fil de l'eau)
   stagiaire: { src: 'assets/sprites/stagiaire.png', kind: 'building' },
   voisin: { src: 'assets/sprites/voisin.png', kind: 'building' },
+  poubelleCompost: { src: 'assets/sprites/poubelleCompost.png', kind: 'building' },
   tondeuse: { src: 'assets/sprites/tondeuse.png', kind: 'building' },
   serre: { src: 'assets/sprites/serre.png', kind: 'building' },
+  hamacLeroy: { src: 'assets/sprites/hamacLeroy.png', kind: 'building' },
   drone: { src: 'assets/sprites/drone.png', kind: 'building' },
   usine: { src: 'assets/sprites/usine.png', kind: 'building' },
+  marcheNoir: { src: 'assets/sprites/marcheNoir.png', kind: 'building' },
   franchise: { src: 'assets/sprites/franchise.png', kind: 'building' },
   labo: { src: 'assets/sprites/labo.png', kind: 'building' },
+  antenneCapte: { src: 'assets/sprites/antenneCapte.png', kind: 'building' },
   satellite: { src: 'assets/sprites/satellite.png', kind: 'building' },
   portail: { src: 'assets/sprites/portail.png', kind: 'building' },
   mars: { src: 'assets/sprites/mars.png', kind: 'building' },
+  colonieMartienne: { src: 'assets/sprites/colonieMartienne.png', kind: 'building' },
   iaGalactique: { src: 'assets/sprites/iaGalactique.png', kind: 'building' },
   bigbang: { src: 'assets/sprites/bigbang.png', kind: 'building' },
+  trouVerCompost: { src: 'assets/sprites/trouVerCompost.png', kind: 'building' },
   vaisseauGraine: { src: 'assets/sprites/vaisseauGraine.png', kind: 'building' },
   jardinQuantique: { src: 'assets/sprites/jardinQuantique.png', kind: 'building' },
   multiversMousse: { src: 'assets/sprites/multiversMousse.png', kind: 'building' },
+  essaimGrenouilles: { src: 'assets/sprites/essaimGrenouilles.png', kind: 'building' },
   conscienceChloro: { src: 'assets/sprites/conscienceChloro.png', kind: 'building' },
   templeCompost: { src: 'assets/sprites/templeCompost.png', kind: 'building' },
+  sanctuaireNenuphar: { src: 'assets/sprites/sanctuaireNenuphar.png', kind: 'building' },
   grainePrimordiale: { src: 'assets/sprites/grainePrimordiale.png', kind: 'building' },
   jardinHorsTemps: { src: 'assets/sprites/jardinHorsTemps.png', kind: 'building' },
   // Améliorations de clic (placeholders générés)
@@ -1080,18 +1105,29 @@ const ITEM_SPRITES = {
   c18: { src: 'assets/sprites/c18.png', kind: 'clickUpgrade' },
   c19: { src: 'assets/sprites/c19.png', kind: 'clickUpgrade' },
   c20: { src: 'assets/sprites/c20.png', kind: 'clickUpgrade' },
+  c21: { src: 'assets/sprites/c21.png', kind: 'clickUpgrade' },
+  c22: { src: 'assets/sprites/c22.png', kind: 'clickUpgrade' },
+  c23: { src: 'assets/sprites/c23.png', kind: 'clickUpgrade' },
+  c24: { src: 'assets/sprites/c24.png', kind: 'clickUpgrade' },
+  c25: { src: 'assets/sprites/c25.png', kind: 'clickUpgrade' },
+  c26: { src: 'assets/sprites/c26.png', kind: 'clickUpgrade' },
+  c27: { src: 'assets/sprites/c27.png', kind: 'clickUpgrade' },
+  c28: { src: 'assets/sprites/c28.png', kind: 'clickUpgrade' },
   // Objets uniques (placeholders générés)
   arbreAncestral: { src: 'assets/sprites/arbreAncestral.png', kind: 'unique' },
   chatJardin: { src: 'assets/sprites/chatJardin.png', kind: 'unique' },
   fontaineMagique: { src: 'assets/sprites/fontaineMagique.png', kind: 'unique' },
   gnomeDeJardin: { src: 'assets/sprites/gnomeDeJardin.png', kind: 'unique' },
+  nenupharDore: { src: 'assets/sprites/nenupharDore.png', kind: 'unique' },
   horlogeSolaire: { src: 'assets/sprites/horlogeSolaire.png', kind: 'unique' },
   grelotVent: { src: 'assets/sprites/grelotVent.png', kind: 'unique' },
   bibliothequeRacines: { src: 'assets/sprites/bibliothequeRacines.png', kind: 'unique' },
+  grimoireMousse: { src: 'assets/sprites/grimoireMousse.png', kind: 'unique' },
   collaborationFamiliale: { src: 'assets/sprites/collaborationFamiliale.png', kind: 'unique' },
   meuleCosmique: { src: 'assets/sprites/meuleCosmique.png', kind: 'unique' },
   coeurBraise: { src: 'assets/sprites/coeurBraise.png', kind: 'unique' },
   sentinelleTemporelle: { src: 'assets/sprites/sentinelleTemporelle.png', kind: 'unique' },
+  jardinEternel: { src: 'assets/sprites/jardinEternel.png', kind: 'unique' },
 };
 function getItemIconHtml(id, masked) {
   const entry = ITEM_SPRITES[id];
@@ -1156,26 +1192,34 @@ document.getElementById('itemPopupCloseBtn').addEventListener('click', () => {
 const BUILDINGS = [
   { id: 'stagiaire', name: { fr: 'Cousin têtard de Leroy', en: "Leroy's Tadpole Cousin" }, desc: { fr: "Debout ce matin, motivé, ça durera pas.", en: "Up early today, motivated. Won't last." }, baseCost: 50, baseCps: 1 },
   { id: 'voisin', name: { fr: 'Tortue expérimentée', en: 'Experienced Turtle' }, desc: { fr: "A déjà fait 3 chantiers avant celui-ci. Prend son temps, mais elle livre.", en: "Already worked 3 sites before this one. Takes her time, but delivers." }, baseCost: 100, baseCps: 1 },
+  { id: 'poubelleCompost', name: { fr: 'Poubelle à compost solidaire', en: 'Community Compost Bin' }, desc: { fr: "Officiellement pour tout le quartier. Officieusement, que pour Papi.", en: "Officially for the whole neighborhood. Unofficially, just for Gramps." }, baseCost: 350, baseCps: 3 },
   { id: 'tondeuse', name: { fr: 'Bande de lézards du coin', en: 'Local Lizard Gang' }, desc: { fr: "Personne ne sait qui les a prévenus, ils sont juste là.", en: "Nobody knows who told them. They're just here." }, baseCost: 1100, baseCps: 8 },
   { id: 'serre', name: { fr: 'Campement agrandi', en: 'Expanded Campsite' }, desc: { fr: "La tente de Leroy fait maintenant deux pièces. Le grand luxe.", en: "Leroy's tent now has two rooms. Sheer luxury." }, baseCost: 12000, baseCps: 47 },
+  { id: 'hamacLeroy', name: { fr: 'Hamac de Leroy (motiverait presque)', en: "Leroy's Hammock (almost motivating)" }, desc: { fr: "Il jure que c'est là qu'il a ses meilleures idées. On attend toujours d'en voir une.", en: "He swears this is where he gets his best ideas. Still waiting to see one." }, baseCost: 45000, baseCps: 110 },
   { id: 'drone', name: { fr: 'Libellule éclaireuse', en: 'Scout Dragonfly' }, desc: { fr: "Repère les mauvaises herbes depuis les airs, mais aussi le chat des voisins.", en: "Spots weeds from above. Also spots the neighbor's cat." }, baseCost: 130000, baseCps: 260 },
   { id: 'usine', name: { fr: 'Fosse à compost coopérative', en: 'Community Compost Pit' }, desc: { fr: "Sent horriblement mauvais. Personne ne veut savoir ce qu'il y a dedans.", en: "Smells horrendous. Nobody wants to know what's in there." }, baseCost: 1.4e6, baseCps: 1400 },
+  { id: 'marcheNoir', name: { fr: 'Marché noir de vers de terre', en: 'Earthworm Black Market' }, desc: { fr: "Papi connaît un gars. Papi connaît toujours un gars.", en: "Gramps knows a guy. Gramps always knows a guy." }, baseCost: 5e6, baseCps: 3200 },
   { id: 'franchise', name: { fr: 'Papi Feuillage passe un coup de fil', en: 'Gramps Weeds Makes a Call' }, desc: { fr: "Personne ne sait comment il a eu ce permis de construire aussi vite.", en: "Nobody knows how he got that building permit so fast." }, baseCost: 1.599e7, baseCps: 7800 },
   { id: 'labo', name: { fr: 'Labo de mutation clandestin', en: 'Underground Mutation Lab' }, desc: { fr: "Financé par papi, officiellement il ne sait rien.", en: "Funded by Gramps. Officially, he knows nothing." }, baseCost: 1.849e8, baseCps: 44000 },
+  { id: 'antenneCapte', name: { fr: "Antenne qui capte n'importe quoi", en: 'Antenna That Picks Up Anything' }, desc: { fr: "Radio, télé, pensées de Leroy. Tout, sauf ce qu'on lui demande.", en: "Radio, TV, Leroy's thoughts. Everything except what you asked for." }, baseCost: 7e8, baseCps: 100000 },
   { id: 'satellite', name: { fr: "Réseau de satellites 'empruntés'", en: "Network of 'Borrowed' Satellites" }, desc: { fr: "Leroy préfère ne pas demander d'où ils viennent.", en: "Leroy prefers not to ask where they came from." }, baseCost: 2.240e9, baseCps: 260000 },
   { id: 'portail', name: { fr: 'Portail vers la Mare Originelle', en: 'Portal to the Original Pond' }, desc: { fr: "Une grenouille en est revenue changée à jamais.", en: "One frog came back from it forever changed." }, baseCost: 2.826e10, baseCps: 1.6e6 },
   { id: 'mars', name: { fr: 'Premiers martiens sur le terrain', en: 'First Martians on the Land' }, desc: { fr: "Le terrain commence tout doucement à se décoller du sol. Personne n'ose le faire remarquer à Leroy.", en: "The land is slowly starting to lift off the ground. Nobody dares point it out to Leroy." }, baseCost: 6.5e11, baseCps: 1e7 },
+  { id: 'colonieMartienne', name: { fr: 'Colonie martienne officieuse', en: 'Unofficial Martian Colony' }, desc: { fr: "Pas reconnue par aucun gouvernement. Ça n'a pas empêché Papi d'y vendre des parcelles.", en: "Not recognized by any government. Didn't stop Gramps from selling plots there." }, baseCost: 4e12, baseCps: 2.5e7 },
   { id: 'iaGalactique', name: { fr: 'IA grenouille galactique', en: 'Galactic Frog AI' }, desc: { fr: "Optimise le croassement à l'échelle de la galaxie.", en: "Optimizes croaking on a galactic scale." }, baseCost: 1.4e13, baseCps: 6.5e7 },
   { id: 'bigbang', name: { fr: 'Nénuphar du Big Bang', en: 'Big Bang Lily Pad' }, desc: { fr: "A poussé avant l'univers. Personne ne comprend comment.", en: "Grew before the universe did. Nobody understands how." }, baseCost: 1.7e14, baseCps: 4.3e8 },
+  { id: 'trouVerCompost', name: { fr: 'Trou de ver du compost', en: 'Compost Wormhole' }, desc: { fr: "Raccourci pratique entre le tas de déchets et le fond de l'univers.", en: "A handy shortcut between the compost heap and the edge of the universe." }, baseCost: 7e14, baseCps: 1e9 },
   { id: 'vaisseauGraine', name: { fr: 'Vaisseau-têtard intergalactique', en: 'Intergalactic Tadpole Ship' }, desc: { fr: "Sème des mares sur des exoplanètes.", en: "Seeds ponds on distant exoplanets." }, baseCost: 2.2e15, baseCps: 2.8e9 },
   { id: 'jardinQuantique', name: { fr: 'Marécage quantique', en: 'Quantum Marsh' }, desc: { fr: "Croasse et ne croasse pas en même temps.", en: "Croaks and doesn't croak at the same time." }, baseCost: 3e16, baseCps: 1.9e10 },
   { id: 'multiversMousse', name: { fr: 'Multivers de grenouilles', en: 'Multiverse of Frogs' }, desc: { fr: "Une grenouille dans toutes les réalités possibles.", en: "A frog in every possible reality." }, baseCost: 4.5e17, baseCps: 1.3e11 },
+  { id: 'essaimGrenouilles', name: { fr: 'Essaim de grenouilles dimensionnelles', en: 'Swarm of Dimensional Frogs' }, desc: { fr: "Coassent dans des langues qui n'existent pas encore.", en: "Croaking in languages that don't exist yet." }, baseCost: 2e18, baseCps: 3.5e11 },
   { id: 'conscienceChloro', name: { fr: 'Conscience batracienne collective', en: 'Collective Amphibian Consciousness' }, desc: { fr: "Les grenouilles ont commencé à réfléchir. C'est inquiétant.", en: "The frogs have started thinking. This is concerning." }, baseCost: 6e18, baseCps: 9e11 },
   { id: 'templeCompost', name: { fr: 'Temple du Nénuphar Éternel', en: 'Temple of the Eternal Lily Pad' }, desc: { fr: "On y vénère le grand étang originel.", en: "Here, the great original pond is worshipped." }, baseCost: 8e19, baseCps: 6e12 },
+  { id: 'sanctuaireNenuphar', name: { fr: 'Sanctuaire du Nénuphar Ultime', en: 'Sanctuary of the Ultimate Lily Pad' }, desc: { fr: "Le temple d'à côté l'a mal pris. Papi s'en fiche complètement.", en: "The temple next door didn't take it well. Gramps couldn't care less." }, baseCost: 3.3e20, baseCps: 1.5e13 },
   { id: 'grainePrimordiale', name: { fr: 'Têtard Primordial', en: 'Primordial Tadpole' }, desc: { fr: "Le tout premier têtard ayant jamais existé.", en: "The very first tadpole to have ever existed." }, baseCost: 1e21, baseCps: 4e13 },
   { id: 'jardinHorsTemps', name: { fr: 'Marécage au-delà du temps', en: 'Marsh Beyond Time' }, desc: { fr: "Il a toujours été là. Il sera toujours là.", en: "It has always been here. It will always be here." }, baseCost: 1.4e22, baseCps: 3e14 },
 ];
-const GROWTH = 1.15;
+const GROWTH = 1.18;
 
 // ================= JARDIN VISUEL (icônes évolutives par bâtiment) =================
 //
@@ -1213,7 +1257,7 @@ const UI_STRINGS = {
     specialUniqueIntro: "Bâtiments uniques, un seul exemplaire possible chacun, effets puissants.",
     prestigeBtnLabel: '🌍 Terraformer (Prestige)', ascensionBtnLabel: '🌟 Ascensionner',
     tutorialTitle: '🐸 Bienvenue sur le terrain de Leroy !',
-    tutorialBody: `<p>Papi Feuillage a "mystérieusement" gagné ce terrain vague. Trop occupé (et trop peu motivé), il a filé les clés à son petit-fils au chômage, <b>Leroy</b> : <i>"Si t'arrives à désherber, tu fais ce que tu veux du terrain. Me dérange pas trop. Mais si t'as vraiment un problème... je passerai."</i></p><p>👆 <b>Clique</b> au centre de l'écran pour désherber et gagner de la Verdure 🌿.</p><p>🏪 Ouvre le <b>menu</b> en bas de l'écran pour embaucher de l'aide qui produit de la Verdure automatiquement, même hors-ligne.</p><p>🌍 Une fois que tu as beaucoup progressé, utilise le <b>Prestige</b> (onglet dédié) pour recommencer avec des bonus permanents et aller plus vite la fois suivante.</p>`,
+    tutorialBody: `<p class="tutorialIntro">Papi Feuillage a « mystérieusement » hérité de ce terrain vague. Trop occupé pour s'en occuper, il en a filé les clés à son petit-fils au chômage, <b>Leroy</b> — c'est toi.</p><ul class="tutorialTips"><li><span>👆</span><div><b>Clique</b> au centre de l'écran pour désherber et gagner de la Verdure 🌿.</div></li><li><span>🏪</span><div>Ouvre le <b>Magasin</b> pour embaucher de l'aide qui produit toute seule, même hors-ligne.</div></li><li><span>🌍</span><div>Plus tard, utilise le <b>Prestige</b> pour repartir de zéro avec des bonus permanents.</div></li></ul>`,
     tutorialCloseBtn: 'Compris, on désherbe !',
     skipBtn: 'Passer ⏭️',
     creditsGeneric: "FUZZ<br>Un jeu créé par [Ton nom]<br>Écriture & histoire : [Ton nom]<br>Illustrations : [Ton nom]<br>Développement assisté par Claude (Anthropic)<br>Merci d'avoir joué ! 🐸",
@@ -1247,7 +1291,7 @@ const UI_STRINGS = {
     specialUniqueIntro: "Unique buildings, only one of each possible, powerful effects.",
     prestigeBtnLabel: '🌍 Terraform (Prestige)', ascensionBtnLabel: '🌟 Ascend',
     tutorialTitle: "🐸 Welcome to Leroy's plot!",
-    tutorialBody: `<p>Gramps Weeds "mysteriously" won this vacant lot. Too busy (and not motivated enough), he handed the keys to his unemployed grandson, <b>Leroy</b>: <i>"If you manage to weed it, do whatever you want with the place. Don't bother me too much. But if you really have a problem... I'll come by."</i></p><p>👆 <b>Click</b> the center of the screen to weed and earn Greenery 🌿.</p><p>🏪 Open the <b>menu</b> at the bottom of the screen to hire help that produces Greenery automatically, even offline.</p><p>🌍 Once you've progressed a lot, use <b>Prestige</b> (dedicated tab) to start over with permanent bonuses and go faster next time.</p>`,
+    tutorialBody: `<p class="tutorialIntro">Gramps Weeds "mysteriously" inherited this vacant lot. Too busy to deal with it, he handed the keys to his unemployed grandson, <b>Leroy</b> — that's you.</p><ul class="tutorialTips"><li><span>👆</span><div><b>Click</b> the center of the screen to weed and earn Greenery 🌿.</div></li><li><span>🏪</span><div>Open the <b>Shop</b> to hire help that produces on its own, even offline.</div></li><li><span>🌍</span><div>Later, use <b>Prestige</b> to start fresh with permanent bonuses.</div></li></ul>`,
     tutorialCloseBtn: "Got it, let's weed!",
     skipBtn: 'Skip ⏭️',
     creditsGeneric: "FUZZ<br>A game by [Your name]<br>Writing & story: [Your name]<br>Art: [Your name]<br>Development assisted by Claude (Anthropic)<br>Thanks for playing! 🐸",
@@ -1796,26 +1840,34 @@ document.getElementById('sceneSkipBtn').addEventListener('click', (e) => {
 // 'flatMult' : multiplie le gain de clic de base
 // 'cpsPercent' : ajoute un % de la production/seconde totale au gain de clic (additif, garde le clic utile très loin)
 const CLICK_UPGRADES = [
-  { id: 'c1', name: { fr: 'Gants renforcés', en: 'Reinforced Gloves' }, desc: { fr: '+100% Verdure par clic.', en: '+100% Greenery per click.' }, cost: 30, type: 'flatMult', value: 2 },
-  { id: 'c2', name: { fr: 'Clic synchronisé', en: 'Synced Click' }, desc: { fr: 'Chaque clic ajoute 5% de ta production/seconde.', en: 'Each click adds 5% of your production/second.' }, cost: 200, type: 'cpsPercent', value: 0.05 },
-  { id: 'c3', name: { fr: "Poignet d'acier", en: 'Steel Wrist' }, desc: { fr: '+100% Verdure par clic supplémentaire.', en: '+100% additional Greenery per click.' }, cost: 2200, type: 'flatMult', value: 2 },
-  { id: 'c4', name: { fr: 'Clic en rafale', en: 'Burst Click' }, desc: { fr: '+5% supplémentaire de ta production/seconde par clic.', en: 'An additional +5% of your production/second per click.' }, cost: 24000, type: 'cpsPercent', value: 0.05 },
-  { id: 'c5', name: { fr: 'Binette vibrante', en: 'Vibrating Hand Hoe' }, desc: { fr: '+100% Verdure par clic supplémentaire.', en: '+100% additional Greenery per click.' }, cost: 260000, type: 'flatMult', value: 2 },
-  { id: 'c6', name: { fr: 'Réflexes augmentés', en: 'Enhanced Reflexes' }, desc: { fr: '+5% supplémentaire de ta production/seconde par clic.', en: 'An additional +5% of your production/second per click.' }, cost: 2.8e6, type: 'cpsPercent', value: 0.05 },
-  { id: 'c7', name: { fr: 'Gant-drone', en: 'Drone Glove' }, desc: { fr: '+150% Verdure par clic supplémentaire.', en: '+150% additional Greenery per click.' }, cost: 4e7, type: 'flatMult', value: 2.5 },
-  { id: 'c8', name: { fr: 'Synchronisation neurale', en: 'Neural Sync' }, desc: { fr: '+6% supplémentaire de ta production/seconde par clic.', en: 'An additional +6% of your production/second per click.' }, cost: 6.6e8, type: 'cpsPercent', value: 0.06 },
-  { id: 'c9', name: { fr: 'Exosquelette léger', en: 'Light Exoskeleton' }, desc: { fr: '+150% Verdure par clic supplémentaire.', en: '+150% additional Greenery per click.' }, cost: 1e10, type: 'flatMult', value: 2.5 },
-  { id: 'c10', name: { fr: 'Clic quantique', en: 'Quantum Click' }, desc: { fr: '+6% supplémentaire de ta production/seconde par clic.', en: 'An additional +6% of your production/second per click.' }, cost: 1.5e11, type: 'cpsPercent', value: 0.06 },
-  { id: 'c11', name: { fr: 'Main martienne', en: 'Martian Hand' }, desc: { fr: '+200% Verdure par clic supplémentaire.', en: '+200% additional Greenery per click.' }, cost: 2e12, type: 'flatMult', value: 3 },
-  { id: 'c12', name: { fr: 'Résonance galactique', en: 'Galactic Resonance' }, desc: { fr: '+7% supplémentaire de ta production/seconde par clic.', en: 'An additional +7% of your production/second per click.' }, cost: 2.8e13, type: 'cpsPercent', value: 0.07 },
-  { id: 'c13', name: { fr: 'Doigts du Big Bang', en: 'Big Bang Fingers' }, desc: { fr: '+200% Verdure par clic supplémentaire.', en: '+200% additional Greenery per click.' }, cost: 3.4e14, type: 'flatMult', value: 3 },
-  { id: 'c14', name: { fr: 'Clic intergalactique', en: 'Intergalactic Click' }, desc: { fr: '+7% supplémentaire de ta production/seconde par clic.', en: 'An additional +7% of your production/second per click.' }, cost: 4.4e15, type: 'cpsPercent', value: 0.07 },
-  { id: 'c15', name: { fr: 'Pression quantique', en: 'Quantum Pressure' }, desc: { fr: '+250% Verdure par clic supplémentaire.', en: '+250% additional Greenery per click.' }, cost: 6e16, type: 'flatMult', value: 3.5 },
-  { id: 'c16', name: { fr: 'Écho de mousse', en: 'Moss Echo' }, desc: { fr: '+8% supplémentaire de ta production/seconde par clic.', en: 'An additional +8% of your production/second per click.' }, cost: 9e17, type: 'cpsPercent', value: 0.08 },
-  { id: 'c17', name: { fr: 'Volonté chlorophyllienne', en: 'Chlorophyll Will' }, desc: { fr: '+250% Verdure par clic supplémentaire.', en: '+250% additional Greenery per click.' }, cost: 1.2e19, type: 'flatMult', value: 3.5 },
-  { id: 'c18', name: { fr: 'Rituel du compost', en: 'Compost Ritual' }, desc: { fr: '+8% supplémentaire de ta production/seconde par clic.', en: 'An additional +8% of your production/second per click.' }, cost: 1.6e20, type: 'cpsPercent', value: 0.08 },
-  { id: 'c19', name: { fr: 'Empreinte primordiale', en: 'Primordial Imprint' }, desc: { fr: '+300% Verdure par clic supplémentaire.', en: '+300% additional Greenery per click.' }, cost: 2e21, type: 'flatMult', value: 4 },
-  { id: 'c20', name: { fr: 'Clic hors du temps', en: 'Click Beyond Time' }, desc: { fr: '+10% supplémentaire de ta production/seconde par clic.', en: 'An additional +10% of your production/second per click.' }, cost: 2.8e22, type: 'cpsPercent', value: 0.10 },
+  { id: 'c1', name: { fr: 'Gants renforcés', en: 'Reinforced Gloves' }, desc: { fr: '+100% Verdure par clic.', en: '+100% Greenery per click.' }, cost: 45, type: 'flatMult', value: 2 },
+  { id: 'c2', name: { fr: 'Clic synchronisé', en: 'Synced Click' }, desc: { fr: 'Chaque clic ajoute 5% de ta production/seconde.', en: 'Each click adds 5% of your production/second.' }, cost: 300, type: 'cpsPercent', value: 0.05 },
+  { id: 'c3', name: { fr: "Poignet d'acier", en: 'Steel Wrist' }, desc: { fr: '+100% Verdure par clic supplémentaire.', en: '+100% additional Greenery per click.' }, cost: 3300, type: 'flatMult', value: 2 },
+  { id: 'c4', name: { fr: 'Clic en rafale', en: 'Burst Click' }, desc: { fr: '+5% supplémentaire de ta production/seconde par clic.', en: 'An additional +5% of your production/second per click.' }, cost: 36000, type: 'cpsPercent', value: 0.05 },
+  { id: 'c21', name: { fr: 'Gant à ventouses', en: 'Suction-Cup Glove' }, desc: { fr: '+125% Verdure par clic supplémentaire.', en: '+125% additional Greenery per click.' }, cost: 120000, type: 'flatMult', value: 2.25 },
+  { id: 'c22', name: { fr: 'Cadence naturelle', en: 'Natural Cadence' }, desc: { fr: '+5.5% supplémentaire de ta production/seconde par clic.', en: 'An additional +5.5% of your production/second per click.' }, cost: 200000, type: 'cpsPercent', value: 0.055 },
+  { id: 'c5', name: { fr: 'Binette vibrante', en: 'Vibrating Hand Hoe' }, desc: { fr: '+100% Verdure par clic supplémentaire.', en: '+100% additional Greenery per click.' }, cost: 390000, type: 'flatMult', value: 2 },
+  { id: 'c6', name: { fr: 'Réflexes augmentés', en: 'Enhanced Reflexes' }, desc: { fr: '+5% supplémentaire de ta production/seconde par clic.', en: 'An additional +5% of your production/second per click.' }, cost: 4.2e6, type: 'cpsPercent', value: 0.05 },
+  { id: 'c7', name: { fr: 'Gant-drone', en: 'Drone Glove' }, desc: { fr: '+150% Verdure par clic supplémentaire.', en: '+150% additional Greenery per click.' }, cost: 6e7, type: 'flatMult', value: 2.5 },
+  { id: 'c8', name: { fr: 'Synchronisation neurale', en: 'Neural Sync' }, desc: { fr: '+6% supplémentaire de ta production/seconde par clic.', en: 'An additional +6% of your production/second per click.' }, cost: 9.9e8, type: 'cpsPercent', value: 0.06 },
+  { id: 'c23', name: { fr: 'Prothèse de jardinier', en: "Gardener's Prosthetic" }, desc: { fr: '+175% Verdure par clic supplémentaire.', en: '+175% additional Greenery per click.' }, cost: 2.5e9, type: 'flatMult', value: 2.75 },
+  { id: 'c24', name: { fr: 'Mémoire musculaire', en: 'Muscle Memory' }, desc: { fr: '+6.5% supplémentaire de ta production/seconde par clic.', en: 'An additional +6.5% of your production/second per click.' }, cost: 5e9, type: 'cpsPercent', value: 0.065 },
+  { id: 'c9', name: { fr: 'Exosquelette léger', en: 'Light Exoskeleton' }, desc: { fr: '+150% Verdure par clic supplémentaire.', en: '+150% additional Greenery per click.' }, cost: 1.5e10, type: 'flatMult', value: 2.5 },
+  { id: 'c10', name: { fr: 'Clic quantique', en: 'Quantum Click' }, desc: { fr: '+6% supplémentaire de ta production/seconde par clic.', en: 'An additional +6% of your production/second per click.' }, cost: 2.25e11, type: 'cpsPercent', value: 0.06 },
+  { id: 'c11', name: { fr: 'Main martienne', en: 'Martian Hand' }, desc: { fr: '+200% Verdure par clic supplémentaire.', en: '+200% additional Greenery per click.' }, cost: 3e12, type: 'flatMult', value: 3 },
+  { id: 'c12', name: { fr: 'Résonance galactique', en: 'Galactic Resonance' }, desc: { fr: '+7% supplémentaire de ta production/seconde par clic.', en: 'An additional +7% of your production/second per click.' }, cost: 4.2e13, type: 'cpsPercent', value: 0.07 },
+  { id: 'c25', name: { fr: 'Griffe martienne', en: 'Martian Claw' }, desc: { fr: '+225% Verdure par clic supplémentaire.', en: '+225% additional Greenery per click.' }, cost: 1e14, type: 'flatMult', value: 3.25 },
+  { id: 'c26', name: { fr: 'Câblage neuronal avancé', en: 'Advanced Neural Wiring' }, desc: { fr: '+7.5% supplémentaire de ta production/seconde par clic.', en: 'An additional +7.5% of your production/second per click.' }, cost: 2e14, type: 'cpsPercent', value: 0.075 },
+  { id: 'c13', name: { fr: 'Doigts du Big Bang', en: 'Big Bang Fingers' }, desc: { fr: '+200% Verdure par clic supplémentaire.', en: '+200% additional Greenery per click.' }, cost: 5.1e14, type: 'flatMult', value: 3 },
+  { id: 'c14', name: { fr: 'Clic intergalactique', en: 'Intergalactic Click' }, desc: { fr: '+7% supplémentaire de ta production/seconde par clic.', en: 'An additional +7% of your production/second per click.' }, cost: 6.6e15, type: 'cpsPercent', value: 0.07 },
+  { id: 'c15', name: { fr: 'Pression quantique', en: 'Quantum Pressure' }, desc: { fr: '+250% Verdure par clic supplémentaire.', en: '+250% additional Greenery per click.' }, cost: 9e16, type: 'flatMult', value: 3.5 },
+  { id: 'c16', name: { fr: 'Écho de mousse', en: 'Moss Echo' }, desc: { fr: '+8% supplémentaire de ta production/seconde par clic.', en: 'An additional +8% of your production/second per click.' }, cost: 1.35e18, type: 'cpsPercent', value: 0.08 },
+  { id: 'c27', name: { fr: 'Poing du compost éternel', en: 'Fist of Eternal Compost' }, desc: { fr: '+275% Verdure par clic supplémentaire.', en: '+275% additional Greenery per click.' }, cost: 3.5e18, type: 'flatMult', value: 3.75 },
+  { id: 'c28', name: { fr: 'Battement stellaire', en: 'Stellar Pulse' }, desc: { fr: '+8% supplémentaire de ta production/seconde par clic.', en: 'An additional +8% of your production/second per click.' }, cost: 7e18, type: 'cpsPercent', value: 0.08 },
+  { id: 'c17', name: { fr: 'Volonté chlorophyllienne', en: 'Chlorophyll Will' }, desc: { fr: '+250% Verdure par clic supplémentaire.', en: '+250% additional Greenery per click.' }, cost: 1.8e19, type: 'flatMult', value: 3.5 },
+  { id: 'c18', name: { fr: 'Rituel du compost', en: 'Compost Ritual' }, desc: { fr: '+8% supplémentaire de ta production/seconde par clic.', en: 'An additional +8% of your production/second per click.' }, cost: 2.4e20, type: 'cpsPercent', value: 0.08 },
+  { id: 'c19', name: { fr: 'Empreinte primordiale', en: 'Primordial Imprint' }, desc: { fr: '+300% Verdure par clic supplémentaire.', en: '+300% additional Greenery per click.' }, cost: 3e21, type: 'flatMult', value: 4 },
+  { id: 'c20', name: { fr: 'Clic hors du temps', en: 'Click Beyond Time' }, desc: { fr: '+10% supplémentaire de ta production/seconde par clic.', en: 'An additional +10% of your production/second per click.' }, cost: 4.2e22, type: 'cpsPercent', value: 0.10 },
 ];
 
 // Synergies: chaque unité de "source" boost le cps de "target" de percent
@@ -1838,13 +1890,16 @@ const UNIQUE_BUILDINGS = [
   { id: 'chatJardin', name: { fr: 'Le Chat du Jardin', en: 'The Garden Cat' }, desc: { fr: "Rapporte un bonus aléatoire de Verdure toutes les heures.", en: "Brings a random Greenery bonus every hour." }, cost: 5e6 },
   { id: 'fontaineMagique', name: { fr: 'Fontaine Magique', en: 'Magic Fountain' }, desc: { fr: '+20% de production globale.', en: '+20% global production.' }, cost: 5e7 },
   { id: 'gnomeDeJardin', name: { fr: 'Gnome de Jardin Ancien', en: 'Ancient Garden Gnome' }, desc: { fr: '+50% de Verdure gagnée par clic.', en: '+50% Greenery earned per click.' }, cost: 2e8 },
+  { id: 'nenupharDore', name: { fr: 'Nénuphar Doré', en: 'Golden Lily Pad' }, desc: { fr: '+75% de Verdure gagnée par clic supplémentaire.', en: '+75% additional Greenery earned per click.' }, cost: 4e8 },
   { id: 'horlogeSolaire', name: { fr: 'Horloge Solaire', en: 'Sun Clock' }, desc: { fr: "+30% d'efficacité de production hors-ligne.", en: "+30% offline production efficiency." }, cost: 1e9 },
   { id: 'grelotVent', name: { fr: 'Grelot du Vent', en: 'Wind Chime' }, desc: { fr: "Capacité active : x4 production pendant 20s.", en: "Active ability: x4 production for 20s." }, cost: 3e9, active: { cooldownMs: 4 * 60000, type: 'boostMult', value: 4, durationMs: 20000 } },
   { id: 'bibliothequeRacines', name: { fr: 'Bibliothèque des Racines', en: 'Library of Roots' }, desc: { fr: '+30% de gain de Connaissances.', en: '+30% Knowledge gain.' }, cost: 5e10 },
+  { id: 'grimoireMousse', name: { fr: 'Grimoire de Mousse', en: 'Moss Grimoire' }, desc: { fr: '+40% de gain de Connaissances supplémentaire.', en: '+40% additional Knowledge gain.' }, cost: 2e11 },
   { id: 'collaborationFamiliale', name: { fr: 'Collaboration Familiale', en: 'Family Collaboration' }, desc: { fr: "Cousin Bramble envoie quelques-uns de ses ouvriers filer un coup de main. +25% de production globale.", en: "Cousin Bramble sends a few of his workers to help out. +25% global production." }, cost: 8e11, requires: s => (s.buildings.stagiaire || 0) >= 1000 },
   { id: 'meuleCosmique', name: { fr: 'Meule Cosmique', en: 'Cosmic Millstone' }, desc: { fr: '+30% de production globale supplémentaire.', en: '+30% additional global production.' }, cost: 8e12 },
   { id: 'coeurBraise', name: { fr: 'Cœur de Braise', en: 'Ember Heart' }, desc: { fr: "Capacité active : gain instantané égal à 10 minutes de production.", en: "Active ability: instant gain equal to 10 minutes of production." }, cost: 5e13, active: { cooldownMs: 8 * 60000, type: 'instantGain', minutesEquivalent: 10 } },
   { id: 'sentinelleTemporelle', name: { fr: 'Sentinelle Temporelle', en: 'Temporal Sentinel' }, desc: { fr: "Réduit de 50% les visites surprises de Papi Feuillage.", en: "Reduces Gramps Weeds' surprise visits by 50%." }, cost: 2e14 },
+  { id: 'jardinEternel', name: { fr: 'Jardin Éternel', en: 'Eternal Garden' }, desc: { fr: '+40% de production globale supplémentaire.', en: '+40% additional global production.' }, cost: 6e14 },
 ];
 
 // ================= COSMÉTIQUES DE CLIC (purement visuels) =================
@@ -1857,87 +1912,109 @@ const SKINS = [
 
 // ================= RESEARCH TREE (Connaissances) =================
 const RESEARCH = [
-  { id: 'r_prod1', name: { fr: 'Compost amélioré', en: 'Improved Compost' }, desc: { fr: '+10% production globale.', en: '+10% global production.' }, cost: 5, type: 'prodMult', value: 1.10, requires: null },
-  { id: 'r_click1', name: { fr: 'Technique du poignet', en: 'Wrist Technique' }, desc: { fr: '+50% Verdure par clic.', en: '+50% Greenery per click.' }, cost: 5, type: 'clickMult', value: 1.5, requires: null },
-  { id: 'r_knowledge1', name: { fr: "Carnet d'observations", en: 'Observation Notebook' }, desc: { fr: '+50% de gain de Connaissances.', en: '+50% Knowledge gain.' }, cost: 5, type: 'knowledgeMult', value: 1.5, requires: null },
-  { id: 'r_cheap1', name: { fr: 'Achat en gros', en: 'Bulk Buying' }, desc: { fr: '-8% sur le coût des bâtiments.', en: '-8% on building costs.' }, cost: 8, type: 'cheaper', value: 0.92, requires: null },
-  { id: 'r_synergy1', name: { fr: 'Écosystème optimisé', en: 'Optimized Ecosystem' }, desc: { fr: '+50% sur tous les effets de synergie.', en: '+50% on all synergy effects.' }, cost: 10, type: 'synergyMult', value: 1.5, requires: 'r_prod1' },
-  { id: 'r_weather1', name: { fr: 'Abri météo', en: 'Weather Shelter' }, desc: { fr: 'Réduit de moitié les effets négatifs de la météo.', en: 'Halves the negative effects of weather.' }, cost: 12, type: 'weatherShield', value: 0.5, requires: null },
-  { id: 'r_quest1', name: { fr: 'Carnet de quêtes', en: 'Quest Notebook' }, desc: { fr: '+50% de récompenses de quêtes journalières.', en: '+50% daily quest rewards.' }, cost: 10, type: 'questMult', value: 1.5, requires: null },
-  { id: 'r_offline1', name: { fr: 'Goutte-à-goutte', en: 'Drip Irrigation' }, desc: { fr: "+20% d'efficacité hors-ligne.", en: "+20% offline efficiency." }, cost: 15, type: 'offlineBonus', value: 0.2, requires: null },
-  { id: 'r_prod2', name: { fr: 'Biodiversité contrôlée', en: 'Controlled Biodiversity' }, desc: { fr: '+15% production globale supplémentaire.', en: '+15% additional global production.' }, cost: 20, type: 'prodMult', value: 1.15, requires: 'r_prod1' },
-  { id: 'r_prod3', name: { fr: 'Harmonie du jardin', en: 'Garden Harmony' }, desc: { fr: '+25% production globale supplémentaire.', en: '+25% additional global production.' }, cost: 35, type: 'prodMult', value: 1.25, requires: 'r_prod2' },
-  { id: 'r_clickCps1', name: { fr: 'Résonance verte', en: 'Green Resonance' }, desc: { fr: '+8% de production/seconde ajoutée à chaque clic.', en: '+8% of production/second added to each click.' }, cost: 15, type: 'clickCpsPercent', value: 0.08, requires: 'r_click1' },
+  { id: 'r_prod1', name: { fr: 'Compost amélioré', en: 'Improved Compost' }, desc: { fr: '+10% production globale.', en: '+10% global production.' }, cost: 7, type: 'prodMult', value: 1.10, requires: null },
+  { id: 'r_click1', name: { fr: 'Technique du poignet', en: 'Wrist Technique' }, desc: { fr: '+50% Verdure par clic.', en: '+50% Greenery per click.' }, cost: 7, type: 'clickMult', value: 1.5, requires: null },
+  { id: 'r_knowledge1', name: { fr: "Carnet d'observations", en: 'Observation Notebook' }, desc: { fr: '+50% de gain de Connaissances.', en: '+50% Knowledge gain.' }, cost: 7, type: 'knowledgeMult', value: 1.5, requires: null },
+  { id: 'r_cheap1', name: { fr: 'Achat en gros', en: 'Bulk Buying' }, desc: { fr: '-8% sur le coût des bâtiments.', en: '-8% on building costs.' }, cost: 11, type: 'cheaper', value: 0.92, requires: null },
+  { id: 'r_synergy1', name: { fr: 'Écosystème optimisé', en: 'Optimized Ecosystem' }, desc: { fr: '+50% sur tous les effets de synergie.', en: '+50% on all synergy effects.' }, cost: 13, type: 'synergyMult', value: 1.5, requires: 'r_prod1' },
+  { id: 'r_weather1', name: { fr: 'Abri météo', en: 'Weather Shelter' }, desc: { fr: 'Réduit de moitié les effets négatifs de la météo.', en: 'Halves the negative effects of weather.' }, cost: 16, type: 'weatherShield', value: 0.5, requires: null },
+  { id: 'r_quest1', name: { fr: 'Carnet de quêtes', en: 'Quest Notebook' }, desc: { fr: '+50% de récompenses de quêtes journalières.', en: '+50% daily quest rewards.' }, cost: 13, type: 'questMult', value: 1.5, requires: null },
+  { id: 'r_offline1', name: { fr: 'Goutte-à-goutte', en: 'Drip Irrigation' }, desc: { fr: "+20% d'efficacité hors-ligne.", en: "+20% offline efficiency." }, cost: 20, type: 'offlineBonus', value: 0.2, requires: null },
+  { id: 'r_prod2', name: { fr: 'Biodiversité contrôlée', en: 'Controlled Biodiversity' }, desc: { fr: '+15% production globale supplémentaire.', en: '+15% additional global production.' }, cost: 26, type: 'prodMult', value: 1.15, requires: 'r_prod1' },
+  { id: 'r_prod3', name: { fr: 'Harmonie du jardin', en: 'Garden Harmony' }, desc: { fr: '+25% production globale supplémentaire.', en: '+25% additional global production.' }, cost: 46, type: 'prodMult', value: 1.25, requires: 'r_prod2' },
+  { id: 'r_clickCps1', name: { fr: 'Résonance verte', en: 'Green Resonance' }, desc: { fr: '+8% de production/seconde ajoutée à chaque clic.', en: '+8% of production/second added to each click.' }, cost: 20, type: 'clickCpsPercent', value: 0.08, requires: 'r_click1' },
 
-  // ===== Palier 2 : début de la boucle de prestige (coûts 60-200) =====
-  { id: 'r_prod4', name: { fr: 'Permaculture', en: 'Permaculture' }, desc: { fr: '+20% production globale supplémentaire.', en: '+20% additional global production.' }, cost: 60, type: 'prodMult', value: 1.20, requires: 'r_prod3' },
-  { id: 'r_click2', name: { fr: 'Gant sur-mesure', en: 'Custom-Fit Glove' }, desc: { fr: '+75% Verdure par clic supplémentaire.', en: '+75% additional Greenery per click.' }, cost: 80, type: 'clickMult', value: 1.75, requires: 'r_click1' },
-  { id: 'r_cheap2', name: { fr: 'Négociation de gros', en: 'Bulk Negotiation' }, desc: { fr: '-6% supplémentaire sur le coût des bâtiments.', en: '-6% additional on building costs.' }, cost: 100, type: 'cheaper', value: 0.94, requires: 'r_cheap1' },
-  { id: 'r_synergy2', name: { fr: 'Réseau racinaire', en: 'Root Network' }, desc: { fr: '+75% supplémentaire sur les effets de synergie.', en: '+75% additional on synergy effects.' }, cost: 150, type: 'synergyMult', value: 1.75, requires: 'r_synergy1' },
-  { id: 'r_knowledge2', name: { fr: 'Journal de bord', en: 'Logbook' }, desc: { fr: '+75% de gain de Connaissances supplémentaire.', en: '+75% additional Knowledge gain.' }, cost: 130, type: 'knowledgeMult', value: 1.75, requires: 'r_knowledge1' },
-  { id: 'r_clickCps2', name: { fr: 'Réflexe conditionné', en: 'Conditioned Reflex' }, desc: { fr: '+10% supplémentaire de production/seconde ajoutée à chaque clic.', en: '+10% additional production/second added to each click.' }, cost: 200, type: 'clickCpsPercent', value: 0.10, requires: 'r_clickCps1' },
+  // ===== Palier 2 : début de la boucle de prestige (coûts ~80-260) =====
+  { id: 'r_prod4', name: { fr: 'Permaculture', en: 'Permaculture' }, desc: { fr: '+20% production globale supplémentaire.', en: '+20% additional global production.' }, cost: 78, type: 'prodMult', value: 1.20, requires: 'r_prod3' },
+  { id: 'r_click2', name: { fr: 'Gant sur-mesure', en: 'Custom-Fit Glove' }, desc: { fr: '+75% Verdure par clic supplémentaire.', en: '+75% additional Greenery per click.' }, cost: 104, type: 'clickMult', value: 1.75, requires: 'r_click1' },
+  { id: 'r_cheap2', name: { fr: 'Négociation de gros', en: 'Bulk Negotiation' }, desc: { fr: '-6% supplémentaire sur le coût des bâtiments.', en: '-6% additional on building costs.' }, cost: 130, type: 'cheaper', value: 0.94, requires: 'r_cheap1' },
+  { id: 'r_quest2', name: { fr: 'Calepin de terrain', en: 'Field Notepad' }, desc: { fr: '+25% supplémentaire de récompenses de quêtes.', en: '+25% additional daily quest rewards.' }, cost: 180, type: 'questMult', value: 1.75, requires: 'r_quest1' },
+  { id: 'r_synergy2', name: { fr: 'Réseau racinaire', en: 'Root Network' }, desc: { fr: '+75% supplémentaire sur les effets de synergie.', en: '+75% additional on synergy effects.' }, cost: 195, type: 'synergyMult', value: 1.75, requires: 'r_synergy1' },
+  { id: 'r_knowledge2', name: { fr: 'Journal de bord', en: 'Logbook' }, desc: { fr: '+75% de gain de Connaissances supplémentaire.', en: '+75% additional Knowledge gain.' }, cost: 169, type: 'knowledgeMult', value: 1.75, requires: 'r_knowledge1' },
+  { id: 'r_clickCps2', name: { fr: 'Réflexe conditionné', en: 'Conditioned Reflex' }, desc: { fr: '+10% supplémentaire de production/seconde ajoutée à chaque clic.', en: '+10% additional production/second added to each click.' }, cost: 260, type: 'clickCpsPercent', value: 0.10, requires: 'r_clickCps1' },
 
-  // ===== Palier 3 : plusieurs prestiges (coûts 1 000-3 000) =====
-  { id: 'r_prod5', name: { fr: 'Ingénierie du sol', en: 'Soil Engineering' }, desc: { fr: '+35% production globale supplémentaire.', en: '+35% additional global production.' }, cost: 1000, type: 'prodMult', value: 1.35, requires: 'r_prod4' },
-  { id: 'r_click3', name: { fr: 'Gant bionique', en: 'Bionic Glove' }, desc: { fr: '+125% Verdure par clic supplémentaire.', en: '+125% additional Greenery per click.' }, cost: 1500, type: 'clickMult', value: 2.25, requires: 'r_click2' },
-  { id: 'r_offline2', name: { fr: 'Arrosage automatique', en: 'Automatic Watering' }, desc: { fr: "+25% d'efficacité hors-ligne supplémentaire.", en: "+25% additional offline efficiency." }, cost: 2000, type: 'offlineBonus', value: 0.25, requires: 'r_offline1' },
-  { id: 'r_knowledge3', name: { fr: 'Bibliothèque de poche', en: 'Pocket Library' }, desc: { fr: '+100% de gain de Connaissances supplémentaire.', en: '+100% additional Knowledge gain.' }, cost: 3000, type: 'knowledgeMult', value: 2.0, requires: 'r_knowledge2' },
-  { id: 'r_quest2', name: { fr: 'Planning hebdomadaire', en: 'Weekly Planner' }, desc: { fr: '+100% de récompenses de quêtes supplémentaire.', en: '+100% additional daily quest rewards.' }, cost: 2500, type: 'questMult', value: 2.0, requires: 'r_quest1' },
+  // ===== Palier 3 : plusieurs prestiges (coûts ~1 300-3 900) =====
+  { id: 'r_prod5', name: { fr: 'Ingénierie du sol', en: 'Soil Engineering' }, desc: { fr: '+35% production globale supplémentaire.', en: '+35% additional global production.' }, cost: 1300, type: 'prodMult', value: 1.35, requires: 'r_prod4' },
+  { id: 'r_click3', name: { fr: 'Gant bionique', en: 'Bionic Glove' }, desc: { fr: '+125% Verdure par clic supplémentaire.', en: '+125% additional Greenery per click.' }, cost: 1950, type: 'clickMult', value: 2.25, requires: 'r_click2' },
+  { id: 'r_offline2', name: { fr: 'Arrosage automatique', en: 'Automatic Watering' }, desc: { fr: "+25% d'efficacité hors-ligne supplémentaire.", en: "+25% additional offline efficiency." }, cost: 2600, type: 'offlineBonus', value: 0.25, requires: 'r_offline1' },
+  { id: 'r_clickCps3', name: { fr: 'Rythme du jardinier', en: "Gardener's Rhythm" }, desc: { fr: '+12% supplémentaire de production/seconde ajoutée à chaque clic.', en: '+12% additional production/second added to each click.' }, cost: 2200, type: 'clickCpsPercent', value: 0.12, requires: 'r_clickCps2' },
+  { id: 'r_knowledge3', name: { fr: 'Bibliothèque de poche', en: 'Pocket Library' }, desc: { fr: '+100% de gain de Connaissances supplémentaire.', en: '+100% additional Knowledge gain.' }, cost: 3900, type: 'knowledgeMult', value: 2.0, requires: 'r_knowledge2' },
+  { id: 'r_quest3', name: { fr: 'Planning hebdomadaire', en: 'Weekly Planner' }, desc: { fr: '+100% de récompenses de quêtes supplémentaire.', en: '+100% additional daily quest rewards.' }, cost: 3250, type: 'questMult', value: 2.0, requires: 'r_quest2' },
 
-  // ===== Palier 4 : début de l'ascension (coûts 25 000-150 000) =====
-  { id: 'r_prod6', name: { fr: 'Optimisation totale', en: 'Total Optimization' }, desc: { fr: '+60% production globale supplémentaire.', en: '+60% additional global production.' }, cost: 25000, type: 'prodMult', value: 1.60, requires: 'r_prod5' },
-  { id: 'r_synergy3', name: { fr: 'Réseau mycorhizien', en: 'Mycorrhizal Network' }, desc: { fr: '+150% supplémentaire sur les effets de synergie.', en: '+150% additional on synergy effects.' }, cost: 40000, type: 'synergyMult', value: 2.5, requires: 'r_synergy2' },
-  { id: 'r_clickCps3', name: { fr: 'Instinct de jardinier', en: "Gardener's Instinct" }, desc: { fr: '+15% supplémentaire de production/seconde ajoutée à chaque clic.', en: '+15% additional production/second added to each click.' }, cost: 60000, type: 'clickCpsPercent', value: 0.15, requires: 'r_clickCps2' },
-  { id: 'r_knowledge4', name: { fr: 'Archives secrètes', en: 'Secret Archives' }, desc: { fr: '+150% de gain de Connaissances supplémentaire.', en: '+150% additional Knowledge gain.' }, cost: 150000, type: 'knowledgeMult', value: 2.5, requires: 'r_knowledge3' },
+  // ===== Palier 4 : début de l'ascension (coûts ~32 500-195 000) =====
+  { id: 'r_prod6', name: { fr: 'Optimisation totale', en: 'Total Optimization' }, desc: { fr: '+60% production globale supplémentaire.', en: '+60% additional global production.' }, cost: 32500, type: 'prodMult', value: 1.60, requires: 'r_prod5' },
+  { id: 'r_click4', name: { fr: 'Gant stellaire', en: 'Stellar Glove' }, desc: { fr: '+50% Verdure par clic supplémentaire.', en: '+50% additional Greenery per click.' }, cost: 90000, type: 'clickMult', value: 1.5, requires: 'r_click3' },
+  { id: 'r_cheap3', name: { fr: "Contrat d'exclusivité", en: 'Exclusive Contract' }, desc: { fr: '-8% supplémentaire sur le coût des bâtiments.', en: '-8% additional on building costs.' }, cost: 120000, type: 'cheaper', value: 0.92, requires: 'r_cheap2' },
+  { id: 'r_synergy3', name: { fr: 'Réseau mycorhizien', en: 'Mycorrhizal Network' }, desc: { fr: '+150% supplémentaire sur les effets de synergie.', en: '+150% additional on synergy effects.' }, cost: 52000, type: 'synergyMult', value: 2.5, requires: 'r_synergy2' },
+  { id: 'r_clickCps4', name: { fr: 'Instinct de jardinier', en: "Gardener's Instinct" }, desc: { fr: '+15% supplémentaire de production/seconde ajoutée à chaque clic.', en: '+15% additional production/second added to each click.' }, cost: 78000, type: 'clickCpsPercent', value: 0.15, requires: 'r_clickCps3' },
+  { id: 'r_knowledge4', name: { fr: 'Archives secrètes', en: 'Secret Archives' }, desc: { fr: '+150% de gain de Connaissances supplémentaire.', en: '+150% additional Knowledge gain.' }, cost: 195000, type: 'knowledgeMult', value: 2.5, requires: 'r_knowledge3' },
+
+  // ===== Palier 5 : après l'Ascension (coûts ~400 000-600 000) =====
+  { id: 'r_prod7', name: { fr: 'Résonance chlorophyllienne totale', en: 'Total Chlorophyll Resonance' }, desc: { fr: '+80% production globale supplémentaire.', en: '+80% additional global production.' }, cost: 400000, type: 'prodMult', value: 1.80, requires: 'r_prod6' },
+  { id: 'r_click5', name: { fr: "Doigts d'ambre stellaire", en: 'Amber Stellar Fingers' }, desc: { fr: '+75% Verdure par clic supplémentaire.', en: '+75% additional Greenery per click.' }, cost: 500000, type: 'clickMult', value: 1.75, requires: 'r_click4' },
+  { id: 'r_knowledge5', name: { fr: 'Sagesse post-ascension', en: 'Post-Ascension Wisdom' }, desc: { fr: '+175% de gain de Connaissances supplémentaire.', en: '+175% additional Knowledge gain.' }, cost: 450000, type: 'knowledgeMult', value: 2.75, requires: 'r_knowledge4' },
+  { id: 'r_synergy4', name: { fr: 'Réseau racinaire absolu', en: 'Absolute Root Network' }, desc: { fr: '+200% supplémentaire sur les effets de synergie.', en: '+200% additional on synergy effects.' }, cost: 600000, type: 'synergyMult', value: 3.0, requires: 'r_synergy3' },
 ];
 
 // Recherches infinies : rachetables indéfiniment (coût croissant à chaque niveau, comme
 // les bâtiments), pour que les Connaissances restent utiles même très loin dans la partie —
 // c'est LE puits sans fond une fois l'arbre normal terminé.
 const RESEARCH_INFINITE = [
-  { id: 'ri_prod', name: { fr: 'Compost éternel', en: 'Eternal Compost' }, desc: { fr: '+2% production globale par niveau.', en: '+2% global production per level.' }, baseCost: 500000, growth: 1.4, type: 'prodMult', value: 1.02 },
-  { id: 'ri_click', name: { fr: 'Réflexes infinis', en: 'Infinite Reflexes' }, desc: { fr: '+1.5% Verdure par clic par niveau.', en: '+1.5% Greenery per click per level.' }, baseCost: 700000, growth: 1.4, type: 'clickMult', value: 1.015 },
-  { id: 'ri_knowledge', name: { fr: 'Mémoire ancestrale', en: 'Ancestral Memory' }, desc: { fr: '+3% de gain de Connaissances par niveau.', en: '+3% Knowledge gain per level.' }, baseCost: 1000000, growth: 1.45, type: 'knowledgeMult', value: 1.03 },
+  { id: 'ri_prod', name: { fr: 'Compost éternel', en: 'Eternal Compost' }, desc: { fr: '+2% production globale par niveau.', en: '+2% global production per level.' }, baseCost: 650000, growth: 1.4, type: 'prodMult', value: 1.02 },
+  { id: 'ri_click', name: { fr: 'Réflexes infinis', en: 'Infinite Reflexes' }, desc: { fr: '+1.5% Verdure par clic par niveau.', en: '+1.5% Greenery per click per level.' }, baseCost: 910000, growth: 1.4, type: 'clickMult', value: 1.015 },
+  { id: 'ri_knowledge', name: { fr: 'Mémoire ancestrale', en: 'Ancestral Memory' }, desc: { fr: '+3% de gain de Connaissances par niveau.', en: '+3% Knowledge gain per level.' }, baseCost: 1300000, growth: 1.45, type: 'knowledgeMult', value: 1.03 },
 ];
 
 // ================= ASCENSION UPGRADES (Éclats Stellaires — ne reset JAMAIS, même par une nouvelle Ascension) =================
 const ASCENSION_UPGRADES = [
   // --- Branche Production (comme avant) ---
-  { id: 'as_prod1', name: { fr: 'Résonance stellaire', en: 'Stellar Resonance' }, desc: { fr: '+30% de production globale.', en: '+30% global production.' }, cost: 1, type: 'prodMult', value: 1.3, requires: null },
-  { id: 'as_click1', name: { fr: 'Clic céleste', en: 'Celestial Click' }, desc: { fr: '+100% de Verdure par clic.', en: '+100% Greenery per click.' }, cost: 2, type: 'clickMult', value: 2, requires: null },
-  { id: 'as_knowledge1', name: { fr: 'Sagesse des étoiles', en: 'Wisdom of the Stars' }, desc: { fr: '+100% de gain de Connaissances.', en: '+100% Knowledge gain.' }, cost: 2, type: 'knowledgeMult', value: 2, requires: null },
-  { id: 'as_cheaper1', name: { fr: 'Commerce interstellaire', en: 'Interstellar Trade' }, desc: { fr: 'Coût des bâtiments réduit de 10% supplémentaire.', en: 'Building costs reduced by an additional 10%.' }, cost: 3, type: 'cheaper', value: 0.9, requires: null },
-  { id: 'as_offline1', name: { fr: 'Jardin autonome total', en: 'Fully Autonomous Garden' }, desc: { fr: 'Gains hors-ligne à 100%, cumulable avec les autres sources.', en: '100% offline gains, stacks with other sources.' }, cost: 3, type: 'offline', value: 1.0, requires: null },
-  { id: 'as_prod2', name: { fr: 'Éclat de constellation', en: 'Constellation Shard' }, desc: { fr: '+50% de production globale supplémentaire.', en: '+50% additional global production.' }, cost: 5, type: 'prodMult', value: 1.5, requires: 'as_prod1' },
+  { id: 'as_prod1', name: { fr: 'Résonance stellaire', en: 'Stellar Resonance' }, desc: { fr: '+30% de production globale.', en: '+30% global production.' }, cost: 2, type: 'prodMult', value: 1.3, requires: null },
+  { id: 'as_click1', name: { fr: 'Clic céleste', en: 'Celestial Click' }, desc: { fr: '+100% de Verdure par clic.', en: '+100% Greenery per click.' }, cost: 3, type: 'clickMult', value: 2, requires: null },
+  { id: 'as_click2', name: { fr: 'Poigne stellaire', en: 'Stellar Grip' }, desc: { fr: '+150% de Verdure par clic supplémentaire.', en: '+150% additional Greenery per click.' }, cost: 6, type: 'clickMult', value: 2.5, requires: 'as_click1' },
+  { id: 'as_knowledge1', name: { fr: 'Sagesse des étoiles', en: 'Wisdom of the Stars' }, desc: { fr: '+100% de gain de Connaissances.', en: '+100% Knowledge gain.' }, cost: 3, type: 'knowledgeMult', value: 2, requires: null },
+  { id: 'as_knowledge2', name: { fr: 'Archives cosmiques', en: 'Cosmic Archives' }, desc: { fr: '+150% supplémentaire de gain de Connaissances.', en: 'An additional +150% Knowledge gain.' }, cost: 6, type: 'knowledgeMult', value: 2.5, requires: 'as_knowledge1' },
+  { id: 'as_cheaper1', name: { fr: 'Commerce interstellaire', en: 'Interstellar Trade' }, desc: { fr: 'Coût des bâtiments réduit de 10% supplémentaire.', en: 'Building costs reduced by an additional 10%.' }, cost: 4, type: 'cheaper', value: 0.9, requires: null },
+  { id: 'as_offline1', name: { fr: 'Jardin autonome total', en: 'Fully Autonomous Garden' }, desc: { fr: 'Gains hors-ligne à 100%, cumulable avec les autres sources.', en: '100% offline gains, stacks with other sources.' }, cost: 4, type: 'offline', value: 1.0, requires: null },
+  { id: 'as_prod2', name: { fr: 'Éclat de constellation', en: 'Constellation Shard' }, desc: { fr: '+50% de production globale supplémentaire.', en: '+50% additional global production.' }, cost: 7, type: 'prodMult', value: 1.5, requires: 'as_prod1' },
+  { id: 'as_prod3', name: { fr: 'Aurore galactique', en: 'Galactic Aurora' }, desc: { fr: '+75% de production globale supplémentaire.', en: '+75% additional global production.' }, cost: 9, type: 'prodMult', value: 1.75, requires: 'as_prod2' },
   // --- Branche Snowball (accélère les cycles de Prestige/Ascension suivants) ---
-  { id: 'as_seedBoost1', name: { fr: 'Fertilité stellaire', en: 'Stellar Fertility' }, desc: { fr: '+25% de Verdure "comptée" pour le calcul des Graines Cosmiques gagnées au Prestige.', en: '+25% Greenery "counted" for calculating Cosmic Seeds earned on Prestige.' }, cost: 4, type: 'prestigeSeedMult', value: 0.25, requires: null },
-  { id: 'as_seedBoost2', name: { fr: 'Abondance cosmique', en: 'Cosmic Abundance' }, desc: { fr: '+35% supplémentaires de Verdure "comptée" pour le Prestige.', en: 'An additional +35% Greenery "counted" for Prestige.' }, cost: 8, type: 'prestigeSeedMult', value: 0.35, requires: 'as_seedBoost1' },
-  { id: 'as_ascBoost1', name: { fr: 'Résonance galactique', en: 'Galactic Resonance' }, desc: { fr: '+25% de Graines "comptées" pour le calcul des Éclats gagnés à l\'Ascension.', en: '+25% Seeds "counted" for calculating Shards earned on Ascension.' }, cost: 6, type: 'ascensionSeedMult', value: 0.25, requires: null },
-  { id: 'as_synergy1', name: { fr: 'Toile mycélienne stellaire', en: 'Stellar Mycelial Web' }, desc: { fr: '+50% sur tous les effets de synergie entre bâtiments.', en: '+50% on all building synergy effects.' }, cost: 5, type: 'synergyMult', value: 1.5, requires: null },
-  { id: 'as_startBonus1', name: { fr: 'Graine éternelle', en: 'Eternal Seed' }, desc: { fr: 'Après un Prestige OU une Ascension, commence avec 5000 Verdure.', en: 'After a Prestige OR an Ascension, start with 5000 Greenery.' }, cost: 6, type: 'startBonus', value: 5000, requires: 'as_seedBoost1' },
-  { id: 'as_clickCps1', name: { fr: 'Écho stellaire éternel', en: 'Eternal Stellar Echo' }, desc: { fr: '+12% de production/seconde ajoutée à chaque clic.', en: '+12% of production/second added to each click.' }, cost: 7, type: 'clickCpsPercent', value: 0.12, requires: 'as_click1' },
+  { id: 'as_seedBoost1', name: { fr: 'Fertilité stellaire', en: 'Stellar Fertility' }, desc: { fr: '+25% de Verdure "comptée" pour le calcul des Graines Cosmiques gagnées au Prestige.', en: '+25% Greenery "counted" for calculating Cosmic Seeds earned on Prestige.' }, cost: 6, type: 'prestigeSeedMult', value: 0.25, requires: null },
+  { id: 'as_seedBoost2', name: { fr: 'Abondance cosmique', en: 'Cosmic Abundance' }, desc: { fr: '+35% supplémentaires de Verdure "comptée" pour le Prestige.', en: 'An additional +35% Greenery "counted" for Prestige.' }, cost: 11, type: 'prestigeSeedMult', value: 0.35, requires: 'as_seedBoost1' },
+  { id: 'as_seedBoost3', name: { fr: 'Marée cosmique', en: 'Cosmic Tide' }, desc: { fr: '+50% supplémentaires de Verdure "comptée" pour le Prestige.', en: 'An additional +50% Greenery "counted" for Prestige.' }, cost: 14, type: 'prestigeSeedMult', value: 0.5, requires: 'as_seedBoost2' },
+  { id: 'as_ascBoost1', name: { fr: 'Résonance galactique', en: 'Galactic Resonance' }, desc: { fr: '+25% de Graines "comptées" pour le calcul des Éclats gagnés à l\'Ascension.', en: '+25% Seeds "counted" for calculating Shards earned on Ascension.' }, cost: 8, type: 'ascensionSeedMult', value: 0.25, requires: null },
+  { id: 'as_ascBoost2', name: { fr: 'Écho galactique', en: 'Galactic Echo' }, desc: { fr: '+35% supplémentaires de Graines "comptées" pour l\'Ascension.', en: 'An additional +35% Seeds "counted" for Ascension.' }, cost: 12, type: 'ascensionSeedMult', value: 0.35, requires: 'as_ascBoost1' },
+  { id: 'as_synergy1', name: { fr: 'Toile mycélienne stellaire', en: 'Stellar Mycelial Web' }, desc: { fr: '+50% sur tous les effets de synergie entre bâtiments.', en: '+50% on all building synergy effects.' }, cost: 7, type: 'synergyMult', value: 1.5, requires: null },
+  { id: 'as_synergy2', name: { fr: 'Réseau stellaire ultime', en: 'Ultimate Stellar Web' }, desc: { fr: '+100% supplémentaire sur tous les effets de synergie.', en: 'An additional +100% on all synergy effects.' }, cost: 10, type: 'synergyMult', value: 2.0, requires: 'as_synergy1' },
+  { id: 'as_startBonus1', name: { fr: 'Graine éternelle', en: 'Eternal Seed' }, desc: { fr: 'Après un Prestige OU une Ascension, commence avec 5000 Verdure.', en: 'After a Prestige OR an Ascension, start with 5000 Greenery.' }, cost: 8, type: 'startBonus', value: 5000, requires: 'as_seedBoost1' },
+  { id: 'as_clickCps1', name: { fr: 'Écho stellaire éternel', en: 'Eternal Stellar Echo' }, desc: { fr: '+12% de production/seconde ajoutée à chaque clic.', en: '+12% of production/second added to each click.' }, cost: 10, type: 'clickCpsPercent', value: 0.12, requires: 'as_click1' },
 ];
 
 // ================= PRESTIGE UPGRADES (Graines Cosmiques) =================
 const PRESTIGE_UPGRADES = [
-  { id: 'p_click1', name: { fr: 'Poigne ferme', en: 'Firm Grip' }, desc: { fr: '+100% de Verdure par clic.', en: '+100% Greenery per click.' }, cost: 1, type: 'clickMult', value: 2, requires: null },
-  { id: 'p_prod1', name: { fr: 'Terreau enrichi', en: 'Enriched Soil' }, desc: { fr: '+25% production globale.', en: '+25% global production.' }, cost: 2, type: 'prodMult', value: 1.25, requires: null },
-  { id: 'p_offline1', name: { fr: 'Arrosage automatique', en: 'Automatic Watering' }, desc: { fr: "Gains hors-ligne portés à 75%.", en: "Offline gains raised to 75%." }, cost: 3, type: 'offline', value: 0.75, requires: null },
-  { id: 'p_auto1', name: { fr: 'Assistant jardinier', en: 'Garden Assistant' }, desc: { fr: "Achète automatiquement l'amélioration la moins chère toutes les 5s.", en: "Automatically buys the cheapest upgrade every 5s." }, cost: 5, type: 'autobuy', value: true, requires: null },
-  { id: 'p_click2', name: { fr: 'Binette légendaire', en: 'Legendary Hand Hoe' }, desc: { fr: '+200% de Verdure par clic supplémentaire.', en: '+200% additional Greenery per click.' }, cost: 6, type: 'clickMult', value: 3, requires: 'p_click1' },
-  { id: 'p_prod2', name: { fr: 'Symbiose fongique', en: 'Fungal Symbiosis' }, desc: { fr: '+50% production globale supplémentaire.', en: '+50% additional global production.' }, cost: 8, type: 'prodMult', value: 1.5, requires: 'p_prod1' },
-  { id: 'p_offline2', name: { fr: 'Serre autonome totale', en: 'Fully Autonomous Greenhouse' }, desc: { fr: 'Gains hors-ligne portés à 100%.', en: 'Offline gains raised to 100%.' }, cost: 10, type: 'offline', value: 1.0, requires: 'p_offline1' },
-  { id: 'p_startBonus', name: { fr: 'Graine mère', en: 'Mother Seed' }, desc: { fr: 'Après un prestige, commence avec 1000 Verdure.', en: 'After a prestige, start with 1000 Greenery.' }, cost: 12, type: 'startBonus', value: 1000, requires: null },
-  { id: 'p_prod3', name: { fr: 'Bénédiction de Gaïa', en: "Gaia's Blessing" }, desc: { fr: '+100% production globale supplémentaire.', en: '+100% additional global production.' }, cost: 20, type: 'prodMult', value: 2, requires: 'p_prod2' },
-  { id: 'p_cheaper', name: { fr: 'Négociation en gros', en: 'Bulk Negotiation' }, desc: { fr: 'Coût des améliorations réduit de 10%.', en: 'Upgrade costs reduced by 10%.' }, cost: 15, type: 'cheaper', value: 0.9, requires: null },
-  { id: 'p_synergyBoost', name: { fr: 'Réseau mycélien', en: 'Mycelial Network' }, desc: { fr: '+50% sur les effets de synergie.', en: '+50% on synergy effects.' }, cost: 25, type: 'synergyMult', value: 1.5, requires: 'p_prod3' },
-  { id: 'p_questBoost', name: { fr: 'Journal du jardinier', en: "Gardener's Journal" }, desc: { fr: '+50% de récompenses de quêtes.', en: '+50% quest rewards.' }, cost: 10, type: 'questMult', value: 1.5, requires: null },
-  { id: 'p_weatherShield', name: { fr: 'Dôme climatique', en: 'Climate Dome' }, desc: { fr: 'Effets négatifs de météo réduits de moitié.', en: 'Negative weather effects halved.' }, cost: 18, type: 'weatherShield', value: 0.5, requires: null },
-  { id: 'p_uniqueDiscount', name: { fr: 'Réseau de fournisseurs', en: 'Supplier Network' }, desc: { fr: '-15% sur le coût des bâtiments spéciaux uniques.', en: '-15% on unique special building costs.' }, cost: 20, type: 'uniqueDiscount', value: 0.85, requires: null },
-  { id: 'p_knowledgeBoost', name: { fr: 'Bibliothèque du jardin', en: 'Garden Library' }, desc: { fr: '+100% de gain de Connaissances.', en: '+100% Knowledge gain.' }, cost: 8, type: 'knowledgeMult', value: 2, requires: null },
-  { id: 'p_click3', name: { fr: 'Doigts de lumière', en: 'Fingers of Light' }, desc: { fr: '+300% de Verdure par clic supplémentaire.', en: '+300% additional Greenery per click.' }, cost: 30, type: 'clickMult', value: 4, requires: 'p_click2' },
-  { id: 'p_clickCps1', name: { fr: 'Résonance cosmique', en: 'Cosmic Resonance' }, desc: { fr: '+10% de production/seconde ajoutée à chaque clic.', en: '+10% of production/second added to each click.' }, cost: 15, type: 'clickCpsPercent', value: 0.10, requires: null },
-  { id: 'p_clickCps2', name: { fr: 'Écho stellaire', en: 'Stellar Echo' }, desc: { fr: '+15% supplémentaire de production/seconde ajoutée à chaque clic.', en: 'An additional +15% of production/second added to each click.' }, cost: 30, type: 'clickCpsPercent', value: 0.15, requires: 'p_clickCps1' },
+  { id: 'p_click1', name: { fr: 'Poigne ferme', en: 'Firm Grip' }, desc: { fr: '+100% de Verdure par clic.', en: '+100% Greenery per click.' }, cost: 2, type: 'clickMult', value: 2, requires: null },
+  { id: 'p_prod1', name: { fr: 'Terreau enrichi', en: 'Enriched Soil' }, desc: { fr: '+25% production globale.', en: '+25% global production.' }, cost: 3, type: 'prodMult', value: 1.25, requires: null },
+  { id: 'p_offline1', name: { fr: 'Arrosage automatique', en: 'Automatic Watering' }, desc: { fr: "Gains hors-ligne portés à 75%.", en: "Offline gains raised to 75%." }, cost: 4, type: 'offline', value: 0.75, requires: null },
+  { id: 'p_auto1', name: { fr: 'Assistant jardinier', en: 'Garden Assistant' }, desc: { fr: "Achète automatiquement l'amélioration la moins chère toutes les 5s.", en: "Automatically buys the cheapest upgrade every 5s." }, cost: 7, type: 'autobuy', value: true, requires: null },
+  { id: 'p_click2', name: { fr: 'Binette légendaire', en: 'Legendary Hand Hoe' }, desc: { fr: '+200% de Verdure par clic supplémentaire.', en: '+200% additional Greenery per click.' }, cost: 8, type: 'clickMult', value: 3, requires: 'p_click1' },
+  { id: 'p_prod2', name: { fr: 'Symbiose fongique', en: 'Fungal Symbiosis' }, desc: { fr: '+50% production globale supplémentaire.', en: '+50% additional global production.' }, cost: 11, type: 'prodMult', value: 1.5, requires: 'p_prod1' },
+  { id: 'p_offline2', name: { fr: 'Serre autonome totale', en: 'Fully Autonomous Greenhouse' }, desc: { fr: 'Gains hors-ligne portés à 100%.', en: 'Offline gains raised to 100%.' }, cost: 13, type: 'offline', value: 1.0, requires: 'p_offline1' },
+  { id: 'p_startBonus', name: { fr: 'Graine mère', en: 'Mother Seed' }, desc: { fr: 'Après un prestige, commence avec 1000 Verdure.', en: 'After a prestige, start with 1000 Greenery.' }, cost: 16, type: 'startBonus', value: 1000, requires: null },
+  { id: 'p_prod3', name: { fr: 'Bénédiction de Gaïa', en: "Gaia's Blessing" }, desc: { fr: '+100% production globale supplémentaire.', en: '+100% additional global production.' }, cost: 26, type: 'prodMult', value: 2, requires: 'p_prod2' },
+  { id: 'p_prod4', name: { fr: 'Chant des racines', en: 'Song of the Roots' }, desc: { fr: '+75% production globale supplémentaire.', en: '+75% additional global production.' }, cost: 45, type: 'prodMult', value: 1.75, requires: 'p_prod3' },
+  { id: 'p_cheaper', name: { fr: 'Négociation en gros', en: 'Bulk Negotiation' }, desc: { fr: 'Coût des améliorations réduit de 10%.', en: 'Upgrade costs reduced by 10%.' }, cost: 20, type: 'cheaper', value: 0.9, requires: null },
+  { id: 'p_cheaper2', name: { fr: 'Grossiste attitré', en: 'Regular Wholesaler' }, desc: { fr: '-10% supplémentaire sur le coût des améliorations.', en: 'An additional -10% on upgrade costs.' }, cost: 30, type: 'cheaper', value: 0.9, requires: 'p_cheaper' },
+  { id: 'p_synergyBoost', name: { fr: 'Réseau mycélien', en: 'Mycelial Network' }, desc: { fr: '+50% sur les effets de synergie.', en: '+50% on synergy effects.' }, cost: 33, type: 'synergyMult', value: 1.5, requires: 'p_prod3' },
+  { id: 'p_synergyBoost2', name: { fr: 'Toile racinaire', en: 'Root Web' }, desc: { fr: '+100% supplémentaire sur les effets de synergie.', en: 'An additional +100% on synergy effects.' }, cost: 45, type: 'synergyMult', value: 2.0, requires: 'p_synergyBoost' },
+  { id: 'p_questBoost', name: { fr: 'Journal du jardinier', en: "Gardener's Journal" }, desc: { fr: '+50% de récompenses de quêtes.', en: '+50% quest rewards.' }, cost: 13, type: 'questMult', value: 1.5, requires: null },
+  { id: 'p_questBoost2', name: { fr: 'Registre de quêtes', en: 'Quest Ledger' }, desc: { fr: '+100% supplémentaire de récompenses de quêtes.', en: 'An additional +100% quest rewards.' }, cost: 20, type: 'questMult', value: 2.0, requires: 'p_questBoost' },
+  { id: 'p_weatherShield', name: { fr: 'Dôme climatique', en: 'Climate Dome' }, desc: { fr: 'Effets négatifs de météo réduits de moitié.', en: 'Negative weather effects halved.' }, cost: 24, type: 'weatherShield', value: 0.5, requires: null },
+  { id: 'p_uniqueDiscount', name: { fr: 'Réseau de fournisseurs', en: 'Supplier Network' }, desc: { fr: '-15% sur le coût des bâtiments spéciaux uniques.', en: '-15% on unique special building costs.' }, cost: 26, type: 'uniqueDiscount', value: 0.85, requires: null },
+  { id: 'p_knowledgeBoost', name: { fr: 'Bibliothèque du jardin', en: 'Garden Library' }, desc: { fr: '+100% de gain de Connaissances.', en: '+100% Knowledge gain.' }, cost: 11, type: 'knowledgeMult', value: 2, requires: null },
+  { id: 'p_knowledgeBoost2', name: { fr: 'Grimoire du compost', en: 'Compost Grimoire' }, desc: { fr: '+150% supplémentaire de gain de Connaissances.', en: 'An additional +150% Knowledge gain.' }, cost: 20, type: 'knowledgeMult', value: 2.5, requires: 'p_knowledgeBoost' },
+  { id: 'p_click3', name: { fr: 'Doigts de lumière', en: 'Fingers of Light' }, desc: { fr: '+300% de Verdure par clic supplémentaire.', en: '+300% additional Greenery per click.' }, cost: 39, type: 'clickMult', value: 4, requires: 'p_click2' },
+  { id: 'p_click4', name: { fr: 'Étreinte de la mare', en: "Pond's Embrace" }, desc: { fr: '+250% de Verdure par clic supplémentaire.', en: '+250% additional Greenery per click.' }, cost: 50, type: 'clickMult', value: 3.5, requires: 'p_click3' },
+  { id: 'p_clickCps1', name: { fr: 'Résonance cosmique', en: 'Cosmic Resonance' }, desc: { fr: '+10% de production/seconde ajoutée à chaque clic.', en: '+10% of production/second added to each click.' }, cost: 20, type: 'clickCpsPercent', value: 0.10, requires: null },
+  { id: 'p_clickCps2', name: { fr: 'Écho stellaire', en: 'Stellar Echo' }, desc: { fr: '+15% supplémentaire de production/seconde ajoutée à chaque clic.', en: 'An additional +15% of production/second added to each click.' }, cost: 39, type: 'clickCpsPercent', value: 0.15, requires: 'p_clickCps1' },
 ];
 
 // ================= WEATHER =================
@@ -2247,11 +2324,14 @@ function uniqueMultipliers() {
   let prod = 1, click = 1, offlineBonus = 0, knowledge = 1, invasiveRate = 1;
   if (hasUnique('fontaineMagique')) prod *= 1.2;
   if (hasUnique('gnomeDeJardin')) click *= 1.5;
+  if (hasUnique('nenupharDore')) click *= 1.75;
   if (hasUnique('horlogeSolaire')) offlineBonus += 0.3;
   if (hasUnique('bibliothequeRacines')) knowledge *= 1.3;
+  if (hasUnique('grimoireMousse')) knowledge *= 1.4;
   if (hasUnique('meuleCosmique')) prod *= 1.3;
   if (hasUnique('collaborationFamiliale')) prod *= 1.25;
   if (hasUnique('sentinelleTemporelle')) invasiveRate *= 0.5;
+  if (hasUnique('jardinEternel')) prod *= 1.4;
   return { prod, click, offlineBonus, knowledge, invasiveRate };
 }
 
@@ -2461,7 +2541,7 @@ function buyResearchInfinite(id) {
 
 function prestigeGainAmount() {
   const boost = 1 + (combinedUpgradeValue('prestigeSeedMult') || 0);
-  return Math.floor(Math.cbrt((state.totalEarned * boost) / 1e9));
+  return Math.floor(Math.cbrt((state.totalEarned * boost) / 1e10));
 }
 
 function doPrestige() {
@@ -3229,17 +3309,19 @@ document.getElementById('questsModalOverlay').addEventListener('click', (e) => {
 
 // Message de Papi pour chaque onglet (sauf Jardin, disponible dès le début) + fenêtre à ouvrir une fois le message lu
 const PAPI_TAB_ANNOUNCEMENTS_BI = {
-  clic: { fr: "Tiens, j'ai des gants renforcés qui traînaient au fond du magasin. File voir ça.", en: "Hey, I had some reinforced gloves lying around the shop. Go check it out." },
-  special: { fr: "J'ai du matériel... disons, particulier, qui vient d'arriver. Jette un œil à la section Spéciale.", en: "I got some... let's say unusual gear in. Check out the Special section." },
-  recherche: { fr: "Un pote m'a filé des bouquins de recherche. File voir ça, je te fais un prix.", en: "A buddy gave me some research books. Go take a look, I'll give you a deal." },
-  prestige: { fr: "T'as bien avancé, dis donc. Y'a un truc qui pourrait t'intéresser, question de repartir de zéro... en mieux.", en: "You've come a long way. There's something that might interest you, about starting over... better." },
-  ascension: { fr: "Alors là, on passe dans la cour des grands. Regarde-moi ça.", en: "Now we're in the big leagues. Go take a look." },
-  journal: { fr: "Tiens, note tout ce qui se passe ici, ça peut servir. Je t'ai ouvert ça.", en: "Here, keep track of everything happening here, could be useful. I set this up for you." },
-  stats: { fr: "Un petit tableau de bord, pour voir où t'en es.", en: "A little dashboard, so you can see where you stand." },
-  options: { fr: "Là tu peux régler deux-trois trucs à ta sauce.", en: "You can tweak a few things to your liking here." },
-  quetes: { fr: "J'ai des petites missions pour toi, histoire de garder ça intéressant.", en: "I've got some small tasks for you, to keep things interesting." },
-  defi: { fr: "Si t'es motivé, y'a des défis pour les courageux.", en: "If you're up for it, there are challenges for the brave." },
-  succes: { fr: "Tiens, un registre de tes exploits. Pratique pour frimer.", en: "Here, a record of your achievements. Handy for bragging." },
+  // Chaque réplique est un tableau de 2 phrases courtes (au lieu d'un seul long pavé) : la bulle
+  // de dialogue a une hauteur fixe assez petite, un texte trop long dépasserait la zone visible.
+  clic: { fr: ["Tiens, j'ai des gants renforcés qui traînaient au fond du magasin — planqués derrière le stock que je préfère pas nommer.", "Chaque amélioration augmente ce que ton clic rapporte, en direct ou en % de ta production. Utile tant que tu cliques à la main."], en: ["Hey, I had some reinforced gloves lying around the shop — tucked behind stock I'd rather not name.", "Every upgrade here boosts what your click earns, flat or as a cut of your production. Handy as long as you're still clicking by hand."] },
+  special: { fr: ["J'ai du matériel... disons, particulier, qui vient d'arriver : des bâtiments uniques, un par un, pas de doublons possibles.", "Chacun a son effet à lui, parfois passif, parfois à activer toi-même. Lis bien les descriptions, y'en a des vicieux."], en: ["I got some... let's say unusual gear in: one-of-a-kind buildings, no duplicates possible.", "Each has its own effect, some passive, some you trigger yourself. Read the descriptions carefully, a few are sneaky."] },
+  recherche: { fr: ["Un pote m'a filé des bouquins de recherche — enfin, \"filé\", disons qu'il me devait de l'argent.", "Tu dépenses tes Connaissances là-dedans pour débloquer des bonus permanents. Prends ton temps, ça part pas en courant."], en: ["A buddy gave me some research books — well, \"gave,\" let's say he owed me money.", "You spend Knowledge in there to unlock permanent bonuses. Take your time, it's not going anywhere."] },
+  prestige: { fr: ["T'as bien avancé. Là on parle de tout recommencer à zéro — jardin et bâtiments repartent à rien.", "Mais en échange tu touches des Graines Cosmiques, permanentes. Plus t'as produit avant, plus t'en gagnes."], en: ["You've come a long way. This is about starting completely over — garden and buildings back to nothing.", "But in exchange you get Cosmic Seeds, permanent ones. The more you'd produced before, the more you earn."] },
+  ascension: { fr: ["Alors là, on passe dans la cour des grands. Un cran au-dessus du Prestige.", "Tu perds tes Graines Cosmiques, mais tu gagnes des Éclats Stellaires, permanents eux aussi. Fallait bien un truc plus définitif."], en: ["Now we're in the big leagues. A step above Prestige.", "You lose your Cosmic Seeds, but you earn Stellar Shards, permanent too. Had to have something even more final."] },
+  journal: { fr: ["Tiens, note tout ce qui se passe ici, ça peut servir.", "C'est ton historique : les gros événements, tout ce que t'aurais pu louper en cliquant sur des herbes."], en: ["Here, keep track of everything happening here, could be useful.", "This is your log: the big events, everything you might've missed while clicking on weeds."] },
+  stats: { fr: ["Un petit tableau de bord, pour voir où t'en es.", "Production, clics, records personnels — de quoi frimer devant quelqu'un qui s'en fiche complètement."], en: ["A little dashboard, so you can see where you stand.", "Production, clicks, personal records — everything to brag about to someone who couldn't care less."] },
+  options: { fr: ["Là tu peux régler deux-trois trucs à ta sauce : son, thème, langue.", "Et sauvegarder ta partie si t'es prudent — perso j'en fais jamais, mais t'as l'air plus sérieux que moi."], en: ["You can tweak a few things here: sound, theme, language.", "And save your game if you're the cautious type — I never do, but you seem more responsible than me."] },
+  quetes: { fr: ["J'ai des petites missions pour toi, histoire de garder ça intéressant.", "Ça se renouvelle chaque jour et rapporte un petit bonus — rien d'obligatoire, juste de quoi s'occuper."], en: ["I've got some small tasks for you, to keep things interesting.", "They reset every day and pay out a little bonus — nothing mandatory, just something to do."] },
+  defi: { fr: ["Si t'es motivé, y'a des défis pour les courageux — des règles tordues, comme prestige sans acheter ou sans cliquer.", "Une petite récompense à la clé. Personne t'oblige, mais je te connais un peu maintenant."], en: ["If you're up for it, there are challenges for the brave — twisted rules, like prestiging without buying or clicking.", "A small reward at the end. Nobody's forcing you, but I know you a little by now."] },
+  succes: { fr: ["Tiens, un registre de tes exploits. Pratique pour frimer.", "Et ça débloque parfois un petit bonus au passage — presque payé pour se la raconter."], en: ["Here, a record of your achievements. Handy for bragging.", "And it occasionally unlocks a small bonus — almost like getting paid to show off."] },
 };
 const GROUP_TO_OVERLAY = { shop: 'shopPageOverlay', settings: 'settingsModalOverlay', quests: 'questsModalOverlay', achievements: 'achievementsModalOverlay', dailyReward: 'dailyRewardModalOverlay' };
 
@@ -3270,15 +3352,26 @@ let _pendingTabAnnouncements = [];
 // déblocage — seulement une fois que le joueur a VRAIMENT ouvert cet onglet précis (clic sur le
 // mini-onglet, ou sur le bouton flottant si le groupe n'a qu'un seul onglet — ex: Succès).
 let _pendingTabDescriptions = {};
+// Temps de pause (ms) avant qu'une bulle non-bloquante n'avance toute seule, une fois le texte
+// entièrement affiché — partagé entre le descriptif d'onglet (ci-dessous) et la réplique de
+// sortie de Papi (voir quitGameWithPapiLine) : les deux ont besoin du même réglage, recalé sur
+// la plus longue réplique quand `text` est un tableau de plusieurs répliques successives.
+function papiReadingPauseMs(text) {
+  const lines = Array.isArray(text) ? text : [text];
+  return Math.max(600, Math.max(...lines.map(l => l.length)) * 15);
+}
+
 function revealPendingDescription(tabId, onDone) {
-  const msg = _pendingTabDescriptions[tabId];
-  if (!msg) { if (onDone) onDone(); return; }
+  const lines = _pendingTabDescriptions[tabId];
+  if (!lines) { if (onDone) onDone(); return; }
   delete _pendingTabDescriptions[tabId];
   // Une fois dans le bon onglet, le descriptif disparaît tout seul après un temps de lecture
   // (le joueur peut toujours cliquer avant pour aller plus vite) — pas besoin de cliquer pour
-  // passer à l'onglet suivant.
-  const autoAdvanceMs = Math.max(1100, msg.length * 30);
-  showDialogue('papi', [msg], { position: 'top-right', onComplete: onDone, autoAdvanceMs });
+  // passer à l'onglet suivant. Certains descriptifs sont un tableau de 2 répliques courtes
+  // (plutôt qu'un seul long pavé) pour rester dans la hauteur visible de la bulle sans avoir à
+  // scroller dedans — _pendingTabDescriptions stocke toujours un tableau (voir plus bas), même
+  // pour une réplique unique.
+  showDialogue('papi', lines, { position: 'top-right', onComplete: onDone, autoAdvanceMs: papiReadingPauseMs(lines) });
 }
 // Onglet suivant à présenter, un par un, dans un groupe multi-onglets (Paramètres/Quêtes/
 // Magasin) : rempli quand un onglet est mis en évidence, vidé + appelé quand le joueur clique
@@ -3308,7 +3401,10 @@ function announceNewTabsSequentially(tabs) {
     announceNewTabsSequentially(rest);
     return;
   }
-  const specificMsg = (PAPI_TAB_ANNOUNCEMENTS_BI[t.id] && (PAPI_TAB_ANNOUNCEMENTS_BI[t.id][state.lang] || PAPI_TAB_ANNOUNCEMENTS_BI[t.id].fr)) || (state.lang === 'en' ? `This is "${L(t,'label')}".` : `Voici "${L(t,'label')}".`);
+  // Toujours un tableau de répliques (même à un seul élément pour le repli générique
+  // ci-dessous) — revealPendingDescription() le passe tel quel à showDialogue, qui attend
+  // justement un tableau de lignes.
+  const specificMsg = (PAPI_TAB_ANNOUNCEMENTS_BI[t.id] && (PAPI_TAB_ANNOUNCEMENTS_BI[t.id][state.lang] || PAPI_TAB_ANNOUNCEMENTS_BI[t.id].fr)) || [state.lang === 'en' ? `This is "${L(t,'label')}".` : `Voici "${L(t,'label')}".`];
   _pendingTabDescriptions[t.id] = specificMsg;
   // Annonce de déblocage : dit juste QU'il y a une nouveauté et où cliquer (le spotlight +
   // la flèche font le reste) — jamais CE QUE ça contient, ça c'est pour quand il l'ouvrira.
@@ -4733,9 +4829,26 @@ function performFullReset() {
   }, 450);
 }
 
+// Affiche la réplique de départ de Papi (si l'écran principal n'est pas déjà occupé par autre
+// chose) puis ferme, sans jamais obliger le joueur à cliquer dessus : le texte avance tout seul
+// une fois lu (autoAdvanceMs, même mécanisme que les descriptifs d'onglets du tutoriel).
+function quitGameWithPapiLine(doClose) {
+  const line = !isMainScreenBlocked() ? pickPapiLine('quitGame') : null;
+  if (!line) { doClose(); return; }
+  showDialogue('papi', [line], { position: 'top-right', autoAdvanceMs: papiReadingPauseMs(line), onComplete: doClose });
+}
+
 document.getElementById('quitGameBtn').addEventListener('click', () => {
   if (isTauriApp() && window.__TAURI__.window) {
-    window.__TAURI__.window.getCurrentWindow().close();
+    const appWindow = window.__TAURI__.window.getCurrentWindow();
+    // Referme d'abord la fenêtre Paramètres : sinon isMainScreenBlocked() la voit encore
+    // ouverte et Papi ne dirait jamais rien avant que le jeu ne se ferme. Sauf si le tutoriel
+    // d'introduction des Paramètres est justement en train de l'utiliser (spotlight/descriptif
+    // pas encore terminés) : la fermer de force romprait son verrou partagé (_pendingSpotlightGroup)
+    // et bloquerait le jeu sur une annonce fantôme — dans ce cas on laisse juste
+    // isMainScreenBlocked() supprimer la réplique de Papi et fermer directement, comme d'habitude.
+    if (_pendingSpotlightGroup !== 'settings') closeModal('settingsModalOverlay');
+    quitGameWithPapiLine(() => appWindow.close());
   } else {
     showToast(state.lang === 'en' ? '🚪 This only works in the installed app.' : '🚪 Ça ne fonctionne que dans l\'application installée.');
   }
@@ -4765,6 +4878,7 @@ function startOpeningScene() {
     { character: 'papi', text: { fr: "...", en: "..." } },
     { character: 'papi', text: { fr: "Je repasserai jeter un œil, au cas où tu te fais attaquer par une herbe.", en: "I'll swing by now and then. Just in case a weed jumps you." } },
   ], { left: 'papi', right: 'leroy', onComplete: () => {
+    document.getElementById('tutorialBoxPortrait').innerHTML = getCharacterPortraitHtml('papi');
     document.getElementById('tutorialOverlay').style.display = 'flex';
   }});
 }
@@ -4874,9 +4988,9 @@ function runOpeningIfNeeded() {
 
 runSplashScreen((reveal) => runLanguageChoiceIfNeeded(reveal));
 
-// Réplique de Papi quand le joueur ferme l'application (Tauri natif uniquement — la fermeture
-// est retardée de quelques secondes le temps d'afficher la réplique, avec une sécurité qui
-// ferme quand même si le joueur ne clique pas).
+// Réplique de Papi quand le joueur ferme l'application via la croix (Tauri natif uniquement) —
+// voir quitGameWithPapiLine : le texte se ferme tout seul après un temps de lecture, pas besoin
+// de cliquer dessus.
 if (isTauriApp() && window.__TAURI__.window) {
   try {
     const appWindow = window.__TAURI__.window.getCurrentWindow();
@@ -4884,17 +4998,7 @@ if (isTauriApp() && window.__TAURI__.window) {
     appWindow.onCloseRequested(async (event) => {
       if (_closeConfirmed) return;
       event.preventDefault();
-      const line = !isMainScreenBlocked() ? pickPapiLine('quitGame') : null;
-      if (line) {
-        showDialogue('papi', [line], { position: 'top-right', onComplete: async () => {
-          _closeConfirmed = true;
-          await appWindow.close();
-        }});
-        setTimeout(async () => { if (!_closeConfirmed) { _closeConfirmed = true; await appWindow.close(); } }, 4000);
-      } else {
-        _closeConfirmed = true;
-        await appWindow.close();
-      }
+      quitGameWithPapiLine(async () => { _closeConfirmed = true; await appWindow.close(); });
     });
   } catch (e) { console.error('Interception de fermeture indisponible :', e); }
 }
