@@ -227,8 +227,12 @@
   }
   .sideModalOverlay.open { display: flex; }
   /* La modale de mise à jour est un moment "hors-jeu" à part entière (au lancement) —
-     fond totalement opaque, contrairement aux autres modales qui restent semi-transparentes. */
-  #updatePromptOverlay { background: #17110b; }
+     fond totalement opaque, contrairement aux autres modales qui restent semi-transparentes.
+     z-index au-dessus du splash (500) et de l'écran de choix de langue (490) : ces deux-là
+     restent affichés (opaques) tant que la vérification de MAJ n'est pas terminée (voir
+     proceedToUpdateCheck), donc sans ce z-index la modale s'ouvrirait bien mais resterait
+     cachée derrière eux, invisible et donc impossible à fermer pour le joueur. */
+  #updatePromptOverlay { background: #17110b; z-index: 510; }
   .sideModal {
     width: min(560px, 92vw);
     max-height: 82vh;
@@ -1099,9 +1103,16 @@ function getItemIconHtml(id, masked) {
 }
 // Retrouve la définition (nom/desc) et le statut de possession d'un objet illustré, quel
 // que soit le tableau auquel il appartient — utilisé par le pop-up de révélation et la galerie.
+// Table id -> définition, construite une seule fois (BUILDINGS/CLICK_UPGRADES/UNIQUE_BUILDINGS
+// sont des tableaux de config statiques, jamais modifiés après leur déclaration) — un seul id
+// à chercher au lieu d'un .find() sur le tableau du bon "kind" à chaque appel.
+let _spriteItemById = null;
 function findSpriteItem(id, kind) {
-  const arr = kind === 'building' ? BUILDINGS : kind === 'clickUpgrade' ? CLICK_UPGRADES : UNIQUE_BUILDINGS;
-  const item = arr.find(x => x.id === id);
+  if (!_spriteItemById) {
+    _spriteItemById = new Map();
+    [...BUILDINGS, ...CLICK_UPGRADES, ...UNIQUE_BUILDINGS].forEach(x => _spriteItemById.set(x.id, x));
+  }
+  const item = _spriteItemById.get(id);
   const owned = kind === 'building' ? (state.buildings[id] || 0) > 0
     : kind === 'clickUpgrade' ? hasClickUpgrade(id)
     : hasUnique(id);
@@ -1110,21 +1121,33 @@ function findSpriteItem(id, kind) {
 
 // Affiche un petit pop-up de révélation la toute première fois qu'un objet est acquis —
 // uniquement pour les objets qui ont un vrai sprite (pas d'intérêt à révéler une case vide).
+// Remplit et affiche la popup de révélation générique (#itemPopupOverlay) — partagée entre la
+// première acquisition d'un objet illustré et la révélation du compagnon.
+function showItemPopup({ title, iconSrc, name, desc, playSound }) {
+  document.getElementById('itemPopupTitle').textContent = title;
+  const iconEl = document.getElementById('itemPopupIcon');
+  iconEl.style.display = iconSrc ? '' : 'none';
+  if (iconSrc) iconEl.src = iconSrc;
+  document.getElementById('itemPopupName').textContent = name;
+  document.getElementById('itemPopupDesc').textContent = desc;
+  document.getElementById('itemPopupCloseBtn').textContent = state.lang === 'en' ? 'Nice!' : 'Super !';
+  document.getElementById('itemPopupOverlay').style.display = 'flex';
+  if (playSound) playFirstPurchaseSound();
+}
 function maybeShowItemAcquiredPopup(id, kind) {
   if (!ITEM_SPRITES[id]) return;
   state.itemPopupsShown = state.itemPopupsShown || {};
   if (state.itemPopupsShown[id]) return;
   state.itemPopupsShown[id] = true;
-  const item = kind === 'building' ? BUILDINGS.find(x => x.id === id) : CLICK_UPGRADES.find(x => x.id === id);
+  const { item } = findSpriteItem(id, kind);
   if (!item) return;
-  document.getElementById('itemPopupTitle').textContent = state.lang === 'en' ? 'New item!' : 'Nouvel objet !';
-  document.getElementById('itemPopupIcon').style.display = '';
-  document.getElementById('itemPopupIcon').src = ITEM_SPRITES[id].src;
-  document.getElementById('itemPopupName').textContent = L(item, 'name');
-  document.getElementById('itemPopupDesc').textContent = L(item, 'desc');
-  document.getElementById('itemPopupCloseBtn').textContent = state.lang === 'en' ? 'Nice!' : 'Super !';
-  document.getElementById('itemPopupOverlay').style.display = 'flex';
-  playFirstPurchaseSound();
+  showItemPopup({
+    title: state.lang === 'en' ? 'New item!' : 'Nouvel objet !',
+    iconSrc: ITEM_SPRITES[id].src,
+    name: L(item, 'name'),
+    desc: L(item, 'desc'),
+    playSound: true,
+  });
 }
 document.getElementById('itemPopupCloseBtn').addEventListener('click', () => {
   document.getElementById('itemPopupOverlay').style.display = 'none';
@@ -2676,25 +2699,25 @@ function musicTargetVolume() {
   const vol = (state.soundVolume === undefined ? 100 : state.soundVolume) / 100;
   return vol * 0.18; // toujours un peu en retrait par rapport aux effets sonores
 }
+function switchToNewAmbientTrack(excludeCurrent, fadeMs) {
+  const audio = document.getElementById('bgMusic');
+  loadAmbientTrack(pickRandomAmbientTrack(excludeCurrent));
+  audio.volume = 0;
+  audio.play().catch(() => {});
+  fadeAudioTo(audio, musicTargetVolume(), fadeMs);
+}
 function startBackgroundMusic() {
   const audio = document.getElementById('bgMusic');
   if (!audio || _musicStarted) return;
   _musicStarted = true;
   if (!state.soundEnabled) return; // respecte une préférence déjà désactivée, ne joue rien
-  loadAmbientTrack(pickRandomAmbientTrack(false));
-  audio.volume = 0;
-  audio.play().catch(() => {});
-  fadeAudioTo(audio, musicTargetVolume(), 2500);
+  switchToNewAmbientTrack(false, 2500);
 }
 // Dès qu'une piste se termine, on en repioche une autre au hasard (jamais deux fois de
 // suite la même s'il y en a plusieurs) plutôt que de boucler sur elle-même.
 document.getElementById('bgMusic').addEventListener('ended', () => {
   if (!state.soundEnabled) return;
-  const audio = document.getElementById('bgMusic');
-  loadAmbientTrack(pickRandomAmbientTrack(true));
-  audio.volume = 0;
-  audio.play().catch(() => {});
-  fadeAudioTo(audio, musicTargetVolume(), 1500);
+  switchToNewAmbientTrack(true, 1500);
 });
 function updateMusicVolume() {
   const audio = document.getElementById('bgMusic');
@@ -2869,8 +2892,6 @@ function clickInvasive() {
 }
 
 // ================= DAILY QUESTS =================
-function todayStr() { const d = new Date(); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; }
-
 // ================= RÉCOMPENSE DE CONNEXION QUOTIDIENNE =================
 // Cycle de 7 jours, qui recommence indéfiniment (le palier 7 est un petit bonus, avec une
 // Graine Cosmique si le joueur a déjà fait au moins un prestige). Les montants de Verdure
@@ -2880,6 +2901,7 @@ function dateStrForOffset(daysAgo) {
   d.setDate(d.getDate() - daysAgo);
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }
+function todayStr() { return dateStrForOffset(0); }
 function dailyRewardForDay(day) {
   const cps = Math.max(1, totalCps());
   switch (day) {
@@ -2912,12 +2934,23 @@ function checkDailyLoginReward() {
 // Vrai une fois que les 3 menus principaux (Paramètres, Succès, Quêtes) ont été présentés
 // par Papi — la récompense quotidienne n'apparaît qu'à partir de là, pour ne pas surcharger
 // l'arrivée du joueur avec encore un système de plus avant qu'il ait vu les bases.
+// Scan DOM (pas state.tabsSeen) : tabsSeen[id] passe à true dès la DÉTECTION du déblocage,
+// avant même que l'annonce/le bouton ne soient réellement montrés au joueur (voir le commentaire
+// sur syncRevealedButtonsOnLoad plus bas) — après un import de sauvegarde ou une restauration
+// de secours, tabsSeen peut déjà être true alors que ces boutons n'ont jamais été révélés dans
+// CETTE session ; seul le scan DOM reflète ce que le joueur a vraiment vu.
 function coreMenusIntroduced() {
   return ['settingsBtn', 'achievementsBtn', 'questsBtn'].every(id => {
     const el = document.getElementById(id);
     return el && el.classList.contains('revealed');
   });
 }
+// true entre le moment où le Bonus quotidien se débloque et celui où highlightNewFeature prend
+// le relai (voir onComplete plus bas) — la bulle de Papi n'étant pas bloquante, isMainScreenBlocked()
+// doit rester vrai pendant tout ce laps de temps, sinon un AUTRE onglet qui se débloquerait
+// pile à ce moment-là (production idle qui continue) pourrait démarrer sa propre annonce et se
+// disputer le spotlight partagé avec celle du Bonus quotidien.
+let _dailyRewardIntroPending = false;
 function checkDailyRewardFeatureUnlock() {
   if (state.dailyRewardFeatureUnlocked) return;
   if (!coreMenusIntroduced()) return;
@@ -2927,31 +2960,21 @@ function checkDailyRewardFeatureUnlock() {
   // pour ne jamais annoncer le Bonus quotidien par-dessus un spotlight précédent.
   if (_pendingSpotlightGroup) return;
   state.dailyRewardFeatureUnlocked = true;
-  // Verrouille exactement comme highlightNewFeature (voir _pendingSpotlightGroup plus bas) :
-  // tant que cette fenêtre reste ouverte, aucune autre annonce d'onglet ne doit démarrer par-
-  // dessus — sinon les deux se disputeraient le même overlay/flèche partagés
-  // (tutorialSpotlightOverlay/Arrow). "dailyReward" n'est pas un vrai groupe de TAB_DEFS, mais
-  // sert de jeton pour ce verrou partagé.
-  _pendingSpotlightGroup = 'dailyReward';
-  const btn = document.getElementById('dailyRewardBtn');
-  btn.classList.add('revealed');
+  _dailyRewardIntroPending = true;
+  // Rendu visible tout de suite (pendant que Papi tape encore sa ligne) : seuls le halo et le
+  // spotlight attendent la fin du dialogue, voir onComplete plus bas.
+  document.getElementById('dailyRewardBtn').classList.add('revealed');
   const line = state.lang === 'en'
     ? "Oh, and I almost forgot — swing by every day, I leave you something on the porch."
     : "Oh, et j'ai failli oublier — passe tous les jours, je te laisse un truc sur le perron.";
   showDialogue('papi', [line], { position: 'top-right', onComplete: () => {
-    btn.classList.add('featureHighlight');
-    showTutorialSpotlight(btn, () => {
-      btn.classList.remove('featureHighlight');
+    _dailyRewardIntroPending = false;
+    // "dailyReward" n'est pas un vrai groupe de TAB_DEFS, mais highlightNewFeature ne s'appuie
+    // que sur GROUP_TO_FLOAT_BTN/GROUP_TO_OVERLAY (les deux incluent une entrée dailyReward) —
+    // le réutiliser évite de dupliquer sa logique de verrou/spotlight/attente de fermeture.
+    highlightNewFeature('dailyReward', 'dailyReward', () => {
       saveGame();
       checkDailyLoginReward();
-      // Comme pour highlightNewFeature : on attend la fermeture réelle de la fenêtre Bonus
-      // quotidien avant de débloquer d'éventuelles annonces suivantes restées en attente.
-      waitForModalClose('dailyRewardModalOverlay', () => {
-        _pendingSpotlightGroup = null;
-        _lockedToTabId = null;
-        if (_pendingTabAnnouncements.length) announceNewTabsSequentially(_pendingTabAnnouncements.splice(0));
-        flushPendingPapiCategories();
-      });
     });
   }});
 }
@@ -3149,6 +3172,7 @@ function isMainScreenBlocked() {
   // qui débarque, herbe dorée, papillons...) peut apparaître par-dessus et perturber le
   // tutoriel, qui doit rester la SEULE chose à l'écran tant qu'il est en cours.
   if (_pendingSpotlightGroup) return true;
+  if (_dailyRewardIntroPending) return true;
   if (isAnyModalOpen()) return true;
   const updateOverlay = document.getElementById('updatePromptOverlay');
   if (updateOverlay && updateOverlay.classList.contains('open')) return true;
@@ -3217,7 +3241,7 @@ const PAPI_TAB_ANNOUNCEMENTS_BI = {
   defi: { fr: "Si t'es motivé, y'a des défis pour les courageux.", en: "If you're up for it, there are challenges for the brave." },
   succes: { fr: "Tiens, un registre de tes exploits. Pratique pour frimer.", en: "Here, a record of your achievements. Handy for bragging." },
 };
-const GROUP_TO_OVERLAY = { shop: 'shopPageOverlay', settings: 'settingsModalOverlay', quests: 'questsModalOverlay', achievements: 'achievementsModalOverlay' };
+const GROUP_TO_OVERLAY = { shop: 'shopPageOverlay', settings: 'settingsModalOverlay', quests: 'questsModalOverlay', achievements: 'achievementsModalOverlay', dailyReward: 'dailyRewardModalOverlay' };
 
 // Annonce les onglets nouvellement débloqués un par un (Papi parle, tu fermes, il t'emmène directement
 // au bon endroit) — enchaînés proprement si plusieurs se débloquent en même temps.
@@ -3301,7 +3325,7 @@ function announceNewTabsSequentially(tabs) {
   highlightNewFeature(t.group, t.id, () => announceNewTabsSequentially(rest));
 }
 
-const GROUP_TO_FLOAT_BTN = { shop: 'shopBtn', settings: 'settingsBtn', quests: 'questsBtn', achievements: 'achievementsBtn' };
+const GROUP_TO_FLOAT_BTN = { shop: 'shopBtn', settings: 'settingsBtn', quests: 'questsBtn', achievements: 'achievementsBtn', dailyReward: 'dailyRewardBtn' };
 // Assombrit l'écran et affiche une flèche pointant vers targetEl pour forcer le joueur à
 // cliquer dessus avant de continuer — le reste de l'écran (assombri) devient inerte car
 // l'overlay est cliqué à sa place, sauf les boutons flottants qui restent au-dessus (z-index).
@@ -3990,8 +4014,6 @@ function mostOwnedBuilding() {
   return best ? `${L(best,'name')} (${bestN})` : 'Aucun';
 }
 
-// Galerie : un objet non encore possédé s'affiche en silhouette grisée (mystère à
-// débloquer) plutôt que d'être caché, pour donner envie de continuer à jouer.
 // ================= COMPAGNON =================
 // Débloqué au premier prestige, purement décoratif + un tout petit bonus de production.
 // 🐌 est un emoji de secours en attendant un vrai sprite dessiné — remplacer simplement
@@ -4003,14 +4025,14 @@ function renderCompanion() {
 }
 function showCompanionRevealPopup() {
   const en = state.lang === 'en';
-  document.getElementById('itemPopupTitle').textContent = en ? 'New companion!' : 'Nouveau compagnon !';
-  document.getElementById('itemPopupIcon').style.display = 'none';
-  document.getElementById('itemPopupName').textContent = en ? 'Snail buddy' : 'Escargot compagnon';
-  document.getElementById('itemPopupDesc').textContent = en
-    ? "He'll hang around your garden from now on, and gives +5% production just by being there."
-    : "Il va traîner dans ton jardin à partir de maintenant, et donne +5% de production rien qu'en étant là.";
-  document.getElementById('itemPopupCloseBtn').textContent = en ? 'Nice!' : 'Super !';
-  document.getElementById('itemPopupOverlay').style.display = 'flex';
+  showItemPopup({
+    title: en ? 'New companion!' : 'Nouveau compagnon !',
+    iconSrc: null,
+    name: en ? 'Snail buddy' : 'Escargot compagnon',
+    desc: en
+      ? "He'll hang around your garden from now on, and gives +5% production just by being there."
+      : "Il va traîner dans ton jardin à partir de maintenant, et donne +5% de production rien qu'en étant là.",
+  });
 }
 
 // Vue agrandie d'un objet de la galerie — plein écran, se ferme au clic n'importe où.
@@ -4024,6 +4046,8 @@ document.getElementById('galleryLightboxOverlay').addEventListener('click', () =
   document.getElementById('galleryLightboxOverlay').style.display = 'none';
 });
 
+// Galerie : un objet non encore possédé s'affiche en silhouette grisée (mystère à
+// débloquer) plutôt que d'être caché, pour donner envie de continuer à jouer.
 function renderGallery() {
   const grid = document.getElementById('galleryGrid');
   if (!grid) return;
