@@ -211,10 +211,14 @@
   .boostRow:empty { display: none; }
   /* Capacités du Spécial sur l'écran de jeu : colonne à gauche, cadran sombre pendant la recharge. */
   @property --cd { syntax: '<number>'; inherits: true; initial-value: 0; }
-  .abilityBar { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); z-index: 40; display: flex; flex-direction: column; gap: 22px; }
+  .abilityBar { position: absolute; left: 30px; top: 50%; transform: translateY(-50%); z-index: 40; display: flex; flex-direction: column; gap: 22px; }
   .abilityBar:empty { display: none; }
   .abilityBtn { position: relative; width: 52px; height: 52px; border-radius: 50%; background: var(--panel-bg); border: 3px solid var(--accent-dark); box-shadow: 0 3px 8px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 26px; transition: --cd 1s linear, filter 0.15s; }
-  .abilityBtn .itemIcon { width: 36px; height: 36px; }
+  /* Icône ronde qui remplit exactement l'intérieur du cercle (52 px - 2 x 3 px de bordure = 46 px).
+     L'image est un peu plus grande que le cercle puis découpée en rond : le cadre carré du
+     sprite tombe hors du disque visible. */
+  .abilityBtn .itemIcon { position: absolute; left: 50%; top: 50%; width: 58px; height: 58px; transform: translate(-50%, -50%); clip-path: circle(23px at 50% 50%); }
+  .abilityNum { display: inline-block; width: 2ch; text-align: right; }
   .abilityBtn::after { content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none; background: conic-gradient(rgba(0,0,0,0.6) calc(var(--cd) * 360deg), transparent 0); }
   .abilityBtn:not(.ready) { cursor: default; }
   /* Halo « prête » sur un anneau à part, animé en transform/opacity : pas de repeinture à chaque image. */
@@ -2704,6 +2708,7 @@ function applyLoadedState(parsed) {
 
 const SAVE_KEY = 'fuzzSave';
 const SAVE_KEY_BACKUP = 'fuzzSave_backup';
+const IMPORT_TOAST_FLAG = 'fuzzImportToast'; // sessionStorage : confirmation à afficher après le rechargement d'un import
 const LEGACY_SAVE_KEY = 'jardinIdleSave'; // ancien nom, avant le renommage du jeu en Fuzz
 const LEGACY_SAVE_KEY_BACKUP = 'jardinIdleSave_backup';
 
@@ -4998,16 +5003,22 @@ function renderStats(cps) {
   }
 }
 
+const BUY_MODES = [1, 10, 100, 'max'];
+// Les boutons sont créés une seule fois : les reconstruire à chaque rendu (jusqu'à 60 fois par
+// seconde) faisait clignoter leur survol. Ensuite, seul le bouton actif change.
 function renderBuyModeRow() {
   const row = document.getElementById('buyModeRow');
-  row.innerHTML = '';
-  [1, 10, 100, 'max'].forEach(mode => {
-    const btn = document.createElement('button');
-    btn.className = 'buyModeBtn' + (state.buyMode === mode ? ' active' : '');
-    btn.textContent = mode === 'max' ? 'MAX' : 'x' + mode;
-    btn.onclick = () => { state.buyMode = mode; renderAll(); };
-    row.appendChild(btn);
-  });
+  if (!row.children.length) {
+    for (const mode of BUY_MODES) {
+      const btn = document.createElement('button');
+      btn.className = 'buyModeBtn';
+      btn._mode = mode;
+      btn.textContent = mode === 'max' ? 'MAX' : 'x' + mode;
+      btn.onclick = () => { state.buyMode = mode; renderAll(); };
+      row.appendChild(btn);
+    }
+  }
+  for (const btn of row.children) btn.classList.toggle('active', state.buyMode === btn._mode);
 }
 
 // Calcule quel bâtiment offre le meilleur rapport CPS gagné / coût du prochain exemplaire —
@@ -5753,10 +5764,17 @@ const PANEL_RENDERERS = {
   stats: renderStatsTab,
   galerie: renderGallery,
 };
+// Temps de recharge exact sous l'icône : « 14 min 30 sec », « 1 min 2 sec », « 45 sec ». Chaque
+// nombre occupe la largeur de deux chiffres (sans zéro devant) : le texte ne bouge pas pendant
+// le décompte, et « 1 min 2 sec » prend la même place que « 14 min 30 sec ».
+function abilityTimeHtml(sec) {
+  const min = Math.floor(sec / 60);
+  return min ? `${abilityNum(min)} min ${abilityNum(sec % 60)} sec` : `${abilityNum(sec)} sec`;
+}
+function abilityNum(v) { return `<span class="abilityNum">${v}</span>`; }
 // Capacités du Spécial possédées, à portée de clic sur l'écran de jeu. Comme pour les pastilles de
 // bonus, le HTML de chaque bouton est fixe : la recharge (cadran et temps) est mise à jour sur
 // les nœuds existants, ce qui laisse la transition du cadran s'animer.
-function abilityTimeLabel(ms) { const sec = Math.ceil(ms / 1000); return sec >= 60 ? `${Math.ceil(sec / 60)} min` : `${sec} sec`; }
 function renderAbilityBar() {
   const bar = document.getElementById('abilityBar');
   if (!bar) return;
@@ -5780,8 +5798,9 @@ function renderAbilityBar() {
     if (el._cd !== cd) { el.style.setProperty('--cd', cd); el._cd = cd; }
     const titre = `${L(u,'name')} : ${L(u,'desc')}`;
     if (el.title !== titre) el.title = titre;
-    const temps = el.lastElementChild, txt = reste > 0 ? abilityTimeLabel(reste) : ''; // HTML fixe : le temps est le dernier enfant
-    if (temps.textContent !== txt) temps.textContent = txt;
+    // Le texte ne change qu'une fois par seconde : il n'est reconstruit qu'à ce moment-là.
+    const sec = Math.ceil(reste / 1000);
+    if (el._sec !== sec) { el._sec = sec; el.lastElementChild.innerHTML = sec > 0 ? abilityTimeHtml(sec) : ''; } // HTML fixe : le temps est le dernier enfant
   });
 }
 function renderAll() {
@@ -6324,10 +6343,15 @@ document.getElementById('vacationToggleBtn').addEventListener('click', () => {
 });
 
 function encodeSave() { return btoa(unescape(encodeURIComponent(JSON.stringify(state)))); }
+// Import (fichier, code collé, sauvegarde de secours) : la partie importée est enregistrée, puis la
+// page est rechargée. Le démarrage normal reconstruit alors tout (boutons révélés, annonces de
+// Papi, bonus et minuteurs en mémoire), exactement comme au lancement : rien de l'ancienne partie
+// ne reste à l'écran. (La sauvegarde faite en quittant la page réécrit la même partie importée.)
 function applyImportedData(parsed) {
   applyLoadedState(parsed);
-  saveGame(); renderAll();
-  showToast('Sauvegarde importée !');
+  saveGame();
+  try { sessionStorage.setItem(IMPORT_TOAST_FLAG, '1'); } catch (e) {}
+  location.reload();
 }
 
 // ================= HELPERS FICHIER & PRESSE-PAPIER (universels web + app native Tauri) =================
@@ -6473,6 +6497,7 @@ function arreterPresentationsEnCours() {
   clearDescribedZone();
   stopFollowingDialogueAnchor();
   hideTutorialArrow();
+  clearTimeout(_tutorialBreatherTimer);
 }
 
 // Réinitialisation complète : garde la langue déjà choisie (pas besoin de la redemander),
@@ -6590,6 +6615,9 @@ function startOpeningScene() {
   }});
 }
 
+// Délai de respiration après le tutoriel (voir ci-dessous), annulé par arreterPresentationsEnCours :
+// sans ça, un reset dans la seconde qui suit réactivait les annonces pendant l'intro rejouée.
+let _tutorialBreatherTimer = null;
 document.getElementById('tutorialCloseBtn').addEventListener('click', () => {
   state.tutorialSeen = true;
   document.getElementById('tutorialOverlay').style.display = 'none';
@@ -6602,7 +6630,7 @@ document.getElementById('tutorialCloseBtn').addEventListener('click', () => {
   // détermine quoi présenter. Construire la liste à la main ici annonçait des onglets dont la
   // condition n'était pas remplie — Papi présentait Production avant les 200 clics, alors que
   // la rangée refusait de l'afficher.
-  setTimeout(() => {
+  _tutorialBreatherTimer = setTimeout(() => {
     _suppressTabAnnouncements = false;
     renderTabsRow();
   }, 1200);
@@ -6686,6 +6714,13 @@ function proceedToUpdateCheck(reveal) {
 
 function runOpeningIfNeeded() {
   beginBackgroundMusic(); // le jeu commence ici : premier moment où la musique a sa place
+  // Confirmation d'un import (voir applyImportedData), une fois l'écran de lancement passé.
+  try {
+    if (sessionStorage.getItem(IMPORT_TOAST_FLAG)) {
+      sessionStorage.removeItem(IMPORT_TOAST_FLAG);
+      showToast(state.lang === 'en' ? 'Save imported!' : 'Sauvegarde importée !');
+    }
+  } catch (e) {}
   if (!state.tutorialSeen) { startOpeningScene(); return; }
   // La récompense quotidienne n'est plus lancée d'ici : voir maybeShowDailyLoginReward (tick).
 }
