@@ -1,141 +1,175 @@
-# 🌱 FUZZ — Version native (Tauri)
+<p align="center">
+  <img src="dist/assets/logo.png" alt="FUZZ" width="140">
+</p>
 
-FUZZ est un jeu idle de jardinage : clique, améliore, cherche, prestige, ascensionne.
+<h1 align="center">FUZZ</h1>
 
-Ce dossier enveloppe le jeu (`dist/index.html`, inchangé côté logique) dans une vraie
-application installable — `.exe` sur Windows, `.app`/`.dmg` sur macOS, `.deb`/`.AppImage`
-sur Linux. Tauri ouvre juste une fenêtre native qui charge ce fichier HTML ; aucune
-réécriture du jeu n'a été nécessaire.
+<p align="center">
+  Un jeu de jardinage incrémental : tu désherbes, tu embauches des grenouilles, et un jour tu terraformes tout.<br>
+  Application native pour Windows, macOS et Linux. Français et anglais.
+</p>
 
-## Pré-requis (à installer une seule fois sur ta machine)
+<p align="center">
+  <img src="docs/captures/jeu.png" alt="L'écran de jeu de FUZZ" width="720">
+</p>
 
-1. **Node.js** (v18+) — tu l'as sûrement déjà.
-2. **Rust** — via [rustup.rs](https://rustup.rs) (`curl https://sh.rustup.rs -sSf | sh` sur Mac/Linux,
-   ou l'installeur `.exe` sur Windows).
-3. Dépendances système selon l'OS où tu compiles (nécessaires seulement pour builder,
-   pas pour faire tourner l'app une fois compilée) :
-   - **Windows** : "Desktop development with C++" via Visual Studio Build Tools (l'installeur Rust te le proposera).
-   - **macOS** : Xcode Command Line Tools (`xcode-select --install`).
-   - **Linux** : `libwebkit2gtk-4.1-dev`, `libssl-dev`, `librsvg2-dev`, `patchelf`, `build-essential`
-     (sur Debian/Ubuntu : `sudo apt install libwebkit2gtk-4.1-dev libssl-dev librsvg2-dev patchelf build-essential curl wget file libxdo-dev libayatana-appindicator3-dev`).
+## L'histoire
 
-## Étapes de build
+Papi Feuillage a « mystérieusement » hérité d'un terrain vague. Trop occupé pour s'en occuper, il
+en confie les clés à son petit-fils au chômage, Leroy. C'est toi.
 
-```bash
-cd fuzz-tauri
+Papi repasse régulièrement pour commenter, expliquer, et te rappeler que ton cousin Bramble, lui,
+a déjà trois terrains et un yacht.
 
-# 1. Installe le CLI Tauri (une seule fois)
-npm install
+## Télécharger et jouer
 
-# 2. (Recommandé) Régénère toutes les icônes proprement depuis la source haute résolution
-#    — ça génère automatiquement .icns (Mac), .ico (Windows) et tous les PNG requis.
-#    J'ai déjà mis des icônes de base dans src-tauri/icons/, mais cette commande
-#    les remplace par une génération plus complète et fiable (notamment icon.icns pour Mac).
-npx tauri icon app-icon-source.png
+Va dans [Releases](https://github.com/TomRolling/FUZZ/releases) et prends le fichier de ton système :
 
-# 3. Lancer en mode développement (fenêtre native, hot-reload pas nécessaire ici
-#    car le jeu est un fichier statique, mais utile pour vérifier que tout s'affiche bien)
-npm run tauri dev
+| Système | Fichier |
+|---|---|
+| Windows | `.msi` ou `.exe` |
+| macOS | `.dmg` |
+| Linux | `.deb` ou `.AppImage` |
 
-# 4. Builder l'installeur final pour TON OS actuel
-npm run tauri build
+Une fois installé, le jeu se met à jour tout seul : il propose la nouvelle version au lancement.
+Ta partie est enregistrée sur ton ordinateur, et les Options permettent de l'exporter, de
+l'importer, ou de revenir à la partie d'avant un import.
+
+## Ce qu'on y fait
+
+Tu commences en cliquant sur le jardin. Au bout de 200 clics, Papi ouvre son magasin, et chaque
+nouveauté t'est présentée au moment où elle arrive.
+
+<p align="center">
+  <img src="docs/captures/magasin.png" alt="Le magasin de Papi Feuillage" width="720">
+</p>
+
+- **Production** : 34 compagnons, du Cousin têtard de Leroy à l'Esprit de la Mare Infinie. Chacun
+  produit tout seul, même quand le jeu est fermé.
+- **Clic** : des améliorations pour ceux qui aiment cliquer.
+- **Bâtiments** : achetés une seule fois, chacun améliore un compagnon précis.
+- **Spécial** : des objets uniques, surtout des capacités à déclencher, avec leur temps de recharge
+  affiché à gauche de l'écran.
+- **Recherche** : payée en Connaissances, qui arrivent au rythme d'une par minute, quoi que tu fasses.
+- **Familiers** : cinq compagnons de route (escargot, grenouille, chouette, hérisson, abeille), un
+  seul actif à la fois, que tu fais monter en niveau.
+- **Automatisation** : achats, capacités et Prestige automatiques, offerts au fil de la progression.
+- **Défis, quêtes, bonus du jour, succès et galerie** pour le reste.
+
+Sans oublier la météo, les mauvaises herbes dorées, les nuées de papillons, et les visites de Papi
+qu'il faut écourter en cliquant.
+
+### Recommencer plus fort
+
+<p align="center">
+  <img src="docs/captures/ascension.png" alt="L'onglet Ascension" width="720">
+</p>
+
+- **Prestige** : tu repars de zéro (Verdure, compagnons, Clic, Bâtiments, Spécial) et tu gagnes des
+  **Graines Cosmiques**, qui augmentent ta production pour toujours et achètent des améliorations
+  permanentes.
+- **Ascension** : un cran au-dessus. Tu perds aussi tes Graines, mais tu gagnes des **Éclats
+  Stellaires**, qui augmentent ta production et les Graines de chaque Prestige suivant.
+
+Pour donner une idée du rythme : environ 15 heures de jeu jusqu'au premier Prestige, 3 jours et
+demi jusqu'à la première Ascension, et près de trois semaines pour posséder tout le contenu.
+
+## Pour développer
+
+Le jeu entier (HTML, CSS et JavaScript) tient dans un seul fichier, [dist/index.html](dist/index.html).
+Il n'y a ni framework, ni bundler, ni étape de compilation côté jeu : Tauri ouvre simplement une
+fenêtre native sur ce fichier. Le même fichier fonctionne aussi tel quel dans un navigateur.
+
+```
+dist/index.html      tout le jeu
+dist/assets/         images, sons, polices
+src-tauri/           coquille native (Rust, config Tauri, icônes)
+tests/               tests automatiques et banc d'équilibrage
+docs/captures/       images de ce README
 ```
 
-Le fichier installable apparaît dans :
-`src-tauri/target/release/bundle/` (sous-dossier `msi/`, `nsis/`, `dmg/`, `deb/`,
-`appimage/` selon ton OS).
+### Lancer et construire
 
-## Builder pour Windows + macOS + Linux automatiquement (GitHub Actions)
+```bash
+npm install            # une fois : installe le CLI Tauri
+npm run tauri dev      # ouvre le jeu dans une fenêtre native
+npm run tauri build    # construit l'installeur pour ton système
+```
 
-Le fichier `.github/workflows/build.yml` est déjà prêt. Pour l'utiliser :
+Pré-requis : [Node.js](https://nodejs.org) 18 ou plus, et [Rust](https://rustup.rs). Sous Linux,
+il faut aussi `libwebkit2gtk-4.1-dev`, `libssl-dev`, `librsvg2-dev`, `patchelf`, `build-essential`,
+`libxdo-dev` et `libayatana-appindicator3-dev`. Sous macOS, les outils en ligne de commande Xcode.
+Sous Windows, « Desktop development with C++ » des Build Tools de Visual Studio.
 
-1. Pousse ce dossier dans un dépôt GitHub (public ou privé, peu importe).
-2. Crée un tag de version et pousse-le :
+Pour régénérer toutes les icônes depuis l'image source : `npx tauri icon app-icon-source.png`.
+
+### Tests et équilibrage
+
+Les tests pilotent le vrai jeu dans un navigateur, avec Playwright. Voir [tests/README.md](tests/README.md).
+
+```bash
+cd tests
+npm install && npx playwright install chromium   # une fois
+bash tout.sh                  # toute la suite (environ 15 min)
+node test-fluidite.js         # un seul test
+```
+
+Le banc d'équilibrage fait jouer un bot sous horloge virtuelle et sort un rapport : moment de
+chaque déblocage, temps morts, part de chaque source de revenus.
+
+```bash
+cd tests
+node banc.js ./equilibre-jeu-paliers.js attentif 42 150   # début de partie
+node banc.js ./equilibre-fin.js attentif 42 600           # jusqu'à la fin du contenu
+```
+
+### Mode test caché
+
+Dans le jeu, **Ctrl + Maj + D** ouvre un panneau qui permet d'avancer le temps, d'accélérer le jeu,
+de s'offrir des ressources, de déclencher les événements, de forcer un Prestige ou une Ascension,
+de tout débloquer, ou de faire rejouer à Papi toutes ses présentations.
+
+### Publier une version
+
+1. Change `"version"` dans [src-tauri/tauri.conf.json](src-tauri/tauri.conf.json). C'est ce numéro
+   que la mise à jour automatique compare.
+2. Commite, puis pousse un tag :
    ```bash
-   git tag v1.0.0
-   git push origin v1.0.0
+   git tag -a v0.7.0 -m "Version 0.7.0"
+   git push origin main && git push origin v0.7.0
    ```
-3. Va dans l'onglet **Actions** de ton dépôt GitHub : le workflow se lance tout seul,
-   build en parallèle sur 3 runners (Windows/macOS/Linux), puis crée une **Release
-   GitHub en brouillon** avec les 3 installeurs (`.msi`/`.nsis`, `.dmg`, `.deb`+`.AppImage`)
-   déjà attachés. Il ne te reste qu'à relire et publier la release.
-4. Tu peux aussi le lancer manuellement sans tag, via le bouton "Run workflow" dans
-   l'onglet Actions (déclenchement `workflow_dispatch`) — dans ce cas il build mais
-   ne publie pas de release, pratique pour juste vérifier que ça compile.
+3. GitHub construit les trois systèmes en parallèle et crée une **release en brouillon** avec les
+   installeurs et un `latest.json` signé. Relis-la, puis publie-la : tant qu'elle est en brouillon,
+   personne ne reçoit la mise à jour.
 
-Aucune installation de Rust/Node nécessaire sur ta machine pour cette méthode — tout
-se passe sur les serveurs GitHub, gratuit pour les dépôts publics (et un quota gratuit
-généreux pour les dépôts privés).
+Le workflow [.github/workflows/build.yml](.github/workflows/build.yml) peut aussi être lancé à la
+main depuis l'onglet Actions, sans tag : il construit sans rien publier.
 
-## Mises à jour automatiques (bouton "Vérifier" dans le jeu)
+<details>
+<summary>Clés de signature des mises à jour (déjà configurées)</summary>
 
-L'app peut désormais se mettre à jour toute seule : à chaque nouvelle release (tag `vX.X.X`),
-elle détecte la nouvelle version, la télécharge, l'installe et redémarre — plus besoin de
-désinstaller/réinstaller manuellement.
+Tauri exige que chaque mise à jour soit signée, sinon les installations existantes la refusent. La
+clé publique est dans `tauri.conf.json` (`plugins.updater.pubkey`), et la clé privée vit dans les
+secrets GitHub du dépôt, sous `TAURI_SIGNING_PRIVATE_KEY` et `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.
 
-**Obligatoire avant de builder une release avec l'updater actif** : Tauri exige que chaque
-mise à jour soit signée cryptographiquement (sécurité : empêche quiconque d'injecter un faux
-exécutable via une future mise à jour). Ça se fait **une seule fois**, chez toi :
+Pour refaire une paire de clés (seulement si la clé privée est perdue, ce qui casse la mise à jour
+automatique pour tous les joueurs déjà installés) :
 
-### 1. Génère ta paire de clés
-
-Depuis la racine du projet (là où se trouve `package.json`) :
 ```bash
 npx tauri signer generate -w ~/.tauri/fuzz.key
 ```
-*(Le nom du fichier `.key` est libre — s'il en existe déjà un d'une version précédente,
-inutile d'en régénérer un nouveau, il reste valide indéfiniment.)*
 
-Ça te demande un mot de passe pour protéger la clé (choisis-en un, note-le). Le terminal
-affiche ensuite une **clé publique** (un long texte qui commence par `dW50cnVzdGVk...` ou
-similaire) — copie-la.
+La commande affiche la clé publique à recopier dans `tauri.conf.json`, et demande un mot de passe
+à enregistrer dans les secrets GitHub avec le contenu du fichier `.key`.
+</details>
 
-### 2. Colle la clé publique dans la config
+## À savoir
 
-Ouvre `src-tauri/tauri.conf.json`, trouve la ligne :
-```json
-"pubkey": "REMPLACE_MOI_PAR_TA_CLE_PUBLIQUE_GENEREE_LOCALEMENT"
-```
-et remplace par ta vraie clé publique copiée à l'étape 1.
+- Les images de certains objets de fin de partie sont provisoires : elles sont générées
+  automatiquement, en attendant de vraies illustrations.
+- Le service worker (`sw.js`) ne sert qu'à la version web installable. L'application native
+  l'ignore, le jeu le détecte tout seul.
 
-### 3. Ajoute la clé privée comme secret GitHub (jamais dans le code !)
+## Crédits
 
-Sur `github.com/TomRolling/FUZZ` → **Settings** → **Secrets and variables** → **Actions**
-→ **New repository secret**, crée ces deux secrets :
-
-| Nom | Valeur |
-|---|---|
-| `TAURI_SIGNING_PRIVATE_KEY` | Le contenu de ton fichier `.key` généré à l'étape 1 (ouvre-le avec un éditeur de texte et copie tout) |
-| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | Le mot de passe choisi à l'étape 1 |
-
-### 4. Commit, push, tag comme d'habitude
-
-Une fois ces 3 étapes faites (une seule fois, pas à refaire à chaque version), chaque nouveau
-tag `vX.X.X` poussé génère automatiquement un `latest.json` signé, attaché à la Release. Le
-bouton "Vérifier" dans l'app (onglet Options) le détecte et propose l'installation.
-
-**Pour sortir une nouvelle version** : pense à incrémenter le numéro de version dans
-`src-tauri/tauri.conf.json` (champ `"version"`) avant de tagger — c'est ce numéro que
-l'updater compare pour savoir s'il y a du neuf.
-
-⚠️ Ne perds pas ton fichier `.key` ni son mot de passe — sans eux, impossible
-de publier une nouvelle mise à jour reconnue par les installations existantes (il faudrait
-générer une nouvelle paire de clés, ce qui casserait la mise à jour automatique pour tout le
-monde une fois).
-
-## Sauvegarde du jeu dans l'app native
-
-Ton système actuel utilise `localStorage`, qui **fonctionne nativement dans Tauri**
-sans aucune modification — chaque installation de l'app a son propre stockage local
-persistant, comme dans un navigateur. Les boutons Export/Import/Partager du jeu
-fonctionnent aussi tels quels.
-
-## Ce qui a été volontairement laissé de côté
-
-- `sw.js` (service worker) n'est pas copié dans `dist/` : il ne sert que pour le mode
-  PWA installée via navigateur (cache hors-ligne HTTPS), ce qui devient inutile une
-  fois que l'app est un vrai exécutable natif. Le `index.html` détecte ça tout seul
-  (il ne tente d'enregistrer le service worker que si servi en `https:` ou
-  `localhost`) donc rien à changer.
-- Pas d'icône `.icns` pré-générée (nécessite un Mac ou l'étape 2 ci-dessus) — les
-  PNG et le `.ico` Windows sont déjà prêts si tu veux tester sans attendre.
+Jeu créé par Tom Rolling. Développement assisté par Claude (Anthropic).
