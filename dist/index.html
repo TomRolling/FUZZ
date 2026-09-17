@@ -848,6 +848,16 @@
   .tutorialTips li { display: flex; align-items: flex-start; gap: 10px; background: var(--card-bg); border-radius: 12px; padding: 10px 12px; }
   .tutorialTips li span { font-size: 18px; flex-shrink: 0; line-height: 1.5; }
   .tutorialTips li div { font-size: 12.5px; line-height: 1.5; }
+  /* Retour après une absence : même carte que les autres pop-ups du jeu (fond de panneau, bordure
+     accentuée, titre en capitales), avec une ligne par information et le gain mis en avant. */
+  .offlineBox { background: var(--panel-bg); color: var(--panel-text); border-radius: 20px; padding: 24px 26px; width: 340px; text-align: center; border: 3px solid var(--accent); box-shadow: 0 12px 40px rgba(0,0,0,0.35); animation: itemPopupIn 0.3s ease-out; }
+  .offlineIcon { font-size: 52px; line-height: 1; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.25)); }
+  .offlineBox h2 { margin: 10px 0 16px; font-size: 13px; line-height: 1.5; color: var(--accent-dark); text-transform: uppercase; letter-spacing: 1px; }
+  .offlineLigne { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 11.5px; padding: 9px 12px; border-radius: 10px; background: var(--card-bg); margin-bottom: 8px; text-align: left; }
+  .offlineLigne b { font-size: 12.5px; color: var(--ink); white-space: nowrap; }
+  .offlineGain { font-size: 15px; font-weight: 800; color: var(--accent-dark); margin: 16px 0 18px; }
+  .offlineBtn { width: 100%; padding: 12px; border: none; border-radius: 10px; background: var(--accent); color: white; font-weight: 700; font-size: 13px; cursor: pointer; }
+  .offlineBtn:hover { background: var(--accent-dark); }
   #tutorialCloseBtn { margin-top: 0; width: 100%; padding: 12px; border: none; border-radius: 10px; background: var(--accent); color: white; font-weight: 700; font-size: 14px; cursor: pointer; }
   #tutorialCloseBtn:hover { background: var(--accent-dark); }
 
@@ -1086,10 +1096,11 @@
 </div>
 
 <div class="tutorialOverlay" id="offlineOverlay" style="display:none;">
-  <div class="tutorialBox">
-    <h2 id="offlineTitle" data-i18n="offlineTitle">⏱️ Pendant ton absence</h2>
-    <p id="offlineBody"></p>
-    <button id="offlineCloseBtn" data-i18n="offlineCloseBtn">Continuer à jardiner 🌱</button>
+  <div class="offlineBox">
+    <div class="offlineIcon">🌙</div>
+    <h2 id="offlineTitle" data-i18n="offlineTitle">Pendant ton absence</h2>
+    <div id="offlineBody"></div>
+    <button class="offlineBtn" id="offlineCloseBtn" data-i18n="offlineCloseBtn">Continuer à jardiner 🌱</button>
   </div>
 </div>
 
@@ -1595,6 +1606,7 @@ const UI_STRINGS = {
     tutorialTitle: '🐸 Bienvenue sur le terrain de Leroy !',
     tutorialBody: `<p class="tutorialIntro">Papi Feuillage a « mystérieusement » hérité de ce terrain vague. Trop occupé pour l'entretenir, il en a confié les clés à son petit-fils au chômage, <b>Leroy</b>. C'est toi.</p><ul class="tutorialTips"><li><span>👆</span><div><b>Clique</b> au centre de l'écran pour désherber et gagner de la Verdure 🌿.</div></li><li><span>🏪</span><div>Ouvre le <b>Magasin</b> pour embaucher de l'aide qui produit toute seule, même quand le jeu est fermé.</div></li><li><span>🌍</span><div>Plus tard, utilise le <b>Prestige</b> pour repartir de zéro avec des bonus permanents.</div></li></ul>`,
     tutorialCloseBtn: 'Compris, on désherbe !',
+    offlineTitle: 'Pendant ton absence', offlineCloseBtn: 'Continuer à jardiner 🌱',
     skipBtn: 'Passer ⏭️',
     creditsGeneric: "FUZZ<br>Un jeu créé par [Ton nom]<br>Écriture & histoire : [Ton nom]<br>Illustrations : [Ton nom]<br>Développement assisté par Claude (Anthropic)<br>Merci d'avoir joué ! 🐸",
   },
@@ -1629,6 +1641,7 @@ const UI_STRINGS = {
     tutorialTitle: "🐸 Welcome to Leroy's plot!",
     tutorialBody: `<p class="tutorialIntro">Gramps Weeds "mysteriously" inherited this vacant lot. Too busy to deal with it, he handed the keys to his unemployed grandson, <b>Leroy</b>. That's you.</p><ul class="tutorialTips"><li><span>👆</span><div><b>Click</b> the center of the screen to weed and earn Greenery 🌿.</div></li><li><span>🏪</span><div>Open the <b>Shop</b> to hire help that produces on its own, even offline.</div></li><li><span>🌍</span><div>Later, use <b>Prestige</b> to start fresh with permanent bonuses.</div></li></ul>`,
     tutorialCloseBtn: "Got it, let's weed!",
+    offlineTitle: 'While you were away', offlineCloseBtn: 'Back to gardening 🌱',
     skipBtn: 'Skip ⏭️',
     creditsGeneric: "FUZZ<br>A game by [Your name]<br>Writing & story: [Your name]<br>Art: [Your name]<br>Development assisted by Claude (Anthropic)<br>Thanks for playing! 🐸",
   },
@@ -6250,6 +6263,40 @@ function toutDebloquerModeTest() {
   syncRevealedButtonsOnLoad();
 }
 
+// Mode test : remet le jeu dans l'état « tout est débloqué, mais Papi n'a encore rien présenté »,
+// puis relance la chaîne d'annonces. Sert à vérifier d'un coup tout le parcours de présentation
+// (annonce, doigt « Clique ici ! », explication à l'ouverture) sans refaire une partie.
+function rejouerPresentationsModeTest() {
+  arreterPresentationsEnCours();
+  _sceneOnComplete = null;
+  _sceneQueue = [];
+  advanceScene();
+  document.getElementById('tutorialOverlay').style.display = 'none';
+  state.tutorialSeen = true;
+  // De quoi remplir toutes les conditions d'apparition (voir TAB_DEFS).
+  state.totalClicks = Math.max(state.totalClicks || 0, 500);
+  state.totalPlayTimeSec = Math.max(state.totalPlayTimeSec || 0, 3600);
+  state.verdure = Math.max(state.verdure || 0, 1e9);
+  state.prestigeCount = Math.max(state.prestigeCount || 0, 3);
+  state.totalAscensions = Math.max(state.totalAscensions || 0, 3);
+  state.totalSeedsEarned = Math.max(state.totalSeedsEarned || 0, ASCENSION_SEED_DIVISOR);
+  state.cosmicSeeds = Math.max(state.cosmicSeeds || 0, 20);
+  // La Galerie demande 5 objets distincts possédés, les Succès au moins un succès.
+  for (const b of BUILDINGS.slice(0, 3)) state.buildings[b.id] = Math.max(state.buildings[b.id] || 0, 10);
+  for (const c of CLICK_UPGRADES.slice(0, 3)) state.clickUpgrades[c.id] = true;
+  checkAchievements();
+  state.tabsSeen = {};
+  state.tabsDescribed = {};
+  _suppressTabAnnouncements = false;
+  _highlightedTabIds = new Set();
+  _appearingTabIds = new Set();
+  _tabsPendingAppear = new Set();
+  _tabsQueuedForAnnounce = new Set();
+  Object.values(GROUP_TO_FLOAT_BTN).forEach(id => document.getElementById(id).classList.remove('revealed', 'featureHighlight'));
+  saveGame();
+  renderAll(); // renderTabsRow repère les onglets à annoncer et lance la chaîne
+}
+
 const MODE_TEST_ACTIONS = [
   ['⏩ Temps (production, Connaissances, temps de jeu)', [
     ['+10 min', () => avancerTemps(600)], ['+1 h', () => avancerTemps(3600)],
@@ -6266,6 +6313,7 @@ const MODE_TEST_ACTIONS = [
     ['Prestige maintenant', () => { state.verdure = Math.max(state.verdure, verdureForSeeds(1) * 1.01); doPrestige(true); }],
     ['Ascension maintenant', () => { creditSeeds(Math.max(0, Math.ceil(seedsForShards(1)) - (state.seedsSinceAscension || 0))); doAscension(true); }],
     ['Tout débloquer', toutDebloquerModeTest],
+    ['Rejouer les présentations', rejouerPresentationsModeTest],
   ]],
   ['✨ Événements', [
     ['Herbe dorée', () => spawnGoldenWeed()], ['Papillons', () => spawnButterflies()],
@@ -6348,13 +6396,11 @@ function applyOfflineProgress() {
       const mins = Math.floor(elapsedSec / 60);
       const timeLabel = formatDureeCourte(mins * 60);
       if (elapsedSec > 60) {
-        document.getElementById('offlineBody').innerHTML = state.lang === 'en'
-          ? `You were away <b>${timeLabel}</b>.<br>` +
-            `Your garden kept producing at <b>${(efficiency*100).toFixed(0)}%</b> efficiency.<br><br>` +
-            `🌿 Total gain: <b>+${formatNum(gain)} Greenery</b>`
-          : `Tu as été absent(e) <b>${timeLabel}</b>.<br>` +
-            `Ton jardin a continué à produire à <b>${(efficiency*100).toFixed(0)}%</b> d'efficacité.<br><br>` +
-            `🌿 Gain total : <b>+${formatNum(gain)} Verdure</b>`;
+        const en = state.lang === 'en', rendement = (efficiency * 100).toFixed(0);
+        document.getElementById('offlineBody').innerHTML =
+          `<div class="offlineLigne"><span>${en ? 'Time away' : 'Durée de ton absence'}</span><b>${timeLabel}</b></div>` +
+          `<div class="offlineLigne"><span>${en ? 'Garden efficiency' : 'Rendement du jardin'}</span><b>${en ? rendement + '%' : rendement + ' %'}</b></div>` +
+          `<div class="offlineGain">🌿 +${formatNum(gain)} ${en ? 'Greenery' : 'Verdure'}</div>`;
         document.getElementById('offlineOverlay').style.display = 'flex';
         _shouldShowReturnLine = true;
       } else {
