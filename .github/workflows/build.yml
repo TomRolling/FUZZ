@@ -28,7 +28,9 @@ jobs:
 
     runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v4
+      # Versions d'actions qui tournent sur Node 24 : GitHub a deprecie Node 20 (les anciennes
+      # versions affichaient un avertissement a chaque build et finiront par ne plus fonctionner).
+      - uses: actions/checkout@v5
 
       - name: Installer les dépendances système Linux
         if: matrix.platform == 'ubuntu-22.04'
@@ -40,9 +42,9 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Installer Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Installer les dépendances npm
         run: npm install
@@ -51,7 +53,7 @@ jobs:
         run: npx tauri icon app-icon-source.png
 
       - name: Builder l'app (via tauri-action)
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Clé privée utilisée pour signer les mises à jour (indispensable pour que
@@ -68,4 +70,7 @@ jobs:
           releaseDraft: true
           prerelease: false
           includeUpdaterJson: true
+          # L'envoi des fichiers vers la Release echoue parfois cote GitHub (« Error creating asset
+          # temp dir » sur macOS en 0.6.1, apres une construction pourtant reussie) : on reessaie.
+          retryAttempts: 3
           args: ${{ matrix.args }}
