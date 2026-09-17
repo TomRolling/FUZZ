@@ -1,0 +1,11 @@
+{
+  "name": "fuzz-tests",
+  "private": true,
+  "description": "Tests automatiques de FUZZ (Playwright) et banc d equilibrage",
+  "scripts": {
+    "test": "bash tout.sh"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0"
+  }
+}

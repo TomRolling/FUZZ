@@ -147,6 +147,8 @@
     left: 0;
     width: 1280px;
     height: 820px;
+    /* Rien ne dépasse de la zone de jeu (le magasin qui monte ou descend, par exemple). */
+    overflow: clip;
     transform-origin: top left;
     display: flex;
     flex-direction: column;
@@ -511,6 +513,20 @@
     flex-direction: column;
   }
   .shopPageOverlay.open { display: flex; }
+  /* Ouverture et fermeture des fenêtres. `.fermeture` garde la fenêtre visible le temps de
+     l'animation de sortie, alors qu'elle est déjà fermée pour le jeu (plus de .open).
+     Paramètres, Quêtes, Succès : court fondu. Magasin (plein écran) : il monte du bas de l'écran à
+     l'ouverture et redescend à la fermeture. Pendant qu'il bouge, les repères des tutoriels le
+     suivent (voir suivreFenetrePendantAnimation). `translate` et non `transform` : aucune position
+     existante n'est écrasée. */
+  .sideModalOverlay.open { animation: fenetreEntree 0.18s ease-out; }
+  .sideModalOverlay.fermeture { display: flex; pointer-events: none; animation: fenetreSortie 0.16s ease-in forwards; }
+  @keyframes fenetreEntree { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes fenetreSortie { from { opacity: 1; } to { opacity: 0; } }
+  .shopPageOverlay.open { animation: magasinMonte 0.32s cubic-bezier(0.22, 1, 0.36, 1); }
+  .shopPageOverlay.fermeture { display: flex; pointer-events: none; animation: magasinDescend 0.26s cubic-bezier(0.55, 0, 0.9, 0.4) forwards; }
+  @keyframes magasinMonte { from { translate: 0 100%; } to { translate: 0 0; } }
+  @keyframes magasinDescend { from { translate: 0 0; } to { translate: 0 100%; } }
   .shopPage { position: relative; display: flex; flex-direction: column; width: 100%; height: 100%; min-height: 0; }
   /* Bulle de commentaire de Papi spécifique au magasin — flotte par-dessus le shop, sans
      portrait, ne s'affiche que quand on est dans cet onglet. Toute la bulle est cliquable. */
@@ -693,7 +709,7 @@
   .upgrade .palierLine { font-size: 10.5px; opacity: 0.85; margin-top: 5px; display: block; }
   .upgrade .palierBonus { color: var(--accent-dark); font-weight: 700; }
   .upgrade .palierBar { height: 4px; max-width: 220px; margin-top: 3px; background: rgba(0,0,0,0.1); border-radius: 3px; overflow: hidden; }
-  .upgrade .palierFill { height: 100%; background: var(--accent-dark); border-radius: 3px; }
+  .upgrade .palierFill { width: 0; height: 100%; background: var(--accent-dark); border-radius: 3px; transition: width 0.4s ease; }
   .upgrade .synergy { font-size: 10px; color: #ef6c00; }
   .upgrade .roiBadge { font-size: 10px; color: #2e7d32; font-weight: 700; }
 
@@ -901,6 +917,8 @@
   .dialogueContent { flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; justify-content: center; }
   .dialogueName { font-weight: 700; font-size: 15px; color: var(--ink); margin-bottom: 12px; flex-shrink: 0; }
   .dialogueText { font-size: 13px; line-height: 1.6; color: var(--panel-text); }
+  /* Texte pas encore écrit : occupe sa place sans être vu (voir typewriterEffect). */
+  .dialogueText::after, .sceneText::after, .shopCommentText::after { content: attr(data-reste); visibility: hidden; }
   .continueHint { display: none; }
   @keyframes continueHintPulse { 0%, 100% { transform: translateX(0); opacity: 0.4; } 50% { transform: translateX(4px); opacity: 0.9; } }
 
@@ -1957,11 +1975,15 @@ let _dialogueBlockAdvance = false;
 function typewriterEffect(el, text, speed = 20, onDone) {
   stopTypewriter(el);
   el.textContent = '';
+  // La suite du texte, pas encore écrite, est posée en invisible derrière (voir le CSS
+  // `data-reste`) : la bulle a d'emblée sa taille finale et ne grandit plus pendant l'écriture.
+  el.dataset.reste = text;
   el._typewriterDone = onDone || null;
   let i = 0;
   el._typewriterTimer = setInterval(() => {
     el.textContent += text[i];
     i++;
+    el.dataset.reste = text.slice(i);
     if (i >= text.length) finishTypewriter(el);
   }, speed);
 }
@@ -1969,6 +1991,7 @@ function stopTypewriter(el) {
   clearInterval(el._typewriterTimer);
   el._typewriterTimer = null;
   el._typewriterDone = null;
+  el.dataset.reste = '';
 }
 // Fin de l'écriture, qu'elle arrive au bout ou soit passée d'un clic : la suite (avance ou
 // fermeture automatique) part dans les deux cas.
@@ -3941,7 +3964,10 @@ function openModal(overlayId) {
   // un nouvel onglet, la fenêtre s'ouvre là où le joueur en était et c'est le doigt « Clique
   // ici ! » qui l'emmène sur la nouveauté (seul le défilement repart en haut, voir
   // resetScrollPanes).
+  clearTimeout(overlay._fermetureTimer);
+  overlay.classList.remove('fermeture');
   overlay.classList.add('open');
+  suivreFenetrePendantAnimation(overlay);
   // Les panneaux de cette fenêtre ne sont pas redessinés tant qu'elle est fermée (voir
   // renderAll) : on les remet à jour maintenant qu'elle est marquée ouverte, avant de rendre
   // la main — pas en différé, sinon le joueur verrait une frame de contenu périmé.
@@ -3984,9 +4010,29 @@ function isTutorialHoldingModal(overlayId) {
   if (GROUP_TO_OVERLAY[_pendingSpotlightGroup] !== overlayId) return false;
   return isTutorialSpeakingFor(_pendingSpotlightGroup);
 }
+// Durée (ms) de l'animation CSS en cours sur un élément.
+function dureeAnimationMs(el) { return (parseFloat(getComputedStyle(el).animationDuration) || 0) * 1000; }
+// Pendant qu'une fenêtre bouge (le magasin qui monte), le doigt, le spotlight et la bulle de Papi
+// se recalent à chaque image sur le signal `gameviewportfit`, au lieu de sauter une fois arrivés.
+function suivreFenetrePendantAnimation(overlay) {
+  const fin = performance.now() + dureeAnimationMs(overlay) + 50;
+  const boucle = () => {
+    window.dispatchEvent(new Event('gameviewportfit'));
+    if (performance.now() < fin) requestAnimationFrame(boucle);
+  };
+  requestAnimationFrame(boucle);
+}
 function closeModal(overlayId) {
   if (isTutorialHoldingModal(overlayId)) return;
-  document.getElementById(overlayId).classList.remove('open');
+  const overlay = document.getElementById(overlayId);
+  // Fondu de sortie seulement pour une fenêtre réellement ouverte : le reset ferme toutes les
+  // fenêtres d'un coup, et celles déjà fermées ne doivent pas réapparaître un instant.
+  if (overlay.classList.contains('open')) {
+    overlay.classList.remove('open');
+    overlay.classList.add('fermeture');
+    clearTimeout(overlay._fermetureTimer);
+    overlay._fermetureTimer = setTimeout(() => overlay.classList.remove('fermeture'), dureeAnimationMs(overlay) + 20);
+  }
   flushPendingPapiCategories();
   if (_onModalCloseCallbacks[overlayId] && _onModalCloseCallbacks[overlayId].length) {
     _onModalCloseCallbacks[overlayId].splice(0).forEach(cb => cb());
@@ -4359,15 +4405,16 @@ function revealPendingDescription(tabId, onDone) {
   const zone = highlightDescribedZone(tabId);
   followDialogueAnchor(zone || document.querySelector(`[data-tab-id="${tabId}"]`));
 }
-// La bulle grandit pendant que le texte se tape (effet machine à écrire) et la mise en page
-// derrière peut être reconstruite par un renderAll() : une position calculée une seule fois,
-// au moment où la bulle est encore vide, finissait forcément de travers. On la recale donc en
-// continu tant que le descriptif est affiché.
+// La mise en page derrière la bulle peut être reconstruite par un renderAll() (la bulle, elle, a sa
+// taille finale dès le début, voir typewriterEffect) : on la recale donc en continu tant que le
+// descriptif est affiché.
 let _dialogueAnchorTimer = null;
 function followDialogueAnchor(targetEl) {
   stopFollowingDialogueAnchor();
   if (!targetEl) return;
   anchorDialogueTo(targetEl);
+  _dialogueAnchorRecalage = () => { if (isDialogueVisible()) anchorDialogueTo(targetEl); };
+  window.addEventListener('gameviewportfit', _dialogueAnchorRecalage);
   _dialogueAnchorTimer = setInterval(() => {
     if (!isDialogueVisible()) {
       stopFollowingDialogueAnchor();
@@ -4376,8 +4423,10 @@ function followDialogueAnchor(targetEl) {
     anchorDialogueTo(targetEl);
   }, 150);
 }
+let _dialogueAnchorRecalage = null;
 function stopFollowingDialogueAnchor() {
   if (_dialogueAnchorTimer) { clearInterval(_dialogueAnchorTimer); _dialogueAnchorTimer = null; }
+  if (_dialogueAnchorRecalage) { window.removeEventListener('gameviewportfit', _dialogueAnchorRecalage); _dialogueAnchorRecalage = null; }
 }
 // Onglet suivant à présenter, un par un, dans un groupe multi-onglets (Paramètres/Quêtes/
 // Magasin) : rempli quand un onglet est mis en évidence, vidé + appelé quand le joueur clique
@@ -4677,7 +4726,8 @@ function pointAtMiniTab(tabId) {
   };
   suivre();
   const timer = setInterval(suivre, 400);
-  _miniTabArrowCleanup = () => { clearInterval(timer); hideTutorialArrow(); };
+  window.addEventListener('gameviewportfit', suivre); // recalage immediat (fenetre qui bouge, redimensionnement)
+  _miniTabArrowCleanup = () => { clearInterval(timer); window.removeEventListener('gameviewportfit', suivre); hideTutorialArrow(); };
 }
 function clearMiniTabArrow() {
   _pointedTabId = null;
@@ -4951,11 +5001,29 @@ function renderNextPurchaseBar() {
 }
 
 let _themeApplique = null;
+// ================= COMPTEUR DE VERDURE FLUIDE =================
+// La production est ajoutée une fois par seconde : affiché tel quel, le compteur avançait par
+// sauts. Il défile donc en continu vers la vraie valeur, sans jamais la dépasser (on n'affiche
+// pas de Verdure pas encore gagnée). Une dépense s'affiche aussitôt ; un gain soudain (clic,
+// herbe dorée...) défile vite ; la production régulière défile sur une seconde, jusqu'au tick suivant.
+const _compteur = { affiche: null, depart: 0, cible: 0, t0: 0, duree: 1000 };
+function animerCompteurVerdure(maintenant) {
+  const c = _compteur, vraie = state.verdure;
+  if (c.affiche === null || vraie < c.affiche) {
+    c.affiche = c.depart = c.cible = vraie;
+  } else if (vraie !== c.cible) {
+    c.duree = vraie - c.affiche > totalCps() * 1.5 ? 250 : 1000;
+    c.depart = c.affiche; c.cible = vraie; c.t0 = maintenant;
+  }
+  if (c.affiche !== c.cible) c.affiche = c.depart + (c.cible - c.depart) * Math.min(1, (maintenant - c.t0) / c.duree);
+  const el = document.getElementById('verdureCount'), texte = formatNum(c.affiche);
+  if (el.textContent !== texte) el.textContent = texte;
+  requestAnimationFrame(animerCompteurVerdure);
+}
 function renderStats(cps) {
   renderActiveBoosts();
   const currentCps = cps === undefined ? totalCps() : cps;
   if (currentCps > state.bestCpsEver) state.bestCpsEver = currentCps;
-  document.getElementById('verdureCount').textContent = formatNum(state.verdure);
   document.getElementById('rateText').textContent = `+${formatRate(currentCps)} / ${state.lang === 'en' ? 'second' : 'seconde'}`;
   const seedsChip = document.getElementById('seedsText');
   if (state.prestigeCount > 0 || state.cosmicSeeds > 0) {
@@ -5138,7 +5206,7 @@ function companionMilestoneHtml(owned) {
   const prev = COMPANION_MILESTONES[atteints - 1] || 0;
   const pct = Math.round(((owned - prev) / (next - prev)) * 100);
   return `<div class="palierLine">🎯 ${en ? 'Milestone' : 'Palier'} ${next} : ${owned}/${next} → x${companionMilestoneStep()} production${bonusTxt}`
-    + `<div class="palierBar"><div class="palierFill" style="width:${pct}%;"></div></div></div>`;
+    + `<div class="palierBar"><div class="palierFill" data-pct="${pct}"></div></div></div>`; // largeur posee apres le rendu (voir majBarresPalier)
 }
 
 // Ligne d'un onglet à actions (Familiers, Automatisation, Défis) : icône, texte, zone de boutons.
@@ -5246,6 +5314,24 @@ function renderShop() {
       onclick: () => buyBuilding(b.id),
     };
   }));
+  majBarresPalier();
+}
+// Barres de palier : la ligne d'un compagnon est reconstruite a chaque achat (son HTML change), ce
+// qui recreait la barre deja a sa nouvelle largeur : elle sautait. La largeur est donc posee apres
+// le rendu, et une barre recreee repart de sa derniere largeur connue avant de glisser vers la nouvelle.
+const _palierLargeurs = {};
+function majBarresPalier() {
+  for (const fill of document.querySelectorAll('#shop .palierFill')) {
+    const id = fill.closest('[data-row-id]').dataset.rowId, cible = fill.dataset.pct + '%';
+    if (!fill.style.width) {
+      fill.style.transition = 'none';
+      fill.style.width = _palierLargeurs[id] || cible;
+      void fill.offsetWidth; // la largeur de depart est prise en compte avant la transition
+      fill.style.transition = '';
+    }
+    if (fill.style.width !== cible) fill.style.width = cible;
+    _palierLargeurs[id] = cible;
+  }
 }
 
 function renderClickShop() {
@@ -5491,25 +5577,40 @@ function renderAscension() {
   }));
 }
 
+// Les cartes gardent leurs nœuds (renderItemRows) : la barre, le compteur et le bouton sont mis à
+// jour sur place. Recréées à chaque rendu, elles faisaient clignoter le bouton « Réclamer » au
+// survol et pouvaient avaler un clic.
 function renderQuests() {
   generateQuests();
   const list = document.getElementById('questList');
-  list.innerHTML = '';
-  if (!state.dailyQuests) return;
-  state.dailyQuests.quests.forEach((q, i) => {
-    const progress = questProgressValue(q.type);
-    const pct = Math.min(100, (progress / q.target) * 100);
-    const div = document.createElement('div');
-    div.className = 'questCard';
-    div.innerHTML = `
+  if (!state.dailyQuests) { list.innerHTML = ''; return; }
+  const en = state.lang === 'en';
+  const quetes = state.dailyQuests.quests;
+  renderItemRows(list, quetes.map((q, i) => ({
+    id: `${state.dailyQuests.date}-${i}`,
+    className: 'questCard',
+    html: `
       <div class="qName">${questDesc(q)}</div>
-      <div class="qDesc">${state.lang === 'en' ? 'Reward' : 'Récompense'} : ${formatNum(q.rewardAmount * (combinedUpgradeValue('questMult')||1))} ${q.rewardType === 'verdure' ? (state.lang === 'en' ? 'Greenery 🌿' : 'Verdure 🌿') : (state.lang === 'en' ? 'Knowledge 📚' : 'Connaissances 📚')}</div>
-      <div class="qBar"><div class="qBarFill" style="width:${pct}%"></div></div>
-      <div style="font-size:11px;opacity:0.7;">${formatNum(progress)} / ${formatNum(q.target)}</div>
-      <button class="claimBtn" ${(progress >= q.target && !q.claimed) ? '' : 'disabled'}>${q.claimed ? (state.lang === 'en' ? '✔ Claimed' : '✔ Réclamée') : (state.lang === 'en' ? 'Claim' : 'Réclamer')}</button>
-    `;
-    div.querySelector('.claimBtn').onclick = () => claimQuest(i);
-    list.appendChild(div);
+      <div class="qDesc">${en ? 'Reward' : 'Récompense'} : ${formatNum(q.rewardAmount * (combinedUpgradeValue('questMult')||1))} ${q.rewardType === 'verdure' ? (en ? 'Greenery 🌿' : 'Verdure 🌿') : (en ? 'Knowledge 📚' : 'Connaissances 📚')}</div>
+      <div class="qBar"><div class="qBarFill"></div></div>
+      <div class="qProgress" style="font-size:11px;opacity:0.7;"></div>
+      <button class="claimBtn"></button>
+    `,
+    onclick: (e) => { if (e.target.closest('.claimBtn')) claimQuest(i); },
+  })));
+  quetes.forEach((q, i) => {
+    const carte = list.children[i];
+    if (!carte) return;
+    const progress = questProgressValue(q.type);
+    const largeur = Math.min(100, (progress / q.target) * 100) + '%';
+    const fill = carte.querySelector('.qBarFill'), texte = carte.querySelector('.qProgress'), bouton = carte.querySelector('.claimBtn');
+    if (fill.style.width !== largeur) fill.style.width = largeur;
+    const compte = `${formatNum(progress)} / ${formatNum(q.target)}`;
+    if (texte.textContent !== compte) texte.textContent = compte;
+    const pret = progress >= q.target && !q.claimed;
+    if (bouton.disabled === pret) bouton.disabled = !pret;
+    const libelle = q.claimed ? (en ? '✔ Claimed' : '✔ Réclamée') : (en ? 'Claim' : 'Réclamer');
+    if (bouton.textContent !== libelle) bouton.textContent = libelle;
   });
 }
 
@@ -5579,11 +5680,11 @@ function renderAchievements() {
     ? `Each achievement permanently boosts your Greenery production.<br>Current bonus: <b>+${total} %</b>`
     : `Chaque succès augmente pour toujours ta production de Verdure.<br>Bonus actuel : <b>+${total} %</b>`;
   setHtmlIfChanged(resume, resumeHtml);
-  list.innerHTML = '';
+  // Liste construite en texte puis ecrite seulement si elle change (une barre de progression qui
+  // avance), au lieu d'etre reconstruite a chaque rafraichissement.
+  let html = '';
   for (const a of ACHIEVEMENTS) {
     const unlocked = !!state.achievements[a.id];
-    const div = document.createElement('div');
-    div.className = 'achv' + (unlocked ? '' : ' locked');
     let barHtml = '';
     if (!unlocked && a.progress) {
       const [cur, target] = a.progress(state);
@@ -5593,15 +5694,15 @@ function renderAchievements() {
     const isHiddenSecret = a.secret && !unlocked;
     const displayName = isHiddenSecret ? (state.lang === 'en' ? '??? (secret achievement)' : '??? (succès secret)') : L(a,'name');
     const displayDesc = isHiddenSecret ? (state.lang === 'en' ? 'Unlocked by playing... differently.' : 'Débloqué en jouant... autrement.') : L(a,'desc');
-    div.innerHTML = `
+    html += `<div class="achv${unlocked ? '' : ' locked'}">
       <div class="achvTop">
         <div><div class="name">${unlocked ? '🏆' : '🔒'} ${displayName}</div><div class="desc">${displayDesc}</div></div>
         <div class="achvBonus">${unlocked ? `+${(a.bonus*100).toFixed(0)} % production` : '???'}</div>
       </div>
       ${barHtml}
-    `;
-    list.appendChild(div);
+    </div>`;
   }
+  setHtmlIfChanged(list, html);
 }
 
 function mostOwnedBuilding() {
@@ -5638,28 +5739,34 @@ document.getElementById('galleryLightboxOverlay').addEventListener('click', () =
 
 // Galerie : un objet non encore possédé s'affiche en silhouette grisée (mystère à
 // débloquer) plutôt que d'être caché, pour donner envie de continuer à jouer.
+// La galerie est construite en texte puis ecrite seulement si elle change : reconstruite a chaque
+// rafraichissement, elle recreait (et rechargeait) toutes ses images tant que la fenetre etait ouverte.
 function renderGallery() {
   const grid = document.getElementById('galleryGrid');
   if (!grid) return;
-  grid.innerHTML = '';
   const ids = Object.keys(ITEM_SPRITES);
   if (ids.length === 0) {
-    grid.innerHTML = `<p style="font-size:12px;opacity:0.6;">${state.lang === 'en' ? 'No items illustrated yet.' : "Aucun objet illustré pour l'instant."}</p>`;
+    setHtmlIfChanged(grid, `<p style="font-size:12px;opacity:0.6;">${state.lang === 'en' ? 'No items illustrated yet.' : "Aucun objet illustré pour l'instant."}</p>`);
     return;
   }
+  let html = '';
   for (const id of ids) {
     const entry = ITEM_SPRITES[id];
     const { item, owned } = findSpriteItem(id, entry.kind);
     if (!item) continue;
-    const card = document.createElement('div');
-    card.className = 'galleryCard' + (owned ? '' : ' locked');
-    card.innerHTML = `
+    html += `<div class="galleryCard${owned ? '' : ' locked'}" data-sprite="${id}">
       <img src="${entry.src}" alt="" onerror="this.remove()">
       <div class="galleryCardName">${owned ? L(item, 'name') : '???'}</div>
-    `;
-    if (owned) card.onclick = () => showGalleryLightbox(entry.src, L(item, 'name'), L(item, 'desc'));
-    grid.appendChild(card);
+    </div>`;
   }
+  setHtmlIfChanged(grid, html);
+  // Un seul gestionnaire pour toutes les cartes : la carte cliquee est reconnue a son data-sprite.
+  grid.onclick = (e) => {
+    const card = e.target.closest('.galleryCard:not(.locked)');
+    if (!card) return;
+    const entry = ITEM_SPRITES[card.dataset.sprite], { item } = findSpriteItem(card.dataset.sprite, entry.kind);
+    showGalleryLightbox(entry.src, L(item, 'name'), L(item, 'desc'));
+  };
 }
 
 function renderStatsTab() {
@@ -6650,6 +6757,7 @@ syncRevealedButtonsOnLoad();
 // (elles ne dépendent de rien d'autre — les rejouer à chaque rendu balayait tout le document).
 applyStaticTranslations();
 renderAll();
+requestAnimationFrame(animerCompteurVerdure);
 
 // ---- Séquence de lancement : splash (studio → logo) → choix de langue (1re fois
 // seulement) → vérification de mise à jour → scène d'ouverture/tutoriel (1re fois seulement).
@@ -6663,6 +6771,11 @@ function runSplashScreen(onReady) {
   const studioSlide = document.getElementById('splashSlideStudio');
   const logoSlide = document.getElementById('splashSlideLogo');
   let advanced = false;
+  // Rechargement apres un import (voir applyImportedData) : le joueur etait deja en jeu, on ne lui
+  // remontre pas les logos.
+  let apresImport = false;
+  try { apresImport = !!sessionStorage.getItem(IMPORT_TOAST_FLAG); } catch (e) {}
+  if (apresImport) { studioSlide.style.display = 'none'; finish(); return; }
   function finish() {
     if (advanced) return;
     advanced = true;

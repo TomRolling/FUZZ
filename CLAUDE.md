@@ -25,8 +25,19 @@ npm run tauri dev                 # launch the native window pointed at dist/ind
 npm run tauri build               # build the installer for the current OS -> src-tauri/target/release/bundle/{msi,nsis,dmg,deb,appimage}/
 ```
 
-There is no test suite, linter, or JS build/bundling step in this repo. To verify a change, run
-`npm run tauri dev` (or just open `dist/index.html` in a browser) and play through the affected flow manually.
+There is no linter or JS build/bundling step in this repo. Automated tests (Playwright, driving
+`dist/index.html` in a headless browser) and the bot balance bench live in [tests/](tests/) — see
+[tests/README.md](tests/README.md):
+
+```bash
+cd tests && npm install && npx playwright install chromium   # one-time
+bash tests/tout.sh                # full suite (~15 min), one result file per test in tests/sortie-<test>.txt
+node tests/test-fluidite.js       # a single test
+node tests/banc.js ./equilibre-jeu-paliers.js attentif 42 150   # balance bench (run from tests/)
+```
+
+For anything visual or feel-related, also run `npm run tauri dev` (or open `dist/index.html` in a browser)
+and play through the affected flow.
 
 ### Releasing
 

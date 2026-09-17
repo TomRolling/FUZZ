@@ -1,0 +1,5 @@
+node_modules/
+captures/
+sortie-*.txt
+*-attentif-*.json
+*-clics-*.json
