@@ -1178,6 +1178,7 @@
           <button class="smallBtn" id="importBtn" data-i18n="importBtn">📂 Importer (fichier)</button>
           <button class="smallBtn" id="importPasteBtn" data-i18n="importPasteBtn">📋 Importer (coller un code)</button>
           <button class="smallBtn" id="restoreBackupBtn" data-i18n="restoreBackupBtn">♻️ Restaurer la sauvegarde de secours</button>
+          <button class="smallBtn" id="undoImportBtn" data-i18n="undoImportBtn" style="display:none;">↩️ Revenir à la partie d'avant l'import</button>
           <button class="smallBtn" id="shareBtn" data-i18n="shareBtn">📣 Partager</button>
           <button class="smallBtn" id="resetBtn" data-i18n="resetBtn">🗑️ Reset total</button>
           <button class="smallBtn" id="quitGameBtn" data-i18n="quitGameBtn" style="background:#5c4a3d; color:white;">🚪 Quitter le jeu</button>
@@ -1363,6 +1364,12 @@ const ITEM_SPRITES = {
   sanctuaireNenuphar: { src: 'assets/sprites/sanctuaireNenuphar.png', kind: 'building' },
   grainePrimordiale: { src: 'assets/sprites/grainePrimordiale.png', kind: 'building' },
   jardinHorsTemps: { src: 'assets/sprites/jardinHorsTemps.png', kind: 'building' },
+  tortueGalaxies: { src: 'assets/sprites/tortueGalaxies.png', kind: 'building' },
+  lucioleEtoiles: { src: 'assets/sprites/lucioleEtoiles.png', kind: 'building' },
+  grenouilleTrouNoir: { src: 'assets/sprites/grenouilleTrouNoir.png', kind: 'building' },
+  hibouFinDesTemps: { src: 'assets/sprites/hibouFinDesTemps.png', kind: 'building' },
+  dragonMousse: { src: 'assets/sprites/dragonMousse.png', kind: 'building' },
+  espritMareInfinie: { src: 'assets/sprites/espritMareInfinie.png', kind: 'building' },
   // Améliorations de clic (placeholders générés)
   c1: { src: 'assets/sprites/c1.png', kind: 'clickUpgrade' },
   c2: { src: 'assets/sprites/c2.png', kind: 'clickUpgrade' },
@@ -1384,6 +1391,10 @@ const ITEM_SPRITES = {
   c18: { src: 'assets/sprites/c18.png', kind: 'clickUpgrade' },
   c19: { src: 'assets/sprites/c19.png', kind: 'clickUpgrade' },
   c20: { src: 'assets/sprites/c20.png', kind: 'clickUpgrade' },
+  c29: { src: 'assets/sprites/c29.png', kind: 'clickUpgrade' },
+  c30: { src: 'assets/sprites/c30.png', kind: 'clickUpgrade' },
+  c31: { src: 'assets/sprites/c31.png', kind: 'clickUpgrade' },
+  c32: { src: 'assets/sprites/c32.png', kind: 'clickUpgrade' },
   c21: { src: 'assets/sprites/c21.png', kind: 'clickUpgrade' },
   c22: { src: 'assets/sprites/c22.png', kind: 'clickUpgrade' },
   c23: { src: 'assets/sprites/c23.png', kind: 'clickUpgrade' },
@@ -1420,6 +1431,9 @@ const ITEM_SPRITES = {
   bocalSchrodinger: { src: 'assets/sprites/bocalSchrodinger.png', kind: 'companionBuilding' },
   templeEternel: { src: 'assets/sprites/templeEternel.png', kind: 'companionBuilding' },
   mareOriginelle: { src: 'assets/sprites/mareOriginelle.png', kind: 'companionBuilding' },
+  observatoireCarapace: { src: 'assets/sprites/observatoireCarapace.png', kind: 'companionBuilding' },
+  bassinHorizon: { src: 'assets/sprites/bassinHorizon.png', kind: 'companionBuilding' },
+  sourceToutesMares: { src: 'assets/sprites/sourceToutesMares.png', kind: 'companionBuilding' },
 };
 function getItemIconHtml(id, masked) {
   const entry = ITEM_SPRITES[id];
@@ -1518,6 +1532,13 @@ const BUILDINGS = [
   { id: 'sanctuaireNenuphar', name: { fr: "Gardien aux mille yeux", en: "Guardian of a Thousand Eyes" }, desc: { fr: "L'Ancien d'à côté l'a mal pris. Papi s'en fiche complètement.", en: "The Elder next door didn't take it well. Gramps couldn't care less." }, baseCost: 4e+22, baseCps: 1.5e13 },
   { id: 'grainePrimordiale', name: { fr: "Têtard Primordial", en: "Primordial Tadpole" }, desc: { fr: "Le tout premier têtard de l'histoire.", en: "The very first tadpole to have ever existed." }, baseCost: 2.5000000000000003e+23, baseCps: 4e13 },
   { id: 'jardinHorsTemps', name: { fr: "Le Vieux Râleur hors du temps", en: "The Old Grumbler Beyond Time" }, desc: { fr: "Personne ne connaît son âge. Il grommelle quand on le lui demande.", en: "Nobody knows his age. He grumbles when asked." }, baseCost: 8e+24, baseCps: 3e14 },
+  // --- Fin de partie : au-delà du temps ---
+  { id: 'tortueGalaxies', name: { fr: "Tortue porteuse de galaxies", en: "Galaxy-Bearing Turtle" }, desc: { fr: "Elle porte trois galaxies sur sa carapace. Elle n'a jamais demandé pourquoi.", en: "She carries three galaxies on her shell. She never asked why." }, baseCost: 2.5e+26, baseCps: 2e15 },
+  { id: 'lucioleEtoiles', name: { fr: "Essaim de lucioles stellaires", en: "Swarm of Star Fireflies" }, desc: { fr: "Chaque luciole est une étoile en miniature. Papi revend les éteintes comme lampes.", en: "Each firefly is a tiny star. Gramps sells the burnt-out ones as lamps." }, baseCost: 7.5e+27, baseCps: 1.2e16 },
+  { id: 'grenouilleTrouNoir', name: { fr: "Grenouille du trou noir", en: "Black Hole Frog" }, desc: { fr: "Tout ce qui passe près de sa langue disparaît. Même les factures de Papi.", en: "Everything near her tongue disappears. Even Gramps' bills." }, baseCost: 2.2e+29, baseCps: 7e16 },
+  { id: 'hibouFinDesTemps', name: { fr: "Hibou de la fin des temps", en: "Owl at the End of Time" }, desc: { fr: "Il a déjà vu la fin de l'histoire. Il refuse de dire qui gagne.", en: "He has already seen how the story ends. He won't say who wins." }, baseCost: 6.7e+30, baseCps: 4.2e17 },
+  { id: 'dragonMousse', name: { fr: "Dragon de mousse ancestral", en: "Ancestral Moss Dragon" }, desc: { fr: "Il crache de l'engrais au lieu du feu. Le jardin ne s'en plaint pas.", en: "He breathes fertilizer instead of fire. The garden doesn't complain." }, baseCost: 2e+32, baseCps: 2.5e18 },
+  { id: 'espritMareInfinie', name: { fr: "Esprit de la Mare Infinie", en: "Spirit of the Infinite Pond" }, desc: { fr: "Toutes les mares du monde sont reliées à lui. Même le seau de Leroy.", en: "Every pond in the world is connected to him. Even Leroy's bucket." }, baseCost: 6e+33, baseCps: 1.5e19 },
 ];
 
 // Paliers de compagnon : à chacun de ces nombres d'exemplaires, la production DE CE compagnon est
@@ -1556,7 +1577,7 @@ const UI_STRINGS = {
     saveShareReset: 'Sauvegarde, partage et remise à zéro.',
     exportBtn: '💾 Exporter (fichier)', copyCodeBtn: '📋 Copier mon code (autre appareil)',
     importBtn: '📂 Importer (fichier)', importPasteBtn: '📋 Importer (coller un code)',
-    restoreBackupBtn: '♻️ Restaurer la sauvegarde de secours', shareBtn: '📣 Partager', resetBtn: '🗑️ Reset total', quitGameBtn: '🚪 Quitter le jeu',
+    restoreBackupBtn: '♻️ Restaurer la sauvegarde de secours', undoImportBtn: '↩️ Revenir à la partie d\'avant l\'import', shareBtn: '📣 Partager', resetBtn: '🗑️ Reset total', quitGameBtn: '🚪 Quitter le jeu',
     updatesLabel: '🔄 Mises à jour', checkBtn: 'Vérifier', installBtn: 'Installer', updateNow: 'Mettre à jour maintenant', laterBtn: 'Plus tard', checkingLabel: 'Vérification...',
     clickHere: 'Clique ici !',
     dailyCycleIntro: "Le calendrier tourne sur <b>7 jours</b> : reviens chaque jour pour avancer dedans, et le <b>jour 7</b> offre le plus gros lot. Un jour manqué et la série repart au jour 1.",
@@ -1590,7 +1611,7 @@ const UI_STRINGS = {
     saveShareReset: 'Save, share, and reset.',
     exportBtn: '💾 Export (file)', copyCodeBtn: '📋 Copy my code (other device)',
     importBtn: '📂 Import (file)', importPasteBtn: '📋 Import (paste a code)',
-    restoreBackupBtn: '♻️ Restore backup save', shareBtn: '📣 Share', resetBtn: '🗑️ Full reset', quitGameBtn: '🚪 Quit game',
+    restoreBackupBtn: '♻️ Restore backup save', undoImportBtn: '↩️ Go back to the game before the import', shareBtn: '📣 Share', resetBtn: '🗑️ Full reset', quitGameBtn: '🚪 Quit game',
     updatesLabel: '🔄 Updates', checkBtn: 'Check', installBtn: 'Install', updateNow: 'Update now', laterBtn: 'Later', checkingLabel: 'Checking...',
     clickHere: 'Click here!',
     dailyCycleIntro: 'The calendar runs on a <b>7-day</b> cycle: come back every day to move through it, and <b>day 7</b> has the biggest prize. Miss a day and the streak restarts at day 1.',
@@ -2197,33 +2218,37 @@ document.getElementById('sceneSkipBtn').addEventListener('click', (e) => {
 // 'cpsPercent' : ajoute un % de la production/seconde totale au gain de clic (additif, garde le clic utile très loin)
 const CLICK_UPGRADES = [
   { id: 'c1', name: { fr: 'Gants renforcés', en: 'Reinforced Gloves' }, desc: { fr: '+100% de Verdure par clic.', en: '+100% Greenery per click.' }, cost: 400, type: 'flatMult', value: 2 },
-  { id: 'c2', name: { fr: 'Clic synchronisé', en: 'Synced Click' }, desc: { fr: "Chaque clic ajoute 0.1% de ta production/seconde.", en: "Each click adds 0.1% of your production/second." }, cost: 3000, type: 'cpsPercent', value: 0.001 },
+  { id: 'c2', name: { fr: 'Clic synchronisé', en: 'Synced Click' }, desc: { fr: "Chaque clic ajoute 0.025% de ta production/seconde.", en: "Each click adds 0.025% of your production/second." }, cost: 3000, type: 'cpsPercent', value: 0.00025 },
   { id: 'c3', name: { fr: "Poignet d'acier", en: 'Steel Wrist' }, desc: { fr: '+100% de Verdure par clic en plus.', en: '+100% additional Greenery per click.' }, cost: 40000, type: 'flatMult', value: 2 },
-  { id: 'c4', name: { fr: 'Clic en rafale', en: 'Burst Click' }, desc: { fr: "+0.1% supplémentaire de ta production/seconde par clic.", en: "An additional +0.1% of your production/second per click." }, cost: 400000, type: 'cpsPercent', value: 0.001 },
+  { id: 'c4', name: { fr: 'Clic en rafale', en: 'Burst Click' }, desc: { fr: "+0.025% supplémentaire de ta production/seconde par clic.", en: "An additional +0.025% of your production/second per click." }, cost: 400000, type: 'cpsPercent', value: 0.00025 },
   { id: 'c21', name: { fr: 'Gant à ventouses', en: 'Suction-Cup Glove' }, desc: { fr: '+125% de Verdure par clic en plus.', en: '+125% additional Greenery per click.' }, cost: 1.5e+6, type: 'flatMult', value: 2.25 },
-  { id: 'c22', name: { fr: 'Cadence naturelle', en: 'Natural Cadence' }, desc: { fr: "+0.1% supplémentaire de ta production/seconde par clic.", en: "An additional +0.1% of your production/second per click." }, cost: 2.5e+6, type: 'cpsPercent', value: 0.001 },
+  { id: 'c22', name: { fr: 'Cadence naturelle', en: 'Natural Cadence' }, desc: { fr: "+0.025% supplémentaire de ta production/seconde par clic.", en: "An additional +0.025% of your production/second per click." }, cost: 2.5e+6, type: 'cpsPercent', value: 0.00025 },
   { id: 'c5', name: { fr: 'Binette vibrante', en: 'Vibrating Hand Hoe' }, desc: { fr: '+100% de Verdure par clic en plus.', en: '+100% additional Greenery per click.' }, cost: 6e+6, type: 'flatMult', value: 2 },
-  { id: 'c6', name: { fr: 'Réflexes augmentés', en: 'Enhanced Reflexes' }, desc: { fr: "+0.1% supplémentaire de ta production/seconde par clic.", en: "An additional +0.1% of your production/second per click." }, cost: 6e+7, type: 'cpsPercent', value: 0.001 },
+  { id: 'c6', name: { fr: 'Réflexes augmentés', en: 'Enhanced Reflexes' }, desc: { fr: "+0.025% supplémentaire de ta production/seconde par clic.", en: "An additional +0.025% of your production/second per click." }, cost: 6e+7, type: 'cpsPercent', value: 0.00025 },
   { id: 'c7', name: { fr: 'Gant-drone', en: 'Drone Glove' }, desc: { fr: "+5% sur tout ce que rapporte un clic.", en: "+5% on everything a click earns." }, cost: 1e+9, type: 'totalMult', value: 1.05 },
-  { id: 'c8', name: { fr: 'Synchronisation neurale', en: 'Neural Sync' }, desc: { fr: "+0.12% supplémentaire de ta production/seconde par clic.", en: "An additional +0.12% of your production/second per click." }, cost: 2e+10, type: 'cpsPercent', value: 0.0012 },
+  { id: 'c8', name: { fr: 'Synchronisation neurale', en: 'Neural Sync' }, desc: { fr: "+0.03% supplémentaire de ta production/seconde par clic.", en: "An additional +0.03% of your production/second per click." }, cost: 2e+10, type: 'cpsPercent', value: 0.0003 },
   { id: 'c23', name: { fr: 'Prothèse de jardinier', en: "Gardener's Prosthetic" }, desc: { fr: "+5% sur tout ce que rapporte un clic.", en: "+5% on everything a click earns." }, cost: 4e+10, type: 'totalMult', value: 1.05 },
-  { id: 'c24', name: { fr: 'Mémoire musculaire', en: 'Muscle Memory' }, desc: { fr: "+0.12% supplémentaire de ta production/seconde par clic.", en: "An additional +0.12% of your production/second per click." }, cost: 1e+11, type: 'cpsPercent', value: 0.0012 },
+  { id: 'c24', name: { fr: 'Mémoire musculaire', en: 'Muscle Memory' }, desc: { fr: "+0.03% supplémentaire de ta production/seconde par clic.", en: "An additional +0.03% of your production/second per click." }, cost: 1e+11, type: 'cpsPercent', value: 0.0003 },
   { id: 'c9', name: { fr: 'Exosquelette léger', en: 'Light Exoskeleton' }, desc: { fr: "+5% sur tout ce que rapporte un clic.", en: "+5% on everything a click earns." }, cost: 3e+11, type: 'totalMult', value: 1.05 },
-  { id: 'c10', name: { fr: 'Clic quantique', en: 'Quantum Click' }, desc: { fr: "+0.12% supplémentaire de ta production/seconde par clic.", en: "An additional +0.12% of your production/second per click." }, cost: 5e+12, type: 'cpsPercent', value: 0.0012 },
+  { id: 'c10', name: { fr: 'Clic quantique', en: 'Quantum Click' }, desc: { fr: "+0.03% supplémentaire de ta production/seconde par clic.", en: "An additional +0.03% of your production/second per click." }, cost: 5e+12, type: 'cpsPercent', value: 0.0003 },
   { id: 'c11', name: { fr: 'Main martienne', en: 'Martian Hand' }, desc: { fr: "+5% sur tout ce que rapporte un clic.", en: "+5% on everything a click earns." }, cost: 7e+13, type: 'totalMult', value: 1.05 },
-  { id: 'c12', name: { fr: 'Résonance galactique', en: 'Galactic Resonance' }, desc: { fr: "+0.15% supplémentaire de ta production/seconde par clic.", en: "An additional +0.15% of your production/second per click." }, cost: 1e+15, type: 'cpsPercent', value: 0.0015 },
+  { id: 'c12', name: { fr: 'Résonance galactique', en: 'Galactic Resonance' }, desc: { fr: "+0.04% supplémentaire de ta production/seconde par clic.", en: "An additional +0.04% of your production/second per click." }, cost: 1e+15, type: 'cpsPercent', value: 0.0004 },
   { id: 'c25', name: { fr: 'Griffe martienne', en: 'Martian Claw' }, desc: { fr: "+5% sur tout ce que rapporte un clic.", en: "+5% on everything a click earns." }, cost: 2.5e+15, type: 'totalMult', value: 1.05 },
-  { id: 'c26', name: { fr: 'Câblage neuronal avancé', en: 'Advanced Neural Wiring' }, desc: { fr: "+0.15% supplémentaire de ta production/seconde par clic.", en: "An additional +0.15% of your production/second per click." }, cost: 5e+15, type: 'cpsPercent', value: 0.0015 },
+  { id: 'c26', name: { fr: 'Câblage neuronal avancé', en: 'Advanced Neural Wiring' }, desc: { fr: "+0.04% supplémentaire de ta production/seconde par clic.", en: "An additional +0.04% of your production/second per click." }, cost: 5e+15, type: 'cpsPercent', value: 0.0004 },
   { id: 'c13', name: { fr: 'Doigts du Big Bang', en: 'Big Bang Fingers' }, desc: { fr: "+5% sur tout ce que rapporte un clic.", en: "+5% on everything a click earns." }, cost: 1.5e+16, type: 'totalMult', value: 1.05 },
-  { id: 'c14', name: { fr: 'Clic intergalactique', en: 'Intergalactic Click' }, desc: { fr: "+0.15% supplémentaire de ta production/seconde par clic.", en: "An additional +0.15% of your production/second per click." }, cost: 2e+17, type: 'cpsPercent', value: 0.0015 },
+  { id: 'c14', name: { fr: 'Clic intergalactique', en: 'Intergalactic Click' }, desc: { fr: "+0.04% supplémentaire de ta production/seconde par clic.", en: "An additional +0.04% of your production/second per click." }, cost: 2e+17, type: 'cpsPercent', value: 0.0004 },
   { id: 'c15', name: { fr: 'Pression quantique', en: 'Quantum Pressure' }, desc: { fr: "+8% sur tout ce que rapporte un clic.", en: "+8% on everything a click earns." }, cost: 3e+18, type: 'totalMult', value: 1.08 },
-  { id: 'c16', name: { fr: 'Écho de mousse', en: 'Moss Echo' }, desc: { fr: "+0.18% supplémentaire de ta production/seconde par clic.", en: "An additional +0.18% of your production/second per click." }, cost: 1e+20, type: 'cpsPercent', value: 0.0018 },
+  { id: 'c16', name: { fr: 'Écho de mousse', en: 'Moss Echo' }, desc: { fr: "+0.045% supplémentaire de ta production/seconde par clic.", en: "An additional +0.045% of your production/second per click." }, cost: 1e+20, type: 'cpsPercent', value: 0.00045 },
   { id: 'c27', name: { fr: 'Poing du compost éternel', en: 'Fist of Eternal Compost' }, desc: { fr: "+8% sur tout ce que rapporte un clic.", en: "+8% on everything a click earns." }, cost: 5e+20, type: 'totalMult', value: 1.08 },
-  { id: 'c28', name: { fr: 'Battement stellaire', en: 'Stellar Pulse' }, desc: { fr: "+0.18% supplémentaire de ta production/seconde par clic.", en: "An additional +0.18% of your production/second per click." }, cost: 2e+21, type: 'cpsPercent', value: 0.0018 },
+  { id: 'c28', name: { fr: 'Battement stellaire', en: 'Stellar Pulse' }, desc: { fr: "+0.045% supplémentaire de ta production/seconde par clic.", en: "An additional +0.045% of your production/second per click." }, cost: 2e+21, type: 'cpsPercent', value: 0.00045 },
   { id: 'c17', name: { fr: 'Volonté chlorophyllienne', en: 'Chlorophyll Will' }, desc: { fr: "+8% sur tout ce que rapporte un clic.", en: "+8% on everything a click earns." }, cost: 1.2e+22, type: 'totalMult', value: 1.08 },
-  { id: 'c18', name: { fr: 'Rituel du compost', en: 'Compost Ritual' }, desc: { fr: "+0.18% supplémentaire de ta production/seconde par clic.", en: "An additional +0.18% of your production/second per click." }, cost: 3e+23, type: 'cpsPercent', value: 0.0018 },
+  { id: 'c18', name: { fr: 'Rituel du compost', en: 'Compost Ritual' }, desc: { fr: "+0.045% supplémentaire de ta production/seconde par clic.", en: "An additional +0.045% of your production/second per click." }, cost: 3e+23, type: 'cpsPercent', value: 0.00045 },
   { id: 'c19', name: { fr: 'Empreinte primordiale', en: 'Primordial Imprint' }, desc: { fr: "+10% sur tout ce que rapporte un clic.", en: "+10% on everything a click earns." }, cost: 9.999999999999999e+24, type: 'totalMult', value: 1.1 },
-  { id: 'c20', name: { fr: 'Clic hors du temps', en: 'Click Beyond Time' }, desc: { fr: "+0.2% supplémentaire de ta production/seconde par clic.", en: "An additional +0.2% of your production/second per click." }, cost: 2.5e+26, type: 'cpsPercent', value: 0.002 },
+  { id: 'c20', name: { fr: 'Clic hors du temps', en: 'Click Beyond Time' }, desc: { fr: "+0.05% supplémentaire de ta production/seconde par clic.", en: "An additional +0.05% of your production/second per click." }, cost: 2.5e+26, type: 'cpsPercent', value: 0.0005 },
+  { id: 'c29', name: { fr: 'Paume galactique', en: 'Galactic Palm' }, desc: { fr: "+10% sur tout ce que rapporte un clic.", en: "+10% on everything a click earns." }, cost: 1e+28, type: 'totalMult', value: 1.1 },
+  { id: 'c30', name: { fr: 'Clic du trou noir', en: 'Black Hole Click' }, desc: { fr: "+8% sur tout ce que rapporte un clic.", en: "+8% on everything a click earns." }, cost: 5e+29, type: 'totalMult', value: 1.08 },
+  { id: 'c31', name: { fr: 'Main de la fin des temps', en: 'Hand at the End of Time' }, desc: { fr: "+12% sur tout ce que rapporte un clic.", en: "+12% on everything a click earns." }, cost: 2e+31, type: 'totalMult', value: 1.12 },
+  { id: 'c32', name: { fr: 'Clic infini', en: 'Infinite Click' }, desc: { fr: "+10% sur tout ce que rapporte un clic.", en: "+10% on everything a click earns." }, cost: 1e+33, type: 'totalMult', value: 1.1 },
 ];
 
 // Synergies: chaque unité de "source" boost le cps de "target" de percent
@@ -2261,6 +2286,9 @@ const COMPANION_BUILDINGS = [
   { id: 'bocalSchrodinger', targetId: 'jardinQuantique', mult: 3.0, cost: 3e+20, name: { fr: "Bocal de Schrödinger", en: "Schrödinger's Jar" }, desc: { fr: "Le papillon y est à la fois posé et en vol. On encaisse quand même.", en: "The butterfly is both resting and flying. We cash in either way." } },
   { id: 'templeEternel', targetId: 'templeCompost', mult: 3.0, cost: 2e+24, name: { fr: 'Temple Éternel', en: 'Eternal Temple' }, desc: { fr: "L'Ancien a enfin un lieu à sa mesure pour raconter l'histoire du premier étang.", en: "The Elder finally has a venue worthy of his first-pond stories." } },
   { id: 'mareOriginelle', targetId: 'grainePrimordiale', mult: 3.0, cost: 5e+25, name: { fr: 'Mare Originelle restaurée', en: 'Restored Original Pond' }, desc: { fr: "Le tout premier têtard y est enfin chez lui.", en: "The very first tadpole is finally home." } },
+  { id: 'observatoireCarapace', targetId: 'tortueGalaxies', mult: 3.0, cost: 5e+28, name: { fr: "Observatoire sur carapace", en: "Shell Observatory" }, desc: { fr: "On y observe les galaxies de très près. Trop près, selon la tortue.", en: "You watch the galaxies up close from here. Too close, says the turtle." } },
+  { id: 'bassinHorizon', targetId: 'grenouilleTrouNoir', mult: 3.0, cost: 4e+30, name: { fr: "Bassin de l'horizon des événements", en: "Event Horizon Basin" }, desc: { fr: "Rien n'en ressort, à part la production.", en: "Nothing comes out of it, except production." } },
+  { id: 'sourceToutesMares', targetId: 'espritMareInfinie', mult: 3.0, cost: 1e+35, name: { fr: "Source de toutes les mares", en: "Source of All Ponds" }, desc: { fr: "Leroy y a jeté une pièce. Elle n'est jamais retombée.", en: "Leroy tossed a coin in. It never came back down." } },
 ];
 
 // ================= UNIQUE SPECIAL BUILDINGS =================
@@ -2321,6 +2349,13 @@ const RESEARCH = [
   { id: 'r_cheap5', name: { fr: "Troc interstellaire", en: "Interstellar Barter" }, desc: { fr: "-10% supplémentaire sur le coût des compagnons.", en: "-10% additional on companion costs." }, cost: 1e+6, type: 'cheaper', value: 0.9, requires: 'r_cheap4' },
   { id: 'r_offline5', name: { fr: "Mare qui ne dort jamais", en: "Pond That Never Sleeps" }, desc: { fr: "+30% d'efficacité hors-ligne supplémentaire.", en: "+30% additional offline efficiency." }, cost: 1.2e+6, type: 'offlineBonus', value: 0.3, requires: 'r_offline4' },
   { id: 'r_knowledge7', name: { fr: "Mémoire de la Mare Originelle", en: "Memory of the Original Pond" }, desc: { fr: "+200% de gain de Connaissances supplémentaire.", en: "+200% additional Knowledge gain." }, cost: 3.5e+6, type: 'knowledgeMult', value: 3, requires: 'r_knowledge6' },
+  // --- Fin de partie ---
+  { id: 'r_prod11', name: { fr: "Photosynthèse stellaire", en: "Stellar Photosynthesis" }, desc: { fr: "+100% production globale supplémentaire.", en: "+100% additional global production." }, cost: 4e+6, type: 'prodMult', value: 2, requires: 'r_prod10' },
+  { id: 'r_cheap6', name: { fr: "Bourse des mares", en: "Pond Exchange" }, desc: { fr: "-10% supplémentaire sur le coût des compagnons.", en: "-10% additional on companion costs." }, cost: 6e+6, type: 'cheaper', value: 0.9, requires: 'r_cheap5' },
+  { id: 'r_offline6', name: { fr: "Rêves de la mare", en: "Pond Dreams" }, desc: { fr: "+30% d'efficacité hors-ligne supplémentaire.", en: "+30% additional offline efficiency." }, cost: 8e+6, type: 'offlineBonus', value: 0.3, requires: 'r_offline5' },
+  { id: 'r_prod12', name: { fr: "Racines entre les mondes", en: "Roots Between Worlds" }, desc: { fr: "+120% production globale supplémentaire.", en: "+120% additional global production." }, cost: 8e+6, type: 'prodMult', value: 2.2, requires: 'r_prod11' },
+  { id: 'r_cheap7', name: { fr: "Monnaie de nénuphar", en: "Lily Pad Currency" }, desc: { fr: "-12% supplémentaire sur le coût des compagnons.", en: "-12% additional on companion costs." }, cost: 9e+6, type: 'cheaper', value: 0.88, requires: 'r_cheap6' },
+  { id: 'r_prod13', name: { fr: "Jardin sans fin", en: "Endless Garden" }, desc: { fr: "+150% production globale supplémentaire.", en: "+150% additional global production." }, cost: 1.3e+7, type: 'prodMult', value: 2.5, requires: 'r_prod12' },
 ];
 
 // Recherches infinies : rachetables indéfiniment (coût croissant à chaque niveau, comme
@@ -2353,7 +2388,14 @@ const ASCENSION_UPGRADES = [
   { id: 'as_synergy1', name: { fr: 'Toile mycélienne stellaire', en: 'Stellar Mycelial Web' }, desc: { fr: '+50% sur tous les effets de synergie entre compagnons.', en: '+50% on all building synergy effects.' }, cost: 2, type: 'synergyMult', value: 1.5, requires: null },
   { id: 'as_synergy2', name: { fr: 'Réseau stellaire ultime', en: 'Ultimate Stellar Web' }, desc: { fr: '+100% supplémentaire sur tous les effets de synergie.', en: 'An additional +100% on all synergy effects.' }, cost: 4, type: 'synergyMult', value: 2.0, requires: 'as_synergy1' },
   { id: 'as_startBonus1', name: { fr: 'Graine éternelle', en: 'Eternal Seed' }, desc: { fr: "Après un Prestige OU une Ascension, commence avec 3 min de ta production d'avant.", en: "After a Prestige OR an Ascension, start with 3 min of your previous production." }, cost: 3, type: 'startBonus', value: 3, requires: 'as_seedBoost1' },
-  { id: 'as_clickCps1', name: { fr: 'Écho stellaire éternel', en: 'Eternal Stellar Echo' }, desc: { fr: "+0.2% de production/seconde ajoutée à chaque clic.", en: "+0.2% of production/second added to each click." }, cost: 3, type: 'clickCpsPercent', value: 0.002, requires: 'as_click1' },
+  { id: 'as_clickCps1', name: { fr: 'Écho stellaire éternel', en: 'Eternal Stellar Echo' }, desc: { fr: "+0.05% de production/seconde ajoutée à chaque clic.", en: "+0.05% of production/second added to each click." }, cost: 3, type: 'clickCpsPercent', value: 0.0005, requires: 'as_click1' },
+  // --- Fin de partie (aucun bonus de Graines ni d'Éclats : ils relanceraient l'emballement) ---
+  { id: 'as_click3', name: { fr: 'Main des étoiles', en: 'Hand of the Stars' }, desc: { fr: "+20% sur tout ce que rapporte un clic.", en: "+20% on everything a click earns." }, cost: 20, type: 'clickMult', value: 1.2, requires: 'as_click2' },
+  { id: 'as_prod4', name: { fr: 'Cœur de nébuleuse', en: 'Nebula Heart' }, desc: { fr: '+100% de production globale supplémentaire.', en: '+100% additional global production.' }, cost: 40, type: 'prodMult', value: 2, requires: 'as_prod3' },
+  { id: 'as_knowledge3', name: { fr: "Bibliothèque de l'univers", en: 'Library of the Universe' }, desc: { fr: '+200% supplémentaire de gain de Connaissances.', en: 'An additional +200% Knowledge gain.' }, cost: 40, type: 'knowledgeMult', value: 3, requires: 'as_knowledge2' },
+  { id: 'as_cheaper2', name: { fr: 'Marché galactique', en: 'Galactic Market' }, desc: { fr: 'Compagnons encore 15% moins chers.', en: 'Companions another 15% cheaper.' }, cost: 60, type: 'cheaper', value: 0.85, requires: 'as_cheaper1' },
+  { id: 'as_prod5', name: { fr: 'Souffle cosmique', en: 'Cosmic Breath' }, desc: { fr: '+150% de production globale supplémentaire.', en: '+150% additional global production.' }, cost: 90, type: 'prodMult', value: 2.5, requires: 'as_prod4' },
+  { id: 'as_prod6', name: { fr: 'Naissance d\'une étoile', en: 'Birth of a Star' }, desc: { fr: '+200% de production globale supplémentaire.', en: '+200% additional global production.' }, cost: 120, type: 'prodMult', value: 3, requires: 'as_prod5' },
 ];
 
 // ================= PRESTIGE UPGRADES (Graines Cosmiques) =================
@@ -2379,8 +2421,8 @@ const PRESTIGE_UPGRADES = [
   { id: 'p_knowledgeBoost2', name: { fr: 'Grimoire du compost', en: 'Compost Grimoire' }, desc: { fr: '+150% supplémentaire de gain de Connaissances.', en: 'An additional +150% Knowledge gain.' }, cost: 10, type: 'knowledgeMult', value: 2.5, requires: 'p_knowledgeBoost' },
   { id: 'p_click3', name: { fr: 'Doigts de lumière', en: 'Fingers of Light' }, desc: { fr: "+10% sur tout ce que rapporte un clic.", en: "+10% on everything a click earns." }, cost: 20, type: 'clickMult', value: 1.1, requires: 'p_click2' },
   { id: 'p_click4', name: { fr: 'Étreinte de la mare', en: "Pond's Embrace" }, desc: { fr: "+12% sur tout ce que rapporte un clic.", en: "+12% on everything a click earns." }, cost: 25, type: 'clickMult', value: 1.12, requires: 'p_click3' },
-  { id: 'p_clickCps1', name: { fr: 'Résonance cosmique', en: 'Cosmic Resonance' }, desc: { fr: "+0.2% de production/seconde ajoutée à chaque clic.", en: "+0.2% of production/second added to each click." }, cost: 10, type: 'clickCpsPercent', value: 0.002, requires: null },
-  { id: 'p_clickCps2', name: { fr: 'Écho stellaire', en: 'Stellar Echo' }, desc: { fr: "+0.3% supplémentaire de production/seconde ajoutée à chaque clic.", en: "An additional +0.3% of production/second added to each click." }, cost: 20, type: 'clickCpsPercent', value: 0.003, requires: 'p_clickCps1' },
+  { id: 'p_clickCps1', name: { fr: 'Résonance cosmique', en: 'Cosmic Resonance' }, desc: { fr: "+0.05% de production/seconde ajoutée à chaque clic.", en: "+0.05% of production/second added to each click." }, cost: 10, type: 'clickCpsPercent', value: 0.0005, requires: null },
+  { id: 'p_clickCps2', name: { fr: 'Écho stellaire', en: 'Stellar Echo' }, desc: { fr: "+0.075% supplémentaire de production/seconde ajoutée à chaque clic.", en: "An additional +0.075% of production/second added to each click." }, cost: 20, type: 'clickCpsPercent', value: 0.00075, requires: 'p_clickCps1' },
 ];
 
 // ================= WEATHER =================
@@ -2423,11 +2465,17 @@ const ACHIEVEMENTS = [
   { id: 'a_weatherAll', name: { fr: "Prévisionniste", en: 'Forecaster' }, desc: { fr: 'Vivre les 6 types de météo.', en: 'Experience all 6 weather types.' }, bonus: 0.02, check: s => (s.weatherSeen||[]).length >= 6, progress: s => [(s.weatherSeen||[]).length, 6] },
   { id: 'a_invasive10', name: { fr: "Tu gères tout seul", en: "You've Got This" }, desc: { fr: 'Convaincre Papi de repartir 10 fois.', en: 'Convince Gramps to leave 10 times.' }, bonus: 0.03, check: s => (s.invasiveDefeated||0) >= 10, progress: s => [s.invasiveDefeated||0, 10] },
   { id: 'a_clickUp10', name: { fr: 'Maître du clic', en: 'Click Master' }, desc: { fr: '10 améliorations de clic achetées.', en: '10 click upgrades purchased.' }, bonus: 0.04, check: s => Object.keys(s.clickUpgrades||{}).length >= 10, progress: s => [Object.keys(s.clickUpgrades||{}).length, 10] },
-  { id: 'a_clickUpAll', name: { fr: 'Clic transcendant', en: 'Transcendent Click' }, desc: { fr: 'Toutes les améliorations de clic achetées.', en: 'All click upgrades purchased.' }, bonus: 0.1, check: s => Object.keys(s.clickUpgrades||{}).length >= 20, progress: s => [Object.keys(s.clickUpgrades||{}).length, 20] },
+  { id: 'a_clickUpAll', name: { fr: 'Clic transcendant', en: 'Transcendent Click' }, desc: { fr: 'Toutes les améliorations de clic achetées.', en: 'All click upgrades purchased.' }, bonus: 0.1, check: s => Object.keys(s.clickUpgrades||{}).length >= CLICK_UPGRADES.length, progress: s => [Object.keys(s.clickUpgrades||{}).length, CLICK_UPGRADES.length] },
   { id: 'a_noBuy1', name: { fr: "Relever le gant", en: "Taking Up the Gauntlet" }, desc: { fr: "Réussir 1 défi.", en: "Complete 1 challenge." }, bonus: 0.02, check: s => challengesDoneCount(s) >= 1, progress: s => [challengesDoneCount(s), 1] },
   { id: 'a_noBuy5', name: { fr: "Habitué des défis", en: "Challenge Regular" }, desc: { fr: "Réussir 5 défis.", en: "Complete 5 challenges." }, bonus: 0.06, check: s => challengesDoneCount(s) >= 5, progress: s => [challengesDoneCount(s), 5] },
   { id: 'a_speed1', name: { fr: "Téméraire", en: "Daredevil" }, desc: { fr: "Réussir 2 défis.", en: "Complete 2 challenges." }, bonus: 0.02, check: s => challengesDoneCount(s) >= 2, progress: s => [challengesDoneCount(s), 2] },
   { id: 'a_speed5', name: { fr: "Maître des défis", en: "Challenge Master" }, desc: { fr: "Réussir les 8 défis.", en: "Complete all 8 challenges." }, bonus: 0.07, check: s => challengesDoneCount(s) >= 8, progress: s => [challengesDoneCount(s), 8] },
+  // --- Fin de partie ---
+  { id: 'a_tortueGalaxies1', name: { fr: 'Porteur de mondes', en: 'World Bearer' }, desc: { fr: 'Posséder une Tortue porteuse de galaxies.', en: 'Own a Galaxy-Bearing Turtle.' }, bonus: 0.05, check: s => (s.buildings.tortueGalaxies||0) >= 1, progress: s => [s.buildings.tortueGalaxies||0, 1] },
+  { id: 'a_mareInfinie1', name: { fr: 'Au bout de la mare', en: 'The Far End of the Pond' }, desc: { fr: "Recruter l'Esprit de la Mare Infinie.", en: 'Recruit the Spirit of the Infinite Pond.' }, bonus: 0.1, check: s => (s.buildings.espritMareInfinie||0) >= 1, progress: s => [s.buildings.espritMareInfinie||0, 1] },
+  { id: 'a_ascension10', name: { fr: 'Voyageur des étoiles', en: 'Star Traveler' }, desc: { fr: '10 Ascensions effectuées.', en: '10 Ascensions completed.' }, bonus: 0.08, check: s => (s.totalAscensions||0) >= 10, progress: s => [s.totalAscensions||0, 10] },
+  { id: 'a_shards100', name: { fr: "Collectionneur d'étoiles", en: 'Star Collector' }, desc: { fr: '100 Éclats Stellaires gagnés.', en: '100 Stellar Shards earned.' }, bonus: 0.08, check: s => (s.totalShardsEarned||0) >= 100, progress: s => [s.totalShardsEarned||0, 100] },
+  { id: 'a_prestige100', name: { fr: 'Terraformeur infatigable', en: 'Tireless Terraformer' }, desc: { fr: '100 Prestiges effectués.', en: '100 Prestiges completed.' }, bonus: 0.1, check: s => (s.prestigeCount||0) >= 100, progress: s => [s.prestigeCount||0, 100] },
   // --- Succès secrets : condition non affichée tant qu'ils ne sont pas débloqués (pas de barre de progression) ---
   { id: 'a_secret_owl', name: { fr: 'Oiseau de nuit', en: 'Night Owl' }, desc: { fr: 'Cliquer entre 2h et 4h du matin.', en: 'Click between 2am and 4am.' }, bonus: 0.03, check: s => { const h = new Date().getHours(); return h >= 2 && h < 4 && s.totalClicks > 0; }, secret: true },
   { id: 'a_secret_patience', name: { fr: 'Zen absolu', en: 'Absolute Zen' }, desc: { fr: "Rester 10 minutes sans cliquer une seule fois (hors défi « Mains dans les poches »).", en: "Stay on screen for 10 minutes without clicking once (outside the Hands in Pockets challenge)." }, bonus: 0.04, check: s => (s.maxIdleGapSec || 0) >= 600, secret: true },
@@ -2731,6 +2779,7 @@ function applyLoadedState(parsed) {
 
 const SAVE_KEY = 'fuzzSave';
 const SAVE_KEY_BACKUP = 'fuzzSave_backup';
+const SAVE_KEY_AVANT_IMPORT = 'fuzzSave_avantImport'; // partie remplacee par le dernier import (voir applyImportedData)
 const IMPORT_TOAST_FLAG = 'fuzzImportToast'; // sessionStorage : confirmation à afficher après le rechargement d'un import
 const LEGACY_SAVE_KEY = 'jardinIdleSave'; // ancien nom, avant le renommage du jeu en Fuzz
 const LEGACY_SAVE_KEY_BACKUP = 'jardinIdleSave_backup';
@@ -2919,7 +2968,12 @@ function achievementMultiplier() {
 // racine cubique des Graines) : avec des bonus exponentiels, chaque Prestige financait le
 // suivant presque aussitot et la partie s'emballait (verifie au banc d'equilibrage).
 function seedMultiplier() { return 1 + 0.1 * Math.sqrt(state.seedsSinceAscension || 0); }
-function shardMultiplier() { return 1 + 0.5 * (state.totalShardsEarned || 0); }
+// Bonus de production des Éclats : +50 % par Éclat jusqu'à 20 Éclats, puis en racine carrée. En
+// linéaire, la fin de partie s'emballait : plus d'Éclats, donc plus de Graines, donc encore plus d'Éclats.
+function shardMultiplier() {
+  const n = state.totalShardsEarned || 0, palier = 20;
+  return n <= palier ? 1 + 0.5 * n : 1 + 0.5 * palier * Math.sqrt(n / palier);
+}
 // Les Éclats gagnés augmentent aussi les Graines de chaque Prestige : après une Ascension, un
 // Prestige rapporte vraiment plus, ce qui garde son intérêt à la couche des Graines. En racine
 // carrée (x1.25 avec 1 Éclat, x1.5 avec 4, x2 avec 16) : en linéaire, la boucle Éclats → Graines
@@ -3348,18 +3402,20 @@ function doPrestige(auto) {
 }
 
 const ASCENSION_SEED_DIVISOR = 15; // banc d'équilibrage : 1re Ascension vers 45-55 h de jeu actif
+// Graines « par Éclat » : 15 au départ, un peu plus pour chaque Éclat déjà gagné (frein de fin de partie).
+function ascensionSeedDivisor() { return ASCENSION_SEED_DIVISOR * (1 + (state.totalShardsEarned || 0) / 20); }
 function ascensionGainAmount() {
   const boost = 1 + (combinedUpgradeValue('ascensionSeedMult') || 0);
-  return Math.floor(Math.cbrt(((state.seedsSinceAscension || 0) * boost) / ASCENSION_SEED_DIVISOR) + 1e-9); // marge : pas d'Éclat perdu pile au seuil
+  return Math.floor(Math.cbrt(((state.seedsSinceAscension || 0) * boost) / ascensionSeedDivisor()) + 1e-9); // marge : pas d'Éclat perdu pile au seuil
 }
 // Graines à gagner depuis la dernière Ascension pour obtenir `n` Éclats (inverse de ascensionGainAmount).
-function seedsForShards(n) { return Math.pow(n, 3) * ASCENSION_SEED_DIVISOR / (1 + (combinedUpgradeValue('ascensionSeedMult') || 0)); }
+function seedsForShards(n) { return Math.pow(n, 3) * ascensionSeedDivisor() / (1 + (combinedUpgradeValue('ascensionSeedMult') || 0)); }
 function ascensionUnlocked() { return (state.totalSeedsEarned || 0) >= ASCENSION_SEED_DIVISOR || state.totalAscensions > 0; }
 
 function doAscension(auto) {
   const gain = ascensionGainAmount();
   if (gain < 1) return;
-  if (!auto && !confirm(`Ascensionner maintenant ? Tu vas gagner ${gain} Éclat(s) Stellaire(s) (+50 % de production chacun, et plus de Graines à chaque Prestige, jamais remis à zéro), mais tu repars de zéro comme avec un Prestige (Verdure, compagnons, Clic, Bâtiments et Spécial) ET tes Graines Cosmiques, leur bonus de production et tes améliorations de Prestige sont remis à zéro (Recherche, Connaissances, succès, familiers et améliorations d'Ascension sont conservés). Continuer ?`)) return;
+  if (!auto && !confirm(`Ascensionner maintenant ? Tu vas gagner ${gain} Éclat(s) Stellaire(s) (plus de production et plus de Graines à chaque Prestige, jamais remis à zéro), mais tu repars de zéro comme avec un Prestige (Verdure, compagnons, Clic, Bâtiments et Spécial) ET tes Graines Cosmiques, leur bonus de production et tes améliorations de Prestige sont remis à zéro (Recherche, Connaissances, succès, familiers et améliorations d'Ascension sont conservés). Continuer ?`)) return;
   const cpsAvantReset = totalCps() / boostMult('ability');
   creditShards(gain);
   state.totalAscensions = (state.totalAscensions || 0) + 1;
@@ -4222,8 +4278,8 @@ const PAPI_TAB_ANNOUNCEMENTS_BI = {
       "Une Ascension fonctionne d'abord comme un Prestige : Verdure, compagnons, Clic, Bâtiments et Spécial repartent à zéro.",
       "Mais en plus, tu perds tes Graines Cosmiques, le bonus de production qu'elles te donnaient et les améliorations de l'onglet Prestige.",
       "Ce que tu gardes : ta Recherche, tes Connaissances, tes succès, tes familiers et leurs niveaux, les défis réussis et ce qui s'achète avec des Éclats.",
-      "En échange, tu gagnes des Éclats Stellaires ✨ selon les Graines gagnées depuis ta dernière Ascension : 15 pour 1 Éclat, 120 pour 2, 405 pour 3.",
-      "Chaque Éclat gagné augmente ta production de 50 % pour toujours, et tes Éclats te font gagner plus de Graines : x1.25 avec 1, x1.5 avec 4, x2 avec 16.",
+      "En échange, tu gagnes des Éclats Stellaires ✨ selon les Graines gagnées depuis ta dernière Ascension : 15 pour ton premier Éclat, puis de plus en plus.",
+      "Chaque Éclat gagné augmente ta production de 50 % pour toujours (un peu moins au-delà de 20 Éclats), et te fait gagner plus de Graines à chaque Prestige.",
       "Après chaque Ascension, tes Prestiges rapportent donc plus de Graines. Ils restent toujours utiles, puisque ce sont eux qui te font gagner des Éclats.",
       "Tu dépenses tes Éclats ici, dans des améliorations permanentes. Chaque Ascension débloque aussi des nouveautés : familiers, automatisations et défis.",
       "Le bon moment pour une Ascension ? Quand tes Graines ne te font plus assez avancer. Tu perds leur bonus, mais tes Éclats te feront repartir bien plus vite.",
@@ -4233,8 +4289,8 @@ const PAPI_TAB_ANNOUNCEMENTS_BI = {
       "An Ascension first works like a Prestige: Greenery, companions, Click, Buildings and Special go back to zero.",
       "But on top of that, you lose your Cosmic Seeds, the production bonus they gave you and the upgrades from the Prestige tab.",
       "What you keep: your Research, Knowledge, achievements, pets and their levels, completed challenges and what you buy with Shards.",
-      "In exchange, you earn Stellar Shards ✨ based on the Seeds earned since your last Ascension: 15 for 1 Shard, 120 for 2, 405 for 3.",
-      "Every Shard earned raises your production by 50% forever, and your Shards make you earn more Seeds: x1.25 with 1, x1.5 with 4, x2 with 16.",
+      "In exchange, you earn Stellar Shards ✨ based on the Seeds earned since your last Ascension: 15 for your first Shard, then more and more.",
+      "Every Shard earned raises your production by 50% forever (a bit less past 20 Shards), and makes you earn more Seeds on every Prestige.",
       "So after each Ascension, your Prestiges bring in more Seeds. They always stay useful, since they're what earns you Shards.",
       "You spend your Shards here, on permanent upgrades. Each Ascension also unlocks new things: pets, automations and challenges.",
       "The right time for an Ascension? When your Seeds no longer move you forward enough. You lose their bonus, but your Shards will get you going much faster.",
@@ -5543,8 +5599,8 @@ function renderAscension() {
   setHtmlIfChanged(document.getElementById('ascensionInfo'),
     gain >= 1
       ? (state.lang === 'en'
-          ? `Ascending will give you <b>+${gain} Stellar Shard(s)</b> (each Shard earned gives +50% production, and your Shards raise the Seeds of every Prestige: x1.25 with 1, x1.5 with 4, x2 with 16; <u>never reset</u>, and spending Shards never lowers it). Like a Prestige, you start over from zero (Greenery, companions, Click, Buildings and Special), and on top of that your Cosmic Seeds, their production bonus and your Prestige upgrades are reset. Kept: Research, Knowledge, achievements, pets and Ascension upgrades.<br>Currently: ${formatNum(state.totalShardsEarned||0)} Shard(s) earned in total = x${trimZeros(shardMultiplier())} permanent production and x${trimZeros(shardSeedMultiplier())} Seeds per Prestige.`
-          : `Ascensionner te donnera <b>+${gain} Éclat(s) Stellaire(s)</b> (chaque Éclat gagné donne +50 % de production, et tes Éclats augmentent les Graines de chaque Prestige : x1.25 avec 1, x1.5 avec 4, x2 avec 16 ; <u>jamais réinitialisé</u>, et dépenser des Éclats ne le réduit pas). Comme un Prestige, tu repars de zéro (Verdure, compagnons, Clic, Bâtiments et Spécial), et en plus tes Graines Cosmiques, leur bonus de production et tes améliorations de Prestige sont remis à zéro. Restent acquis : Recherche, Connaissances, succès, familiers et améliorations d'Ascension.<br>Actuellement : ${formatNum(state.totalShardsEarned||0)} Éclat(s) gagné(s) au total = x${trimZeros(shardMultiplier())} production permanente et x${trimZeros(shardSeedMultiplier())} Graines par Prestige.`)
+          ? `Ascending will give you <b>+${gain} Stellar Shard(s)</b> (your Shards earned raise your production: +50% per Shard up to 20, then more and more slowly; they also raise the Seeds of every Prestige: x1.25 with 1, x1.5 with 4, x2 with 16; <u>never reset</u>, and spending Shards never lowers it). Like a Prestige, you start over from zero (Greenery, companions, Click, Buildings and Special), and on top of that your Cosmic Seeds, their production bonus and your Prestige upgrades are reset. Kept: Research, Knowledge, achievements, pets and Ascension upgrades.<br>Currently: ${formatNum(state.totalShardsEarned||0)} Shard(s) earned in total = x${trimZeros(shardMultiplier())} permanent production and x${trimZeros(shardSeedMultiplier())} Seeds per Prestige.`
+          : `Ascensionner te donnera <b>+${gain} Éclat(s) Stellaire(s)</b> (tes Éclats gagnés augmentent ta production : +50 % par Éclat jusqu'à 20, puis de plus en plus lentement ; ils augmentent aussi les Graines de chaque Prestige : x1.25 avec 1, x1.5 avec 4, x2 avec 16 ; <u>jamais réinitialisé</u>, et dépenser des Éclats ne le réduit pas). Comme un Prestige, tu repars de zéro (Verdure, compagnons, Clic, Bâtiments et Spécial), et en plus tes Graines Cosmiques, leur bonus de production et tes améliorations de Prestige sont remis à zéro. Restent acquis : Recherche, Connaissances, succès, familiers et améliorations d'Ascension.<br>Actuellement : ${formatNum(state.totalShardsEarned||0)} Éclat(s) gagné(s) au total = x${trimZeros(shardMultiplier())} production permanente et x${trimZeros(shardSeedMultiplier())} Graines par Prestige.`)
       : (state.lang === 'en'
           ? `Prestige to earn more Cosmic Seeds (${formatNum(state.seedsSinceAscension||0)} earned since your last Ascension): they bring your next Ascension closer.`
           : `Fais des Prestiges pour gagner plus de Graines Cosmiques (${formatNum(state.seedsSinceAscension||0)} gagnées depuis ta dernière Ascension) : elles te rapprochent de ta prochaine Ascension.`));
@@ -5933,6 +5989,7 @@ function renderAll() {
     renderLangToggle();
     renderDarkModeToggle();
     renderVacationToggle();
+    renderUndoImportBtn();
   }
   renderNextGoal();
   renderCompanion();
@@ -6454,7 +6511,14 @@ function encodeSave() { return btoa(unescape(encodeURIComponent(JSON.stringify(s
 // page est rechargée. Le démarrage normal reconstruit alors tout (boutons révélés, annonces de
 // Papi, bonus et minuteurs en mémoire), exactement comme au lancement : rien de l'ancienne partie
 // ne reste à l'écran. (La sauvegarde faite en quittant la page réécrit la même partie importée.)
-function applyImportedData(parsed) {
+//
+// La partie remplacee est mise de cote dans SAVE_KEY_AVANT_IMPORT, un emplacement que le jeu ne
+// touche jamais tout seul : la sauvegarde de secours, elle, est rafraichie toutes les 5 minutes et
+// recevait aussitot la partie importee, si bien qu'un mauvais import faisait perdre la partie d'avant.
+// `revenir` : c'est justement cette partie mise de cote qu'on remet en place (bouton « Revenir... »).
+function applyImportedData(parsed, revenir) {
+  if (revenir) localStorage.removeItem(SAVE_KEY_AVANT_IMPORT);
+  else localStorage.setItem(SAVE_KEY_AVANT_IMPORT, JSON.stringify(state));
   applyLoadedState(parsed);
   saveGame();
   try { sessionStorage.setItem(IMPORT_TOAST_FLAG, '1'); } catch (e) {}
@@ -6543,6 +6607,21 @@ document.getElementById('importPasteBtn').addEventListener('click', () => {
     const parsed = JSON.parse(decodeURIComponent(escape(atob(data))));
     applyImportedData(parsed);
   } catch(e) { alert('Code de sauvegarde invalide.'); }
+});
+// Visible seulement quand une partie a ete mise de cote par un import ou une restauration.
+function renderUndoImportBtn() {
+  const btn = document.getElementById('undoImportBtn');
+  const visible = !!localStorage.getItem(SAVE_KEY_AVANT_IMPORT);
+  if (btn && (btn.style.display === 'none') === visible) btn.style.display = visible ? '' : 'none';
+}
+document.getElementById('undoImportBtn').addEventListener('click', () => {
+  const avant = localStorage.getItem(SAVE_KEY_AVANT_IMPORT);
+  if (!avant) return;
+  const en = state.lang === 'en';
+  if (!confirm(en ? 'Go back to the game you had before the last import? Your current game will be replaced.'
+                  : "Revenir à la partie que tu avais avant le dernier import ? Ta partie actuelle sera remplacée.")) return;
+  try { applyImportedData(JSON.parse(avant), true); }
+  catch (e) { alert(en ? 'That game could not be read.' : 'Impossible de relire cette partie.'); }
 });
 document.getElementById('restoreBackupBtn').addEventListener('click', () => {
   const backup = localStorage.getItem(SAVE_KEY_BACKUP) || localStorage.getItem(LEGACY_SAVE_KEY_BACKUP);
@@ -6646,7 +6725,7 @@ function performFullReset() {
     };
     // Rien de l'ancienne partie ne doit pouvoir revenir : sans ça, « Restaurer la sauvegarde de
     // secours » ou une ancienne clé d'avant le renommage la ramenaient.
-    [SAVE_KEY_BACKUP, LEGACY_SAVE_KEY, LEGACY_SAVE_KEY_BACKUP].forEach(k => localStorage.removeItem(k));
+    [SAVE_KEY_BACKUP, SAVE_KEY_AVANT_IMPORT, LEGACY_SAVE_KEY, LEGACY_SAVE_KEY_BACKUP].forEach(k => localStorage.removeItem(k));
     // Ce qui vit en mémoire hors de la sauvegarde (la page n'est pas rechargée) : bonus en cours,
     // vitesse du mode test, combo de clics, herbes dorées et papillons encore à l'écran.
     for (const k of Object.keys(_boosts)) delete _boosts[k];

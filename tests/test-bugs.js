@@ -57,7 +57,7 @@ async function boot(browser, w, h, skipTuto) {
       if (z.rowsDedans < 3) fail('le halo n entoure pas la liste (seulement', z.rowsDedans, 'lignes dedans)');
       if (z.scrollable !== 'auto' && z.scrollable !== 'scroll') fail('le halo n est pas sur le conteneur qui defile');
     }
-    await page.screenshot({ path: 'halo-magasin.png' });
+    await page.screenshot({ path: __dirname + '/captures/halo-magasin.png' });
     console.log('  capture: halo-magasin.png');
 
     // ---- 3. impossible de fermer pendant l explication ----
