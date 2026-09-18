@@ -32,6 +32,9 @@
   //    écran très large mais peu haut, mieux vaut élargir la zone de dessin que comprimer le
   //    contenu.
   const GAME_W = 1280, GAME_W_MAX = 1600, MIN_H = 700, GROW_DAMP = 0.35;
+  // Hauteur de dessin minimale une fois le zoom applique : en dessous, la colonne centrale
+  // (zone de clic) devient trop courte pour qu'on joue confortablement.
+  const MIN_H_ZOOM = 560;
   let _viewportEl = null;
   function fitGameViewport() {
     _viewportEl = _viewportEl || document.getElementById('gameViewport');
@@ -45,6 +48,11 @@
     let scale = raw <= 1 ? raw : 1 + (raw - 1) * GROW_DAMP;
     if (vw / scale > GAME_W_MAX) scale = vw / GAME_W_MAX;
     if (vh / scale < MIN_H) scale = vh / MIN_H;
+    // Taille de l'affichage choisie dans les options : agrandir le dessin revient a reduire la
+    // zone dessinee, donc tout grossit sans que rien ne sorte de l'ecran (la colonne centrale
+    // absorbe la difference). Plancher de hauteur pour que le jeu reste utilisable au maximum.
+    const zoom = window._zoomUI || 1;
+    if (zoom !== 1) scale = Math.min(scale * zoom, vh / MIN_H_ZOOM);
     const w = vw / scale, h = vh / scale;
     _viewportEl.style.width = w + 'px';
     _viewportEl.style.height = h + 'px';
@@ -174,6 +182,23 @@
   }
   h1 { margin: 0; font-size: 20px; letter-spacing: 0.5px; color: var(--ink); text-shadow: 0 1px 0 rgba(255,255,255,0.3); }
   .weatherBadge { margin-top: 4px; font-size: 11.5px; background: var(--card-bg); padding: 3px 12px; border-radius: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+  /* Événement saisonnier : même gabarit que la météo, avec un liseré doré pour qu'on le remarque. */
+  .eventBadge { margin-top: 4px; font-size: 11.5px; background: var(--card-bg); padding: 3px 12px; border-radius: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); border: 1px solid rgba(214,158,46,0.55); }
+  /* Décor de saison : purement décoratif, donc jamais cliquable et jamais au-dessus des menus. */
+  #eventDecor { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 2; }
+  #eventDecor span { position: absolute; top: -40px; font-size: 20px; opacity: 0.75; animation: chuteDecor linear infinite; will-change: transform; }
+  @keyframes chuteDecor { from { transform: translateY(0) rotate(0deg); } to { transform: translateY(880px) rotate(320deg); } }
+  /* Quelqu'un qui a demandé moins d'animations à son système n'a pas envie de neige. */
+  @media (prefers-reduced-motion: reduce) { #eventDecor { display: none; } }
+  /* Moins d'animations : tout ce qui bouge pour le plaisir est coupé net. Les durées ne sont
+     pas mises à zéro mais à presque rien, parce que du code lit encore ces durées pour savoir
+     quand une fenêtre a fini de s'ouvrir (voir dureeAnimationMs). */
+  body.moinsAnimations #eventDecor { display: none; }
+  body.moinsAnimations *, body.moinsAnimations *::before, body.moinsAnimations *::after {
+    animation-duration: 0.01s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01s !important;
+  }
 
   .statsRow {
     display: flex;
@@ -775,6 +800,10 @@
   .settingsCardVersion { font-weight: 400; font-size: 11px; opacity: 0.6; }
   .settingsCardStatus { font-size: 11px; opacity: 0.65; margin-top: 8px; line-height: 1.6; }
   .soundToggleBtn .state.on { background: var(--accent); color: white; }
+  /* Liste des sauvegardes de secours : une ligne par copie disponible, avec ce qu'elle contient. */
+  #backupList { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 4px 0; }
+  .backupRow { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--panel-bg); border-radius: 10px; padding: 10px 12px; font-size: 12.5px; color: var(--panel-text); }
+  .backupDetail { font-size: 11.5px; opacity: 0.72; margin-top: 2px; }
 
   /* ===== Next-purchase progress bar ===== */
   .progressBarWrap { width: 100%; max-width: 760px; height: 8px; background: rgba(255,255,255,0.5); border-radius: 6px; margin-top: 7px; overflow: hidden; }
@@ -1048,6 +1077,7 @@
 <div class="topBar">
   <h1 class="wordmark">🌱 FUZZ</h1>
   <div class="weatherBadge" id="weatherBadge"></div>
+  <div class="eventBadge" id="eventBadge" style="display:none"></div>
   <div class="statsRow">
     <div class="statChip verdure" id="verdureCount">0</div>
     <div class="statChip rate" id="rateText">+0/s</div>
@@ -1178,6 +1208,14 @@
           <span data-i18n="darkModeLabel">🌙 Mode sombre forcé</span>
           <span class="state" id="darkModeStateLabel">Désactivé</span>
         </div>
+        <div class="soundToggleBtn" id="animToggleBtn">
+          <span data-i18n="animLabel">🎬 Réduire les animations</span>
+          <span class="state" id="animStateLabel">Désactivé</span>
+        </div>
+        <div class="soundToggleBtn" id="zoomToggleBtn">
+          <span data-i18n="zoomLabel">🔍 Taille de l'affichage</span>
+          <span class="state" id="zoomStateLabel">Normale</span>
+        </div>
         <div class="soundToggleBtn" id="vacationToggleBtn">
           <span data-i18n="vacationLabel">🏖️ Mode vacances (plus de visites de Papi)</span>
           <span class="state" id="vacationStateLabel">Désactivé</span>
@@ -1188,7 +1226,10 @@
           <button class="smallBtn" id="copyCodeBtn" data-i18n="copyCodeBtn">📋 Copier mon code (autre appareil)</button>
           <button class="smallBtn" id="importBtn" data-i18n="importBtn">📂 Importer (fichier)</button>
           <button class="smallBtn" id="importPasteBtn" data-i18n="importPasteBtn">📋 Importer (coller un code)</button>
-          <button class="smallBtn" id="restoreBackupBtn" data-i18n="restoreBackupBtn">♻️ Restaurer la sauvegarde de secours</button>
+          <button class="smallBtn" id="restoreBackupBtn" data-i18n="restoreBackupBtn">♻️ Restaurer une sauvegarde</button>
+        </div>
+        <div id="backupList" data-ouvert="0"></div>
+        <div class="footerBtns">
           <button class="smallBtn" id="undoImportBtn" data-i18n="undoImportBtn" style="display:none;">↩️ Revenir à la partie d'avant l'import</button>
           <button class="smallBtn" id="shareBtn" data-i18n="shareBtn">📣 Partager</button>
           <button class="smallBtn" id="resetBtn" data-i18n="resetBtn">🗑️ Reset total</button>
@@ -1584,11 +1625,16 @@ const UI_STRINGS = {
     shopTitle: '🛒 Magasin de Papi Feuillage', shopImgPlaceholder: "🖼️ Emplacement réservé pour l'illustration de Papi et de son magasin (à intégrer)",
     soundLabel: '🔊 Sons du jeu', enabled: 'Activés', disabled: 'Désactivés', enabledSingular: 'Activé', disabledSingular: 'Désactivé', volumeLabel: 'Volume',
     darkModeLabel: '🌙 Mode sombre forcé', vacationLabel: '🏖️ Mode vacances (plus de visites de Papi)',
+    animLabel: '🎬 Réduire les animations', animAuto: 'Système', zoomLabel: "🔍 Taille de l'affichage",
+    sauvAujourdhui: "Aujourd'hui", sauvHier: 'Hier', sauvAuto: 'Copie automatique (dernières minutes)',
+    sauvAucune: 'Aucune sauvegarde de secours pour le moment. Le jeu en garde une par jour, sur trois jours.',
+    sauvRestaurer: 'Restaurer', verdureWord: 'Verdure', prestigesWord: 'Prestiges',
+    zoomNormal: 'Normale', zoomGrand: 'Grande', zoomTresGrand: 'Très grande',
     langLabel: '🌐 Langue / Language', creditsLabel: '🎬 Crédits',
     saveShareReset: 'Sauvegarde, partage et remise à zéro.',
     exportBtn: '💾 Exporter (fichier)', copyCodeBtn: '📋 Copier mon code (autre appareil)',
     importBtn: '📂 Importer (fichier)', importPasteBtn: '📋 Importer (coller un code)',
-    restoreBackupBtn: '♻️ Restaurer la sauvegarde de secours', undoImportBtn: '↩️ Revenir à la partie d\'avant l\'import', shareBtn: '📣 Partager', resetBtn: '🗑️ Reset total', quitGameBtn: '🚪 Quitter le jeu',
+    restoreBackupBtn: '♻️ Restaurer une sauvegarde', undoImportBtn: '↩️ Revenir à la partie d\'avant l\'import', shareBtn: '📣 Partager', resetBtn: '🗑️ Reset total', quitGameBtn: '🚪 Quitter le jeu',
     updatesLabel: '🔄 Mises à jour', checkBtn: 'Vérifier', installBtn: 'Installer', updateNow: 'Mettre à jour maintenant', laterBtn: 'Plus tard', checkingLabel: 'Vérification...',
     clickHere: 'Clique ici !',
     dailyCycleIntro: "Le calendrier tourne sur <b>7 jours</b> : reviens chaque jour pour avancer dedans, et le <b>jour 7</b> offre le plus gros lot. Un jour manqué et la série repart au jour 1.",
@@ -1619,11 +1665,16 @@ const UI_STRINGS = {
     shopTitle: '🛒 Gramps Weeds\' Shop', shopImgPlaceholder: "🖼️ Placeholder for Gramps' illustration and shop art (to be added)",
     soundLabel: '🔊 Game sounds', enabled: 'On', disabled: 'Off', enabledSingular: 'On', disabledSingular: 'Off', volumeLabel: 'Volume',
     darkModeLabel: '🌙 Force dark mode', vacationLabel: '🏖️ Vacation mode (no more visits from Gramps)',
+    animLabel: '🎬 Reduce animations', animAuto: 'System', zoomLabel: '🔍 Display size',
+    sauvAujourdhui: 'Today', sauvHier: 'Yesterday', sauvAuto: 'Automatic copy (last few minutes)',
+    sauvAucune: 'No backup save yet. The game keeps one per day, over three days.',
+    sauvRestaurer: 'Restore', verdureWord: 'Greenery', prestigesWord: 'prestiges',
+    zoomNormal: 'Normal', zoomGrand: 'Large', zoomTresGrand: 'Extra large',
     langLabel: '🌐 Langue / Language', creditsLabel: '🎬 Credits',
     saveShareReset: 'Save, share, and reset.',
     exportBtn: '💾 Export (file)', copyCodeBtn: '📋 Copy my code (other device)',
     importBtn: '📂 Import (file)', importPasteBtn: '📋 Import (paste a code)',
-    restoreBackupBtn: '♻️ Restore backup save', undoImportBtn: '↩️ Go back to the game before the import', shareBtn: '📣 Share', resetBtn: '🗑️ Full reset', quitGameBtn: '🚪 Quit game',
+    restoreBackupBtn: '♻️ Restore a save', undoImportBtn: '↩️ Go back to the game before the import', shareBtn: '📣 Share', resetBtn: '🗑️ Full reset', quitGameBtn: '🚪 Quit game',
     updatesLabel: '🔄 Updates', checkBtn: 'Check', installBtn: 'Install', updateNow: 'Update now', laterBtn: 'Later', checkingLabel: 'Checking...',
     clickHere: 'Click here!',
     dailyCycleIntro: 'The calendar runs on a <b>7-day</b> cycle: come back every day to move through it, and <b>day 7</b> has the biggest prize. Miss a day and the streak restarts at day 1.',
@@ -1647,6 +1698,22 @@ const UI_STRINGS = {
   },
 };
 function tr(key) { return (UI_STRINGS[state.lang] || UI_STRINGS.fr)[key] || key; }
+
+// --- Confort d'affichage ---
+// Animations : tant que le joueur n'a rien choisi (null), on suit son systeme.
+function animationsReduites() {
+  if (state.reduireAnimations !== null && state.reduireAnimations !== undefined) return !!state.reduireAnimations;
+  return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+const ZOOMS_UI = [1, 1.15, 1.3];
+function appliquerConfort() {
+  document.body.classList.toggle('moinsAnimations', animationsReduites());
+  const zoom = ZOOMS_UI.includes(state.zoomUI) ? state.zoomUI : 1;
+  if (window._zoomUI !== zoom) { window._zoomUI = zoom; fitGameViewport(); }
+}
+// Message bilingue ecrit sur place, pour les textes construits a la volee (toasts, confirmations)
+// qui n'ont pas leur place dans UI_STRINGS parce qu'ils interpolent des valeurs.
+function selonLangue(fr, en) { return state.lang === 'en' ? en : fr; }
 // Lit un champ bilingue { fr: '...', en: '...' } sur n'importe quel objet de contenu du jeu
 // (bâtiment, amélioration, succès...). Reste compatible avec une chaîne simple si jamais
 // un champ n'a pas encore été traduit (retombe sur le français).
@@ -2448,6 +2515,122 @@ const WEATHERS = {
   brouillard: { label: { fr: '🌫️ Brouillard', en: '🌫️ Fog' }, mult: 0.85, negative: true },
 };
 
+// ================= ÉVÉNEMENTS SAISONNIERS =================
+// Un habillage qui revient chaque année aux mêmes dates : décor qui tombe, herbe dorée
+// relookée, une remarque de Papi et un petit bonus de production. Rien ne se débloque et rien
+// ne se rate : qui joue en août n'est pas puni, il n'a simplement pas de confettis.
+// `du` et `au` sont des [mois, jour], mois à partir de 1, bornes comprises.
+const EVENEMENTS = [
+  { id: 'nouvelAn', nom: { fr: 'Nouvel An', en: 'New Year' }, emoji: '🎆', du: [1, 1], au: [1, 3],
+    bonus: 0.15, decor: '🎆', herbe: '🎆',
+    papi: { fr: ["Bonne année. Ne prends pas de résolution, tu ne les tiens jamais.",
+                 "Nouvelle année, même terrain. Au moins, lui, il ne change pas."],
+            en: ["Happy New Year. Do not make resolutions, you never keep them.",
+                 "New year, same patch of dirt. At least it does not change."] } },
+  { id: 'valentin', nom: { fr: 'Saint-Valentin', en: "Valentine's Day" }, emoji: '💕', du: [2, 13], au: [2, 15],
+    bonus: 0.10, decor: '💕', herbe: '💐',
+    papi: { fr: ["C'est la Saint-Valentin. Tes grenouilles se sont trouvées, elles.",
+                 "Ne fais pas cette tête. Le terrain t'aime bien, lui."],
+            en: ["It is Valentine's Day. Your frogs found each other, at least.",
+                 "Do not pull that face. The garden likes you."] } },
+  { id: 'printemps', nom: { fr: 'Printemps', en: 'Spring' }, emoji: '🌸', du: [3, 20], au: [4, 5],
+    bonus: 0.10, decor: '🌸', herbe: '🌸',
+    papi: { fr: ["Le printemps. Tout pousse, même toi, on dirait.",
+                 "Ça sent la sève et l'espoir. Profites-en, ça ne dure pas."],
+            en: ["Spring. Everything grows, even you, apparently.",
+                 "Smells like sap and hope. Enjoy it, it does not last."] } },
+  { id: 'poisson', nom: { fr: "Poisson d'avril", en: "April Fools" }, emoji: '🐟', du: [4, 1], au: [4, 1],
+    bonus: 0.10, decor: '🐟', herbe: '🐟',
+    papi: { fr: ["Tu as un poisson accroché dans le dos depuis ce matin. Je n'ai rien dit.",
+                 "Tes compagnons ont dit qu'ils démissionnaient. C'était une blague. Enfin, je crois."],
+            en: ["There has been a paper fish on your back since this morning. I said nothing.",
+                 "Your companions said they were quitting. It was a joke. I think."] } },
+  { id: 'paques', nom: { fr: 'Pâques', en: 'Easter' }, emoji: '🥚', mobile: true,
+    bonus: 0.10, decor: '🥚', herbe: '🥚',
+    papi: { fr: ["J'ai caché des œufs dans le terrain. Ou pas. À toi de voir.",
+                 "Ne mange pas tout, laisse-en pour les têtards."],
+            en: ["I hid eggs in the garden. Or maybe I did not. Up to you.",
+                 "Do not eat it all, leave some for the tadpoles."] } },
+  { id: 'ete', nom: { fr: 'Été', en: 'Summer' }, emoji: '🏖️', du: [6, 21], au: [7, 7],
+    bonus: 0.10, decor: '🌻', herbe: '🍉',
+    papi: { fr: ["L'été. Arrose, et évite l'insolation, je n'ai pas envie de te ramasser.",
+                 "Tout le monde est en vacances. Le terrain, lui, travaille."],
+            en: ["Summer. Water the plants and avoid sunstroke, I am not scraping you off the ground.",
+                 "Everyone is on holiday. The garden is still working."] } },
+  { id: 'anniversaire', nom: { fr: 'Anniversaire du terrain', en: "The Garden's Birthday" }, emoji: '🎂', du: [9, 3], au: [9, 9],
+    bonus: 0.20, decor: '🎉', herbe: '🎂',
+    papi: { fr: ["Ce terrain a un an de plus. Toi aussi, mais on ne va pas en parler.",
+                 "On fête le terrain, pas toi. Ne t'emballe pas."],
+            en: ["This garden is a year older. So are you, but we will not dwell on it.",
+                 "We are celebrating the garden, not you. Do not get excited."] } },
+  { id: 'halloween', nom: { fr: 'Halloween', en: 'Halloween' }, emoji: '🎃', du: [10, 25], au: [10, 31],
+    bonus: 0.10, decor: '🦇', herbe: '🎃',
+    papi: { fr: ["Il paraît qu'un esprit hante le compost. C'est peut-être juste l'odeur.",
+                 "Ne mange pas les citrouilles du voisin. Enfin, pas devant lui."],
+            en: ["They say a spirit haunts the compost. It might just be the smell.",
+                 "Do not eat the neighbour's pumpkins. Not in front of him, anyway."] } },
+  { id: 'noel', nom: { fr: 'Noël', en: 'Christmas' }, emoji: '🎄', du: [12, 18], au: [12, 31],
+    bonus: 0.15, decor: '❄️', herbe: '🎁',
+    papi: { fr: ["Joyeux Noël. Ton cadeau, c'est le terrain. Tu l'as déjà, donc je n'ai rien acheté.",
+                 "Il neige sur les grenouilles. Elles ont l'air de trouver ça normal."],
+            en: ["Merry Christmas. Your present is the garden. You already have it, so I bought nothing.",
+                 "It is snowing on the frogs. They seem fine with it."] } },
+];
+
+// Dimanche de Pâques (algorithme grégorien anonyme) : la seule date de la liste qui bouge.
+function paquesDe(annee) {
+  const a = annee % 19, b = Math.floor(annee / 100), c = annee % 100;
+  const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const jourDeLAn = h + l - 7 * m + 114;
+  return new Date(annee, Math.floor(jourDeLAn / 31) - 1, (jourDeLAn % 31) + 1);
+}
+
+// Fenêtre [début, fin] de l'événement pour une année donnée. Pâques est encadrée du vendredi
+// au lundi, les autres tiennent dans leurs dates fixes.
+function fenetreEvenement(ev, annee) {
+  if (ev.mobile) {
+    const p = paquesDe(annee);
+    const debut = new Date(p); debut.setDate(p.getDate() - 2);
+    const fin = new Date(p); fin.setDate(p.getDate() + 1); fin.setHours(23, 59, 59, 999);
+    return [debut, fin];
+  }
+  return [new Date(annee, ev.du[0] - 1, ev.du[1]), new Date(annee, ev.au[0] - 1, ev.au[1], 23, 59, 59, 999)];
+}
+
+let _evenementForce = null; // mode test : force un événement hors de ses dates
+// evenementActif() est appelé depuis totalProdMultiplier(), donc des centaines de fois par image
+// pendant un rendu du magasin : la date, elle, ne change qu'une fois par jour. On garde donc la
+// réponse une minute. Un appel avec une date explicite (tests, vérifications) n'est jamais mis en
+// cache et recalcule tout.
+let _evCache = { calculeA: 0, force: undefined, ev: null };
+function evenementActif(maintenant) {
+  if (maintenant) return calculerEvenement(maintenant);
+  const now = Date.now();
+  if (_evCache.force !== _evenementForce || now - _evCache.calculeA > 60000) {
+    _evCache = { calculeA: now, force: _evenementForce, ev: calculerEvenement(new Date()) };
+  }
+  return _evCache.ev;
+}
+function calculerEvenement(maintenant) {
+  if (_evenementForce) return EVENEMENTS.find(e => e.id === _evenementForce) || null;
+  const annee = maintenant.getFullYear();
+  const enCours = EVENEMENTS.filter(ev => {
+    const [a, b] = fenetreEvenement(ev, annee);
+    return maintenant >= a && maintenant <= b;
+  });
+  // Le plus court l'emporte : le 1er avril tombe en plein printemps, et c'est lui qu'on veut voir.
+  enCours.sort((x, y) => {
+    const duree = ev => { const [a, b] = fenetreEvenement(ev, annee); return b - a; };
+    return duree(x) - duree(y);
+  });
+  return enCours[0] || null;
+}
+function evenementMult() { const ev = evenementActif(); return ev ? 1 + ev.bonus : 1; }
+
 // ================= ACHIEVEMENTS =================
 // `progress` retourne [valeur actuelle, valeur cible] pour afficher une barre sur les succès verrouillés.
 const ACHIEVEMENTS = [
@@ -2741,6 +2924,9 @@ function defaultState() {
     activeSkin: 'default',
     forceDarkMode: false,
     vacationMode: false,
+    reduireAnimations: null, // null : on suit le reglage du systeme (prefers-reduced-motion)
+    zoomUI: 1,              // 1, 1.15 ou 1.3 : taille de l'affichage
+    evenementsVus: {}, // « halloween-2026 » : Papi ne commente chaque saison qu'une fois par an
     lang: 'fr',
     langChosen: false,
     hasEverPurchased: false,
@@ -2832,8 +3018,58 @@ function saveGame() {
     localStorage.setItem(SAVE_KEY_BACKUP, json);
     state.lastBackupTime = Date.now();
   }
+  majRotationSauvegardes(json);
+}
+
+// Une sauvegarde par jour, sur les 3 derniers jours joués : la copie des 5 minutes protège
+// d'une bêtise immédiate, celle-ci d'un problème qu'on ne remarque que le lendemain.
+const SAVE_KEY_ROTATION = 'fuzzSave_rotation';
+const JOURS_GARDES = 3;
+let _derniereRotation = 0;
+function lireRotation() {
+  try {
+    const brut = localStorage.getItem(SAVE_KEY_ROTATION);
+    const liste = brut ? JSON.parse(brut) : [];
+    return Array.isArray(liste) ? liste.filter(e => e && e.json && e.jour) : [];
+  } catch (e) { return []; }
+}
+function majRotationSauvegardes(json) {
+  if (Date.now() - _derniereRotation < 60000) return; // au plus une écriture par minute
+  _derniereRotation = Date.now();
+  let liste = lireRotation();
+  const jour = todayStr();
+  const minuit = new Date(); minuit.setHours(0, 0, 0, 0);
+  const entree = { jour, ts: Date.now(), jourTs: minuit.getTime(), json };
+  const i = liste.findIndex(e => e.jour === jour);
+  if (i >= 0) liste[i] = entree; else liste.push(entree);
+  liste.sort((a, b) => (b.jourTs || b.ts || 0) - (a.jourTs || a.ts || 0));
+  liste = liste.slice(0, JOURS_GARDES);
+  // Si le navigateur refuse (quota), on se rabat sur moins d'entrées plutôt que tout perdre.
+  while (liste.length) {
+    try { localStorage.setItem(SAVE_KEY_ROTATION, JSON.stringify(liste)); break; }
+    catch (e) { liste.pop(); }
+  }
+  sauvegardeFichierQuotidienne(json);
+}
+
+// App native uniquement : une copie écrite à côté des données de l'app (une fois par jour, en
+// réécrivant toujours le même fichier pour ne rien accumuler), pour que la partie survive même à
+// un effacement des données du navigateur embarqué. Silencieux par construction : si l'écriture
+// échoue, le joueur a déjà ses sauvegardes dans le jeu.
+let _dernierFichierAuto = null;
+async function sauvegardeFichierQuotidienne(json) {
+  if (!isTauriApp() || !window.__TAURI__.fs) return;
+  const jour = todayStr();
+  if (_dernierFichierAuto === jour) return;
+  _dernierFichierAuto = jour;
+  try {
+    const fs = window.__TAURI__.fs;
+    await fs.writeTextFile('fuzz-sauvegarde-auto.txt', btoa(unescape(encodeURIComponent(json))), { baseDir: fs.BaseDirectory.AppData });
+  } catch (e) { console.warn('sauvegarde fichier automatique impossible', e); }
 }
 loadGame();
+// Les reglages de confort touchent <body> et la mise a l'echelle : a poser des que l'etat est lu.
+appliquerConfort();
 
 // ================= HELPERS =================
 // Au niveau module : formatNum est appelée des centaines de fois par rendu, reconstruire cette
@@ -3077,6 +3313,7 @@ function totalProdMultiplier() {
     * achievementMultiplier()
     * uniqueMultipliers().prod
     * weatherMultiplier()
+    * evenementMult()
     * invasivePenalty()
     * boostMult('ability')
     * (1 + familierBonus('escargot'))
@@ -3238,15 +3475,18 @@ function activateUniqueAbility(id) {
   const renfort = 1 + familierBonus('herisson'); // hérisson : capacités plus longues et plus généreuses
   if (a.type === 'boostMult') {
     startTimedBoost('ability', a.value, a.durationMs * renfort);
-    showToast(`🔔 ${L(u,'name')} activé ! x${a.value} production pendant ${formatDureeCourte(a.durationMs * renfort / 1000)}`);
+    showToast(selonLangue(`🔔 ${L(u,'name')} activé ! x${a.value} production pendant ${formatDureeCourte(a.durationMs * renfort / 1000)}`,
+                          `🔔 ${L(u,'name')} activated! x${a.value} production for ${formatDureeCourte(a.durationMs * renfort / 1000)}`));
   } else if (a.type === 'clickBoost') {
     startTimedBoost('click', a.value, a.durationMs * renfort);
-    showToast(`👆 ${L(u,'name')} activé ! x${a.value} par clic pendant ${formatDureeCourte(a.durationMs * renfort / 1000)}`);
+    showToast(selonLangue(`👆 ${L(u,'name')} activé ! x${a.value} par clic pendant ${formatDureeCourte(a.durationMs * renfort / 1000)}`,
+                          `👆 ${L(u,'name')} activated! x${a.value} per click for ${formatDureeCourte(a.durationMs * renfort / 1000)}`));
   } else if (a.type === 'instantGain') {
     const gain = totalCps() * a.minutesEquivalent * 60 * renfort;
     state.verdure += gain; state.totalEarned += gain;
     bump('verdureCount');
-    showToast(`🔥 ${L(u,'name')} activé ! +${formatNum(gain)} Verdure instantanée`);
+    showToast(selonLangue(`🔥 ${L(u,'name')} activé ! +${formatNum(gain)} Verdure instantanée`,
+                          `🔥 ${L(u,'name')} activated! +${formatNum(gain)} Greenery instantly`));
   }
   state.activeCooldowns[id] = Date.now() + a.cooldownMs;
   playGoldenSound();
@@ -3388,9 +3628,13 @@ function doPrestige(auto) {
   const tempsRestant = challengeTimeLeftSec();
   const defiReussi = !!defi && gain >= defi.goal && (tempsRestant === null || tempsRestant >= 0);
   const avertissement = !defi ? '' : defiReussi
-    ? `\n\nDéfi « ${L(defi,'name')} » réussi avec ce Prestige !`
-    : `\n\nAttention : le défi « ${L(defi,'name')} » n'est pas réussi (objectif ${defi.goal} Graine(s)${defi.timeLimitSec ? ' dans le temps imparti' : ''}) et prendra fin.`;
-  if (!auto && !confirm(`Terraformer maintenant ? Tu vas gagner ${gain} Graine(s) Cosmique(s), mais tu repars de zéro : Verdure, compagnons, Clic, Bâtiments et Spécial (Recherche, Connaissances, succès, familiers et améliorations de Prestige sont conservés). Continuer ?${avertissement}`)) return;
+    ? selonLangue(`\n\nDéfi « ${L(defi,'name')} » réussi avec ce Prestige !`,
+                  `\n\nChallenge "${L(defi,'name')}" completed with this Prestige!`)
+    : selonLangue(`\n\nAttention : le défi « ${L(defi,'name')} » n'est pas réussi (objectif ${defi.goal} Graine(s)${defi.timeLimitSec ? ' dans le temps imparti' : ''}) et prendra fin.`,
+                  `\n\nWarning: challenge "${L(defi,'name')}" is not completed (goal: ${defi.goal} Seed(s)${defi.timeLimitSec ? ' within the time limit' : ''}) and will end.`);
+  if (!auto && !confirm(selonLangue(
+    `Terraformer maintenant ? Tu vas gagner ${gain} Graine(s) Cosmique(s), mais tu repars de zéro : Verdure, compagnons, Clic, Bâtiments et Spécial (Recherche, Connaissances, succès, familiers et améliorations de Prestige sont conservés). Continuer ?${avertissement}`,
+    `Terraform now? You will earn ${gain} Cosmic Seed(s), but you start over: Greenery, companions, Click, Buildings and Special (Research, Knowledge, achievements, pets and Prestige upgrades are kept). Continue?${avertissement}`))) return;
   const cpsAvantReset = totalCps() / boostMult('ability');
   const now = Date.now();
   if (state.lastPrestigeTime) {
@@ -3428,7 +3672,9 @@ function ascensionUnlocked() { return (state.totalSeedsEarned || 0) >= ASCENSION
 function doAscension(auto) {
   const gain = ascensionGainAmount();
   if (gain < 1) return;
-  if (!auto && !confirm(`Ascensionner maintenant ? Tu vas gagner ${gain} Éclat(s) Stellaire(s) (plus de production et plus de Graines à chaque Prestige, jamais remis à zéro), mais tu repars de zéro comme avec un Prestige (Verdure, compagnons, Clic, Bâtiments et Spécial) ET tes Graines Cosmiques, leur bonus de production et tes améliorations de Prestige sont remis à zéro (Recherche, Connaissances, succès, familiers et améliorations d'Ascension sont conservés). Continuer ?`)) return;
+  if (!auto && !confirm(selonLangue(
+    `Ascensionner maintenant ? Tu vas gagner ${gain} Éclat(s) Stellaire(s) (plus de production et plus de Graines à chaque Prestige, jamais remis à zéro), mais tu repars de zéro comme avec un Prestige (Verdure, compagnons, Clic, Bâtiments et Spécial) ET tes Graines Cosmiques, leur bonus de production et tes améliorations de Prestige sont remis à zéro (Recherche, Connaissances, succès, familiers et améliorations d'Ascension sont conservés). Continuer ?`,
+    `Ascend now? You will earn ${gain} Stellar Shard(s) (more production and more Seeds on every Prestige, never reset), but you start over as with a Prestige (Greenery, companions, Click, Buildings and Special) AND your Cosmic Seeds, their production bonus and your Prestige upgrades are reset (Research, Knowledge, achievements, pets and Ascension upgrades are kept). Continue?`))) return;
   const cpsAvantReset = totalCps() / boostMult('ability');
   creditShards(gain);
   state.totalAscensions = (state.totalAscensions || 0) + 1;
@@ -5051,6 +5297,65 @@ function renderPanelsVisibility() {
 
 
 // ================= RENDER =================
+// Affiche l'événement de saison : badge, décor qui tombe, et une remarque de Papi la première
+// fois qu'on le croise dans l'année. Le décor n'est reconstruit que quand l'événement change,
+// pas à chaque rendu.
+let _evenementAffiche = null;
+let _decorAnime = null; // reglage des animations au moment ou le decor a ete construit
+function renderEvenement() {
+  const ev = evenementActif();
+  const badge = document.getElementById('eventBadge');
+  if (ev) {
+    const bonus = `+${Math.round(ev.bonus * 100)} %`;
+    badge.textContent = `${ev.emoji} ${L(ev, 'nom')} · production ${bonus}`;
+    badge.style.display = '';
+  } else if (badge.style.display !== 'none') {
+    badge.style.display = 'none';
+  }
+
+  const idActuel = ev ? ev.id : null;
+  const anime = !animationsReduites();
+  if (idActuel !== _evenementAffiche || anime !== _decorAnime) {
+    _evenementAffiche = idActuel;
+    _decorAnime = anime;
+    construireDecorEvenement(ev);
+  }
+
+  // Papi commente, une seule fois par événement et par année (et jamais en mode vacances).
+  if (!ev || !state.tutorialSeen || state.vacationMode) return;
+  const cle = `${ev.id}-${new Date().getFullYear()}`;
+  state.evenementsVus = state.evenementsVus || {};
+  if (state.evenementsVus[cle] || isMainScreenBlocked() || tutorialInProgress()) return;
+  state.evenementsVus[cle] = true;
+  const lignes = ev.papi[state.lang] || ev.papi.fr;
+  const ligne = lignes[Math.floor(Math.random() * lignes.length)];
+  // Remarque spontanée : elle part toute seule, comme les autres visites de Papi.
+  showDialogue('papi', [ligne], { position: 'top-right', autoAdvanceMs: papiReadingPauseMs(ligne) });
+}
+
+// 14 éléments : de quoi habiller l'écran sans peser sur l'animation (ils tombent en CSS pur).
+function construireDecorEvenement(ev) {
+  let couche = document.getElementById('eventDecor');
+  if (!ev || animationsReduites()) { if (couche) couche.remove(); return; }
+  if (!couche) {
+    couche = document.createElement('div');
+    couche.id = 'eventDecor';
+    // Dans #gameViewport comme les herbes dorées : hors du wrapper, le décor ignorerait la
+    // mise à l'échelle et passerait par-dessus les menus.
+    document.getElementById('gameViewport').appendChild(couche);
+  }
+  couche.innerHTML = '';
+  for (let i = 0; i < 14; i++) {
+    const s = document.createElement('span');
+    s.textContent = ev.decor;
+    s.style.left = (Math.random() * 96) + '%';
+    s.style.animationDuration = (7 + Math.random() * 7).toFixed(1) + 's';
+    s.style.animationDelay = (-Math.random() * 12).toFixed(1) + 's';
+    s.style.fontSize = (14 + Math.random() * 12).toFixed(0) + 'px';
+    couche.appendChild(s);
+  }
+}
+
 function renderNextPurchaseBar() {
   let target = null, targetCost = Infinity;
   // Le facteur de réduction est le même pour tous : le sortir de la boucle évite 28 parcours
@@ -5108,6 +5413,7 @@ function renderStats(cps) {
   } else {
     knowChip.style.display = 'none';
   }
+  renderEvenement();
   const w = currentWeather();
   const defiEnCours = activeChallenge();
   document.getElementById('weatherBadge').textContent = `${L(w,'label')} · production x${weatherMultiplier().toFixed(2)}` + (defiEnCours ? ` · 🏅 ${L(defiEnCours,'name')}` : '');
@@ -5125,7 +5431,9 @@ function renderStats(cps) {
   const invBox = document.getElementById('invasiveBox');
   if (state.invasiveWeed && state.invasiveWeed.active) {
     invBox.style.display = 'block';
-    invBox.innerHTML = `👴 <b>Papi Feuillage débarque !</b> Production -30 % : il te déconcentre en te regardant faire. Clique ${state.invasiveWeed.needed - state.invasiveWeed.done} fois pour lui montrer que tu t'en sors, et il repartira.`;
+    invBox.innerHTML = selonLangue(
+      `👴 <b>Papi Feuillage débarque !</b> Production -30 % : il te déconcentre en te regardant faire. Clique ${state.invasiveWeed.needed - state.invasiveWeed.done} fois pour lui montrer que tu t'en sors, et il repartira.`,
+      `👴 <b>Gramps is here!</b> Production -30%: he puts you off by watching over your shoulder. Click ${state.invasiveWeed.needed - state.invasiveWeed.done} times to show him you have got this, and he will go.`);
     invBox.onclick = clickInvasive;
   } else { invBox.style.display = 'none'; }
 
@@ -5868,10 +6176,29 @@ function renderStatsTab() {
   list.innerHTML = rows.map(r => `<div class="statLine"><span>${r[0]}</span><b>${r[1]}</b></div>`).join('');
 }
 
+// Les deux reglages de confort : l'etat affiche dit « Selon le systeme » tant que le joueur
+// n'a rien impose lui-meme.
+function renderConfortToggles() {
+  const anim = document.getElementById('animStateLabel');
+  if (anim) {
+    const auto = state.reduireAnimations === null || state.reduireAnimations === undefined;
+    const actif = animationsReduites();
+    anim.textContent = auto ? `${tr('animAuto')} (${actif ? tr('enabledSingular') : tr('disabledSingular')})`
+                            : (actif ? tr('enabledSingular') : tr('disabledSingular'));
+    anim.className = 'state' + (actif ? ' on' : '');
+  }
+  const zoom = document.getElementById('zoomStateLabel');
+  if (zoom) {
+    const i = Math.max(0, ZOOMS_UI.indexOf(state.zoomUI));
+    zoom.textContent = [tr('zoomNormal'), tr('zoomGrand'), tr('zoomTresGrand')][i];
+    zoom.className = 'state' + (i > 0 ? ' on' : '');
+  }
+}
+
 function renderSoundToggle() {
   const label = document.getElementById('soundStateLabel');
   if (!label) return;
-  label.textContent = state.soundEnabled ? 'Activés' : 'Désactivés';
+  label.textContent = state.soundEnabled ? tr('enabled') : tr('disabled');
   label.className = 'state' + (state.soundEnabled ? ' on' : '');
   const slider = document.getElementById('volumeSlider');
   const volLabel = document.getElementById('volumeValueLabel');
@@ -5999,6 +6326,8 @@ function renderAll() {
   if (isOverlayOpen('settingsModalOverlay')) {
     (PANEL_RENDERERS[activeSettingsTab] || noop)();
     renderSoundToggle();
+    renderConfortToggles();
+    renderSauvegardes();
     renderLangToggle();
     renderDarkModeToggle();
     renderVacationToggle();
@@ -6066,7 +6395,8 @@ document.getElementById('ascensionBtn').addEventListener('click', () => doAscens
 function spawnGoldenWeed() {
   const el = document.createElement('div');
   el.className = 'golden';
-  el.textContent = '🌿✨';
+  const saison = evenementActif();
+  el.textContent = saison ? saison.herbe : '🌿✨';
   el.style.left = (10 + Math.random() * 80) + '%';
   el.style.top = (15 + Math.random() * 65) + '%';
   el.onclick = () => {
@@ -6315,6 +6645,8 @@ const MODE_TEST_ACTIONS = [
     ['Tout débloquer', toutDebloquerModeTest],
     ['Rejouer les présentations', rejouerPresentationsModeTest],
   ]],
+  ['🎉 Saisons', [['Aucune', () => forcerSaisonModeTest(null), () => !_evenementForce]].concat(
+    EVENEMENTS.map(ev => [`${ev.emoji} ${ev.nom.fr}`, () => forcerSaisonModeTest(ev.id), () => _evenementForce === ev.id]))],
   ['✨ Événements', [
     ['Herbe dorée', () => spawnGoldenWeed()], ['Papillons', () => spawnButterflies()],
     ['Visite de Papi', () => { state.invasiveWeed = { active: true, needed: 5, done: 0 }; }],
@@ -6340,6 +6672,21 @@ function renderModeTest() {
       + '</div>').join('')
     + `<div class="mtAide">Ctrl+Maj+D pour fermer</div>`;
 }
+// Mode test : passe sur une saison (ou la quitte) et remet tout ce qu'elle déclenche à l'état
+// « jamais vu », pour qu'on revoie d'un coup le décor, la remarque de Papi et son herbe dorée.
+// Recliquer sur la saison déjà active la coupe.
+function forcerSaisonModeTest(id) {
+  _evenementForce = (id && _evenementForce === id) ? null : id;
+  const ev = evenementActif();
+  if (ev) {
+    state.evenementsVus = state.evenementsVus || {};
+    delete state.evenementsVus[`${ev.id}-${new Date().getFullYear()}`];
+  }
+  document.querySelectorAll('.golden').forEach(e => e.remove());
+  renderAll();
+  if (ev) spawnGoldenWeed();
+}
+
 function basculerModeTest() {
   let panneau = document.getElementById('modeTestPanel');
   if (panneau) { panneau.remove(); return; }
@@ -6481,29 +6828,33 @@ async function refreshUpdateStatus(silent, onDone) {
 
 async function installPendingUpdate(skipConfirm) {
   if (!_pendingUpdate) { await refreshUpdateStatus(false); return; }
-  if (!skipConfirm && !confirm(`Installer la mise à jour v${_pendingUpdate.version} ? L'app va redémarrer automatiquement une fois terminé. Ta sauvegarde n'est pas affectée.`)) return;
+  if (!skipConfirm && !confirm(selonLangue(
+    `Installer la mise à jour v${_pendingUpdate.version} ? L'app va redémarrer automatiquement une fois terminé. Ta sauvegarde n'est pas affectée.`,
+    `Install update v${_pendingUpdate.version}? The app will restart automatically once it is done. Your save is not affected.`))) return;
   const btn = document.getElementById('updateCheckBtn');
   const modalBtn = document.getElementById('updatePromptInstallBtn');
   if (btn) btn.disabled = true;
-  if (modalBtn) { modalBtn.disabled = true; modalBtn.textContent = 'Installation...'; }
+  if (modalBtn) { modalBtn.disabled = true; modalBtn.textContent = selonLangue('Installation...', 'Installing...'); }
   try {
     let total = 0, downloaded = 0;
     await _pendingUpdate.downloadAndInstall((event) => {
       if (event.event === 'Started') total = event.data.contentLength || 0;
       else if (event.event === 'Progress') {
         downloaded += event.data.chunkLength;
-        setUpdateProgressText(total ? `Téléchargement... ${Math.round(downloaded / total * 100)}%` : 'Téléchargement...');
+        setUpdateProgressText(total
+          ? selonLangue(`Téléchargement... ${Math.round(downloaded / total * 100)}%`, `Downloading... ${Math.round(downloaded / total * 100)}%`)
+          : selonLangue('Téléchargement...', 'Downloading...'));
       } else if (event.event === 'Finished') {
-        setUpdateProgressText('Installation terminée, redémarrage...');
+        setUpdateProgressText(selonLangue('Installation terminée, redémarrage...', 'Install complete, restarting...'));
       }
     });
     await window.__TAURI__.process.relaunch();
   } catch (e) {
     console.error(e);
-    setUpdateProgressText("Échec de l'installation.");
-    showToast('❌ Échec de la mise à jour.');
+    setUpdateProgressText(selonLangue("Échec de l'installation.", 'Install failed.'));
+    showToast(selonLangue('❌ Échec de la mise à jour.', '❌ Update failed.'));
     if (btn) btn.disabled = false;
-    if (modalBtn) { modalBtn.disabled = false; modalBtn.textContent = 'Réessayer'; }
+    if (modalBtn) { modalBtn.disabled = false; modalBtn.textContent = selonLangue('Réessayer', 'Try again'); }
   }
 }
 
@@ -6523,6 +6874,18 @@ document.getElementById('soundToggleBtn').addEventListener('click', () => {
   if (state.soundEnabled) playTone(600, 0.06, 'sine', 0.04);
   updateMusicVolume();
   saveGame(); renderSoundToggle();
+});
+// Animations : on fait tourner les trois etats (systeme -> reduites -> completes).
+document.getElementById('animToggleBtn').addEventListener('click', () => {
+  const suite = { null: true, true: false, false: null };
+  state.reduireAnimations = suite[String(state.reduireAnimations)];
+  if (state.reduireAnimations === undefined) state.reduireAnimations = null;
+  appliquerConfort(); saveGame(); renderConfortToggles(); renderAll();
+});
+document.getElementById('zoomToggleBtn').addEventListener('click', () => {
+  const i = Math.max(0, ZOOMS_UI.indexOf(state.zoomUI));
+  state.zoomUI = ZOOMS_UI[(i + 1) % ZOOMS_UI.length];
+  appliquerConfort(); saveGame(); renderConfortToggles();
 });
 document.getElementById('volumeSlider').addEventListener('input', (e) => {
   state.soundVolume = parseInt(e.target.value, 10);
@@ -6616,18 +6979,21 @@ document.getElementById('exportBtn').addEventListener('click', async () => {
   const filename = `fuzz-save-${stamp}.txt`;
   const result = await exportSaveFile(filename, data);
   if (result.cancelled) return; // le joueur a annulé la fenêtre "Enregistrer sous", pas d'erreur à afficher
-  if (!result.ok) { showToast('❌ Échec de la sauvegarde du fichier.'); return; }
+  if (!result.ok) { showToast(selonLangue('❌ Échec de la sauvegarde du fichier.', '❌ Could not save the file.')); return; }
   await writeClipboardText(data);
-  showToast(result.path ? `💾 Sauvegarde enregistrée : ${result.path}` : '💾 Sauvegarde téléchargée (et copiée)');
+  showToast(result.path
+    ? selonLangue(`💾 Sauvegarde enregistrée : ${result.path}`, `💾 Save written to: ${result.path}`)
+    : selonLangue('💾 Sauvegarde téléchargée (et copiée)', '💾 Save downloaded (and copied)'));
 });
 
 document.getElementById('copyCodeBtn').addEventListener('click', async () => {
   const data = encodeSave();
   const success = await writeClipboardText(data);
   if (success) {
-    showToast('📋 Code de sauvegarde copié ! Colle-le sur ton autre appareil via "Importer (coller un code)".');
+    showToast(selonLangue('📋 Code de sauvegarde copié ! Colle-le sur ton autre appareil via "Importer (coller un code)".',
+                          '📋 Save code copied! Paste it on your other device with "Import (paste a code)".'));
   } else {
-    prompt('Copie ce code manuellement :', data);
+    prompt(selonLangue('Copie ce code manuellement :', 'Copy this code manually:'), data);
   }
 });
 document.getElementById('importBtn').addEventListener('click', () => {
@@ -6641,19 +7007,78 @@ document.getElementById('importFileInput').addEventListener('change', (e) => {
     try {
       const parsed = JSON.parse(decodeURIComponent(escape(atob(reader.result.trim()))));
       applyImportedData(parsed);
-    } catch(err) { alert('Fichier de sauvegarde invalide.'); }
+    } catch(err) { alert(selonLangue('Fichier de sauvegarde invalide.', 'Invalid save file.')); }
     e.target.value = '';
   };
   reader.readAsText(file);
 });
 document.getElementById('importPasteBtn').addEventListener('click', () => {
-  const data = prompt('Colle ton code de sauvegarde :');
+  const data = prompt(selonLangue('Colle ton code de sauvegarde :', 'Paste your save code:'));
   if (!data) return;
   try {
     const parsed = JSON.parse(decodeURIComponent(escape(atob(data))));
     applyImportedData(parsed);
-  } catch(e) { alert('Code de sauvegarde invalide.'); }
+  } catch(e) { alert(selonLangue('Code de sauvegarde invalide.', 'Invalid save code.')); }
 });
+// Toutes les sauvegardes de secours disponibles, de la plus récente à la plus ancienne :
+// la copie automatique des 5 minutes, puis une par jour.
+function sauvegardesDisponibles() {
+  const liste = [];
+  const auto = localStorage.getItem(SAVE_KEY_BACKUP) || localStorage.getItem(LEGACY_SAVE_KEY_BACKUP);
+  if (auto) liste.push({ id: 'auto', json: auto, ts: state.lastBackupTime || 0, auto: true });
+  for (const e of lireRotation()) liste.push({ id: e.jour, json: e.json, ts: e.ts, auto: false });
+  return liste;
+}
+// Résumé lisible d'une sauvegarde, sans la charger : date, Verdure gagnée, Prestiges.
+function resumeSauvegarde(entree) {
+  let s = {};
+  try { s = JSON.parse(entree.json) || {}; } catch (e) { return null; }
+  const d = new Date(entree.ts || s.lastSave || Date.now());
+  const heure = d.toLocaleTimeString(state.lang === 'en' ? 'en-GB' : 'fr-FR', { hour: '2-digit', minute: '2-digit' });
+  const minuit = t => { const x = new Date(t); x.setHours(0, 0, 0, 0); return x.getTime(); };
+  const jours = Math.round((minuit(Date.now()) - minuit(d.getTime())) / 86400000);
+  const quand = jours <= 0 ? tr('sauvAujourdhui') : jours === 1 ? tr('sauvHier') : selonLangue(`il y a ${jours} jours`, `${jours} days ago`);
+  return {
+    quand: `${quand} ${heure}`,
+    detail: `${formatNum(s.totalEarned || 0)} ${tr('verdureWord')} · ${s.prestigeCount || 0} ${tr('prestigesWord')}`,
+  };
+}
+
+let _signatureSauvegardes = null;
+function renderSauvegardes() {
+  const box = document.getElementById('backupList');
+  if (!box) return;
+  const liste = sauvegardesDisponibles();
+  // renderAll tourne jusqu'à 60 fois par seconde : on ne relit les sauvegardes que si elles
+  // ont bougé (analyser trois JSON à chaque image serait du gâchis pur).
+  const signature = liste.map(e => e.id + ':' + e.ts).join('|') + '|' + state.lang + '|' + box.dataset.ouvert;
+  if (signature === _signatureSauvegardes) return;
+  _signatureSauvegardes = signature;
+  if (box.dataset.ouvert !== '1') { box.innerHTML = ''; return; }
+  if (!liste.length) { box.innerHTML = `<p class="tabIntro">${tr('sauvAucune')}</p>`; return; }
+  box.innerHTML = liste.map(e => {
+    const r = resumeSauvegarde(e);
+    if (!r) return '';
+    const etiquette = e.auto ? tr('sauvAuto') : r.quand;
+    return `<div class="backupRow"><div><b>${etiquette}</b><div class="backupDetail">${r.detail}</div></div>` +
+           `<button class="smallBtn" data-backup="${e.id}">${tr('sauvRestaurer')}</button></div>`;
+  }).join('');
+  box.querySelectorAll('[data-backup]').forEach(btn => {
+    btn.onclick = () => restaurerSauvegarde(btn.dataset.backup);
+  });
+}
+function restaurerSauvegarde(id) {
+  const entree = sauvegardesDisponibles().find(e => e.id === id);
+  if (!entree) return;
+  const r = resumeSauvegarde(entree);
+  const quand = entree.auto ? tr('sauvAuto') : (r ? r.quand : '');
+  if (!confirm(selonLangue(
+    `Restaurer la sauvegarde « ${quand} » ? Ta partie actuelle sera mise de côté (tu pourras y revenir).`,
+    `Restore the save from "${quand}"? Your current game will be set aside (you can go back to it).`))) return;
+  try { applyImportedData(JSON.parse(entree.json)); }
+  catch (e) { alert(selonLangue('Cette sauvegarde est illisible.', 'This save cannot be read.')); }
+}
+
 // Visible seulement quand une partie a ete mise de cote par un import ou une restauration.
 function renderUndoImportBtn() {
   const btn = document.getElementById('undoImportBtn');
@@ -6669,22 +7094,27 @@ document.getElementById('undoImportBtn').addEventListener('click', () => {
   try { applyImportedData(JSON.parse(avant), true); }
   catch (e) { alert(en ? 'That game could not be read.' : 'Impossible de relire cette partie.'); }
 });
+// Le bouton ouvre (ou referme) la liste : plusieurs sauvegardes coexistent, c'est au joueur
+// de choisir laquelle il veut, en voyant ce qu'elle contient.
 document.getElementById('restoreBackupBtn').addEventListener('click', () => {
-  const backup = localStorage.getItem(SAVE_KEY_BACKUP) || localStorage.getItem(LEGACY_SAVE_KEY_BACKUP);
-  if (!backup) { alert('Aucune sauvegarde de secours disponible pour le moment.'); return; }
-  if (!confirm('Restaurer la sauvegarde de secours ? Ta progression actuelle sera remplacée.')) return;
-  try {
-    applyImportedData(JSON.parse(backup));
-  } catch(e) { alert('Sauvegarde de secours corrompue.'); }
+  const box = document.getElementById('backupList');
+  box.dataset.ouvert = box.dataset.ouvert === '1' ? '0' : '1';
+  renderSauvegardes();
 });
 document.getElementById('shareBtn').addEventListener('click', async () => {
-  const text = `🌱 FUZZ, mon jardin :\n` +
+  const text = selonLangue(
+    `🌱 FUZZ, mon jardin :\n` +
     `${formatNum(state.totalEarned)} Verdure gagnée\n` +
     `${state.cosmicSeeds} Graines Cosmiques\n` +
     `${state.prestigeCount} prestiges effectués\n` +
-    `${Object.values(state.achievements||{}).length} succès débloqués`;
+    `${Object.values(state.achievements||{}).length} succès débloqués`,
+    `🌱 FUZZ, my garden:\n` +
+    `${formatNum(state.totalEarned)} Greenery earned\n` +
+    `${state.cosmicSeeds} Cosmic Seeds\n` +
+    `${state.prestigeCount} prestiges done\n` +
+    `${Object.values(state.achievements||{}).length} achievements unlocked`);
   await writeClipboardText(text);
-  prompt('Copie ce texte pour le partager :', text);
+  prompt(selonLangue('Copie ce texte pour le partager :', 'Copy this text to share it:'), text);
 });
 document.getElementById('resetBtn').addEventListener('click', () => {
   const confirmMsg = state.lang === 'en'

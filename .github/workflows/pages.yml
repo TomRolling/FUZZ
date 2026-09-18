@@ -1,0 +1,45 @@
+name: Version web (GitHub Pages)
+
+# Publie dist/ sur GitHub Pages a chaque changement du jeu pousse sur main, pour qu'on puisse
+# l'essayer dans un navigateur sans installer l'application.
+# Prealable cote depot, a faire une seule fois : Settings > Pages > Source = GitHub Actions.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'dist/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Une seule mise en ligne a la fois ; on laisse finir celle qui est en cours.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+
+      # Le service worker garde un cache par version : sans ca, un joueur deja venu
+      # continuerait de voir l'ancienne page.
+      - name: Numeroter le cache du service worker
+        run: sed -i "s/__VERSION__/${GITHUB_SHA::7}/" dist/sw.js
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

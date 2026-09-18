@@ -50,6 +50,14 @@ a signed `latest.json` for the auto-updater. Before tagging a release:
    already be configured (one-time setup, documented in [README.md](README.md)); the public key lives in
    `tauri.conf.json` under `plugins.updater.pubkey`.
 
+### Web version (GitHub Pages)
+
+`.github/workflows/pages.yml` publishes `dist/` to GitHub Pages on every push to `main` that touches
+`dist/**` — no tag involved, so a game change ships to the web as soon as it lands. `dist/sw.js` caches the
+shell on install and everything else on demand; the workflow substitutes `__VERSION__` with the commit SHA so
+each deploy gets a fresh cache. `tests/test-web.js` serves `dist/` over http and checks the game boots,
+registers the service worker and reloads offline (the service worker only registers on `localhost` or https).
+
 ## Architecture of dist/index.html
 
 Everything is global functions/objects operating on one mutable `state` object (no framework, no modules,
@@ -63,7 +71,19 @@ Key structural pieces, roughly in file order:
   `baseCost * GROWTH^n` (`GROWTH = 1.15`).
 - **`UI_STRINGS` / `tr()` / `L()` (~L1054-1136)** — bilingual FR/EN system. `tr(key)` looks up a UI string in
   the current `state.lang`; `L(obj, field)` reads a bilingual field (`{fr, en}`) off a content object (e.g. a
-  building's name). FR is the default/fallback language.
+  building's name). FR is the default/fallback language. For strings built at runtime (toasts,
+  `confirm()` messages) that can't live in `UI_STRINGS` because they interpolate values, use
+  `selonLangue(fr, en)`. Two checks guard this: `tests/scan-traduction.js` (static: flags French written
+  inline outside the bilingual tables) and `tests/test-traduction.js` (runtime: plays in English, opens
+  every tab and popup, and flags any French still on screen). Both run in `tout.sh` and must stay at 0.
+- **Seasonal events (`EVENEMENTS`, right after `WEATHERS`)** — nine date-based events (New Year, Valentine's,
+  spring, April Fools, Easter via `paquesDe()`, summer, the garden's birthday, Halloween, Christmas). The
+  shortest window wins when two overlap. Each adds a badge, a falling decor layer (`#eventDecor`, skipped
+  when animations are reduced), a reskinned golden weed, a one-per-year Papi remark (`state.evenementsVus`)
+  and a small production bonus via `evenementMult()`. `_evenementForce` (test mode panel) forces one.
+- **Comfort settings** — `animationsReduites()` follows `prefers-reduced-motion` until the player picks a
+  value (`state.reduireAnimations`: `null` = system, then true/false); `state.zoomUI` (1 / 1.15 / 1.3) scales
+  the whole drawing area in `fitGameViewport()`. `appliquerConfort()` applies both.
 - **Dialogue & scenes (~L1137-1623)** — the Papi Feuillage / Leroy narrative system: `showDialogue` (single
   speaker popup), `showScene` (two-character JRPG-style face-off, used for the opening scene), a typewriter
   text effect, and `PAPI_LINES` pools of contextual one-liners (`pickPapiLine`/`papiSaysFromCategory`) shown
@@ -100,6 +120,13 @@ Key structural pieces, roughly in file order:
   save/open and clipboard both branch on `isTauriApp()`: native uses `window.__TAURI__.dialog` +
   `window.__TAURI__.fs`/`clipboardManager`; browser falls back to a Blob download link /
   `navigator.clipboard`. `performFullReset()` preserves only the chosen language across a reset.
+- **Backup saves** — besides `SAVE_KEY_BACKUP` (rewritten every 5 min), `saveGame()` keeps one save per day
+  for the last 3 played days under `fuzzSave_rotation` (`majRotationSauvegardes`, one write per minute max,
+  trimmed further if the browser refuses the quota). The Options panel lists them all with a summary of
+  what each contains (`renderSauvegardes`), and restoring goes through `applyImportedData`, so the game
+  being replaced is itself kept under `SAVE_KEY_AVANT_IMPORT`. In the native app only, one save per day is
+  also written next to the app data (`sauvegardeFichierQuotidienne` → `fuzz-sauvegarde-auto.txt`, rewritten
+  in place so nothing accumulates, silent on failure).
 - **Updater UI (~L3915-4019)** — wraps `window.__TAURI__.updater`/`process`; entirely inert (hidden card) when
   not running inside Tauri, so this code path can't be tested in a browser.
 - **Boot sequence (~L4249-4345)** — strictly sequential via callbacks (never parallel, to avoid flashing raw

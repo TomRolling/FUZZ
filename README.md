@@ -21,7 +21,12 @@ en confie les clés à son petit-fils au chômage, Leroy. C'est toi.
 Papi repasse régulièrement pour commenter, expliquer, et te rappeler que ton cousin Bramble, lui,
 a déjà trois terrains et un yacht.
 
-## Télécharger et jouer
+## Jouer tout de suite
+
+**[Jouer dans le navigateur](https://tomrolling.github.io/FUZZ/)** — rien à installer, la partie est
+enregistrée dans le navigateur, et le jeu reste jouable hors ligne une fois chargé.
+
+## Ou installer l'application
 
 Va dans [Releases](https://github.com/TomRolling/FUZZ/releases) et prends le fichier de ton système :
 
@@ -58,6 +63,16 @@ nouveauté t'est présentée au moment où elle arrive.
 
 Sans oublier la météo, les mauvaises herbes dorées, les nuées de papillons, et les visites de Papi
 qu'il faut écourter en cliquant.
+
+Neuf fois dans l'année, le terrain change de tenue : Nouvel An, Saint-Valentin, printemps, 1er avril,
+Pâques, été, l'anniversaire du terrain début septembre, Halloween et Noël. Chaque saison apporte son
+décor, son herbe dorée relookée, une remarque de Papi et un petit bonus de production. Rien ne se
+rate : passer à côté d'une saison ne coûte aucun contenu.
+
+Côté confort, les Options permettent de réduire les animations (le réglage du système est suivi par
+défaut) et d'agrandir l'affichage sans rien rogner. Le jeu garde aussi une sauvegarde de secours par
+jour sur les trois derniers jours joués, en plus d'une copie automatique récente : la liste est dans
+les Options, avec ce que contient chaque sauvegarde.
 
 ### Recommencer plus fort
 
@@ -144,6 +159,15 @@ de tout débloquer, ou de faire rejouer à Papi toutes ses présentations.
 
 Le workflow [.github/workflows/build.yml](.github/workflows/build.yml) peut aussi être lancé à la
 main depuis l'onglet Actions, sans tag : il construit sans rien publier.
+
+### Mettre la version web en ligne
+
+[.github/workflows/pages.yml](.github/workflows/pages.yml) publie `dist/` sur GitHub Pages à chaque
+changement du jeu poussé sur `main`. Le service worker ([dist/sw.js](dist/sw.js)) met en cache la
+coquille du jeu à l'installation et le reste (sprites, musiques) au fur et à mesure ; son nom de
+cache porte le numéro du commit, donc une mise en ligne remplace proprement la précédente.
+
+Une seule chose à faire côté dépôt, une fois : **Settings → Pages → Source : GitHub Actions**.
 
 <details>
 <summary>Clés de signature des mises à jour (déjà configurées)</summary>
