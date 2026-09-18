@@ -1245,12 +1245,10 @@
           <span class="state">▾</span>
         </div>
         <div id="creditsPanel" data-i18n="creditsGeneric" style="display:none; background:var(--panel-bg); color:var(--panel-text); border-radius:12px; padding:14px 16px; margin-top:-2px; margin-bottom:8px; font-size:12.5px; line-height:1.7;">
-          <!-- Texte générique — à remplacer par tes vrais crédits -->
+          <!-- Repris de UI_STRINGS.creditsGeneric des que le jeu demarre : garder les deux d'accord. -->
           FUZZ<br>
-          Un jeu créé par [Ton nom]<br>
-          Écriture & histoire : [Ton nom]<br>
-          Illustrations : [Ton nom]<br>
-          Développement assisté par Claude (Anthropic)<br>
+          Développement : SeiuZ<br>
+          Dessins, musiques et histoire : Anko<br>
           Merci d'avoir joué ! 🐸
         </div>
       </div>
@@ -1657,7 +1655,7 @@ const UI_STRINGS = {
     tutorialCloseBtn: 'Compris, on désherbe !',
     offlineTitle: 'Pendant ton absence', offlineCloseBtn: 'Continuer à jardiner 🌱',
     skipBtn: 'Passer ⏭️',
-    creditsGeneric: "FUZZ<br>Un jeu créé par [Ton nom]<br>Écriture & histoire : [Ton nom]<br>Illustrations : [Ton nom]<br>Développement assisté par Claude (Anthropic)<br>Merci d'avoir joué ! 🐸",
+    creditsGeneric: "FUZZ<br>Développement : SeiuZ<br>Dessins, musiques et histoire : Anko<br>Merci d'avoir joué ! 🐸",
   },
   en: {
     next: 'Next ▸', close: 'Close ✕', exitShop: 'Exit shop ✕',
@@ -1697,7 +1695,7 @@ const UI_STRINGS = {
     tutorialCloseBtn: "Got it, let's weed!",
     offlineTitle: 'While you were away', offlineCloseBtn: 'Back to gardening 🌱',
     skipBtn: 'Skip ⏭️',
-    creditsGeneric: "FUZZ<br>A game by [Your name]<br>Writing & story: [Your name]<br>Art: [Your name]<br>Development assisted by Claude (Anthropic)<br>Thanks for playing! 🐸",
+    creditsGeneric: "FUZZ<br>Development: SeiuZ<br>Art, music and story: Anko<br>Thanks for playing! 🐸",
   },
 };
 function tr(key) { return (UI_STRINGS[state.lang] || UI_STRINGS.fr)[key] || key; }

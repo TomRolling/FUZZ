@@ -196,4 +196,4 @@ La commande affiche la clé publique à recopier dans `tauri.conf.json`, et dema
 
 ## Crédits
 
-Jeu créé par Tom Rolling. Développement assisté par Claude (Anthropic).
+Développement : **SeiuZ**. Dessins, musiques et histoire : **Anko**.
