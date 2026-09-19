@@ -100,13 +100,18 @@ Key structural pieces, roughly in file order:
   `achievementMultiplier`, `seedMultiplier`, `shardMultiplier`, weather/combo/boost multipliers), buy/sell
   logic per system (`buyBuilding`, `buyResearch`, `buyPrestigeUpgrade`, `buyAscensionUpgrade`, ...), and the
   prestige/ascension reset flows (`doPrestige`, `doAscension` — check what each does/doesn't reset before
-  touching them).
+  touching them). Every buy function ends with `finaliserAchat({ coutVerdure, onglet, auto })`, the single
+  exit point that plays the sound, checks achievements, lets Papi react (`notifyPurchase`), saves and
+  renders — a new way to buy only has to call it, instead of copying five lines and forgetting one.
 - **Audio (~L2458-2572)** — procedural sound effects via Web Audio (`playTone` and friends), no audio files
   for SFX; background music uses `<audio>` elements with fade helpers. (Note: `dist/assets/audio/` currently
   has untracked files per git status — check before assuming audio assets are complete/committed.)
 - **Timed events (~L2633-2807)** — weather changes, invasive weed spawns, daily quests (`generateQuests`,
   reset via `todayStr()`), daily login rewards (streak-based, `dailyRewardForDay`).
-- **Navigation/modals (~L2859-3075)** — tab unlock/visibility logic (`unlockedTabs`, `renderTabsRow`), modal
+- **Navigation/modals (~L2859-3075)** — tab unlock/visibility logic (`unlockedTabs`, `renderTabsRow`). New
+  tabs are detected by `verifierNouveauxOnglets()`, called from the 1s game tick and **never from a render**:
+  an announcement calls `renderAll()` halfway through, so detecting there started a second announcement
+  inside the first (two fingers, two bubbles). Keep it out of the render layer. Modal
   open/close helpers, and `queueOrShowPapi`/`flushPendingPapiCategories`, which queues Papi dialogue so it
   never overlaps another blocking UI (see `isMainScreenBlocked()`).
 - **Render layer (~L3076-3690)** — one `render*()` function per panel/tab (`renderShop`, `renderResearch`,

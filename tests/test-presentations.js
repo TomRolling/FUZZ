@@ -58,13 +58,18 @@ const verifie = (c, ...m) => { if (!c) fail(...m); };
   const bilan = await p.evaluate((ids) => ({
     manquants: ids.filter(id => !state.tabsDescribed[id]),
     vus: ids.filter(id => !state.tabsSeen[id]),
-    spotlight: _pendingSpotlightGroup, bulle: isDialogueVisible(),
+    spotlight: _pendingSpotlightGroup,
+    // Une remarque spontanee de Papi (meteo, nuit, capacite...) peut arriver a tout moment :
+    // ce qui doit etre termine, c'est l'ANNONCE d'onglet, reconnaissable a sa bulle verrouillee
+    // et a la file d'attente.
+    annonceEnCours: _pendingTabAnnouncements.length > 0 || (isDialogueVisible() && _dialogueBlockAdvance),
+    bulle: isDialogueVisible(),
     boutons: ['shopBtn', 'settingsBtn', 'achievementsBtn', 'questsBtn'].filter(id => getComputedStyle(document.getElementById(id)).display !== 'none').length,
   }), aPresenter);
   console.log('   etapes :', etapes, '|', JSON.stringify(bilan));
   verifie(bilan.manquants.length === 0, 'onglets jamais expliques :', bilan.manquants.join(', '));
   verifie(bilan.vus.length === 0, 'onglets jamais apparus :', bilan.vus.join(', '));
-  verifie(!bilan.spotlight && !bilan.bulle, 'une annonce reste en cours a la fin');
+  verifie(!bilan.spotlight && !bilan.annonceEnCours, 'une annonce reste en cours a la fin');
   verifie(bilan.boutons === 4, 'les 4 boutons doivent etre visibles a la fin');
 
   console.log(problems ? `\n${problems} PROBLEME(S)` : '\nTOUT EST OK');

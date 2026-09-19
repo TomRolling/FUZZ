@@ -106,6 +106,10 @@
     --papi: #b8c4d9;
     --purple: #b7a3d9;
     --blue: #8fb8d1;
+    /* Variantes lisibles des couleurs ci-dessus, a utiliser des qu'il s'agit de TEXTE. */
+    --accent-texte: #3d6b45;
+    --purple-texte: #5a3f96;
+    --blue-texte: #2b5f85;
     --card-bg: #f4ead9;
     --panel-bg: #ffffff;
     --panel-text: #23331a;
@@ -184,9 +188,9 @@
     z-index: 5;
   }
   h1 { margin: 0; font-size: 20px; letter-spacing: 0.5px; color: var(--ink); text-shadow: 0 1px 0 rgba(255,255,255,0.3); }
-  .weatherBadge { margin-top: 4px; font-size: 11.5px; background: var(--card-bg); padding: 3px 12px; border-radius: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+  .weatherBadge { margin-top: 4px; font-size: 11.5px; background: var(--card-bg); color: var(--panel-text); padding: 3px 12px; border-radius: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
   /* Événement saisonnier : même gabarit que la météo, avec un liseré doré pour qu'on le remarque. */
-  .eventBadge { margin-top: 4px; font-size: 11.5px; background: var(--card-bg); padding: 3px 12px; border-radius: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); border: 1px solid rgba(214,158,46,0.55); }
+  .eventBadge { margin-top: 4px; font-size: 11.5px; background: var(--card-bg); color: var(--panel-text); padding: 3px 12px; border-radius: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); border: 1px solid rgba(214,158,46,0.55); }
   /* Décor de saison : purement décoratif, donc jamais cliquable et jamais au-dessus des menus. */
   #eventDecor { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 2; }
   #eventDecor span { position: absolute; top: -40px; font-size: 20px; opacity: 0.75; animation: chuteDecor linear infinite; will-change: transform; }
@@ -208,7 +212,9 @@
     gap: 8px;
     margin-top: 8px;
     width: 100%;
-    max-width: 760px;
+    /* Assez large pour les quatre bulles a leur largeur fixe (voir .statChip plus bas) : en
+       dessous, la derniere passait a la ligne en permanence et le bandeau prenait deux etages. */
+    max-width: 1080px;
     flex-wrap: wrap;
     justify-content: center;
   }
@@ -221,9 +227,19 @@
     box-shadow: 0 2px 6px rgba(0,0,0,0.08);
     color: var(--panel-text);
   }
-  .statChip.verdure { color: var(--accent-dark); font-size: 14px; }
-  .statChip.seeds { color: var(--purple); }
-  .statChip.knowledge { color: var(--blue); }
+  /* Largeurs fixes : ces valeurs montent en continu, et une bulle qui se redimensionne à chaque
+     chiffre pousse toutes ses voisines (la ligne entière frétillait). Chaque bulle a donc sa
+     place, calée sur le texte le plus long possible dans les deux langues. */
+  .statChip.verdure, .statChip.rate, .statChip.seeds, .statChip.knowledge {
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .statChip.verdure { color: var(--accent-texte); font-size: 14px; width: 150px; }
+  .statChip.rate { width: 240px; }
+  .statChip.seeds { color: var(--purple-texte); width: 300px; }
+  .statChip.knowledge { color: var(--blue-texte); width: 350px; }
 
   /* Jauges des bonus temporaires (herbe dorée, papillons, capacités actives). Sans elles, le
      joueur voyait le bonus s'appliquer sans savoir combien de temps il lui restait — le toast
@@ -271,7 +287,7 @@
     animation: boostChipIn 0.25s ease-out;
   }
   @keyframes boostChipIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
-  .boostChip .boostTime { color: var(--accent-dark); margin-left: 6px; padding-left: 6px; border-left: 1px solid rgba(0,0,0,0.15); }
+  .boostChip .boostTime { color: var(--accent-texte); margin-left: 6px; padding-left: 6px; border-left: 1px solid rgba(0,0,0,0.15); }
   /* Jauge qui se vide : la durée restante se lit d'un coup d'œil, sans avoir à déchiffrer le
      compte à rebours. `transition` sur la largeur pour que l'écoulement reste fluide entre
      deux rendus (qui n'arrivent qu'une fois par seconde quand le joueur ne clique pas). */
@@ -283,11 +299,11 @@
   .boostChip.gold { border-color: #f4b400; }
   .boostChip.gold .boostTime { color: #b37400; }
   .boostChip.gold .boostBar { background: #f4b400; }
-  .boostChip.click { border-color: var(--purple); }
+  .boostChip.click { border-color: var(--purple-texte); }
   .boostChip.click .boostTime { color: #6b4fa8; }
   .boostChip.click .boostBar { background: var(--purple); }
 
-  .invasiveBox { background: #ffe0e0; border: 2px solid #e53935; border-radius: 12px; padding: 8px 14px; margin-top: 8px; width: 100%; max-width: 760px; text-align: center; font-size: 12px; cursor: pointer; animation: pulse 1.2s infinite; }
+  .invasiveBox { background: #ffe0e0; color: #5a1a18; border: 2px solid #e53935; border-radius: 12px; padding: 8px 14px; margin-top: 8px; width: 100%; max-width: 760px; text-align: center; font-size: 12px; cursor: pointer; animation: pulse 1.2s infinite; }
   @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(229,57,53,0.35); } 50% { box-shadow: 0 0 0 8px rgba(229,57,53,0); } }
   .invasiveBox b { color: #b71c1c; }
 
@@ -319,7 +335,7 @@
   .clickZone.disabled .clickText { font-size: 40px; color: rgba(229,57,53,0.5); animation: none; }
   @keyframes pulseScale { 0%,100% { transform: scale(1); opacity: 0.35; } 50% { transform: scale(1.12); opacity: 0.65; } }
 
-  .floatText { position: fixed; pointer-events: none; font-weight: bold; color: var(--accent-dark); animation: floatUp 0.8s ease-out forwards; z-index: 50; font-size: 18px; }
+  .floatText { position: fixed; pointer-events: none; font-weight: bold; color: var(--accent-texte); animation: floatUp 0.8s ease-out forwards; z-index: 50; font-size: 18px; }
   @keyframes floatUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-40px); } }
 
   .golden { position: fixed; font-size: 30px; cursor: pointer; z-index: 100; animation: floaty 2s ease-in-out infinite, popIn 0.3s ease-out; filter: drop-shadow(0 0 6px gold); }
@@ -468,6 +484,7 @@
     height: 672px;
     max-height: calc(100% - 40px);
     background: var(--card-bg);
+    color: var(--ink);
     border: 4px solid var(--ink);
     border-radius: 18px;
     display: flex;
@@ -654,7 +671,7 @@
     line-height: 1.65;
     box-shadow: 0 2px 6px rgba(0,0,0,0.10);
   }
-  .tabIntro b { color: var(--accent-dark); }
+  .tabIntro b { color: var(--accent-texte); }
   /* Même carte, mais en tête d'une SECTION au milieu d'une liste (cosmétiques, recherches
      infinies) : seul l'espacement au-dessus change. */
   .upgrade + .tabIntro { margin-top: 18px; }
@@ -684,17 +701,33 @@
   .galleryCard.locked .galleryCardName { opacity: 0.6; }
 
   .dailyCalendar { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; margin-top: 4px; }
+  /* Bouton d'une récompense à prendre : vert plein, généreux, avec une légère pulsation.
+     En gris, il passait pour un bouton secondaire et on ne voyait pas qu'il y avait à prendre. */
+  .dailyClaimBtn {
+    width: 100%; margin-bottom: 14px; padding: 14px 18px;
+    border: 3px solid var(--accent-texte); border-radius: 12px;
+    background: var(--accent); color: var(--accent-texte);
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 3px 0 var(--accent-texte);
+    animation: dailyClaimPulse 1.6s ease-in-out infinite;
+  }
+  .dailyClaimBtn:hover { filter: brightness(1.06); }
+  .dailyClaimBtn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--accent-texte); }
+  @keyframes dailyClaimPulse { 0%, 100% { box-shadow: 0 3px 0 var(--accent-texte), 0 0 0 0 rgba(61,107,69,0.35); } 50% { box-shadow: 0 3px 0 var(--accent-texte), 0 0 0 7px rgba(61,107,69,0); } }
   .dailyCalendarCard { background: var(--panel-bg); border-radius: 10px; padding: 10px 6px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.08); border: 2px solid transparent; }
+  /* La carte du jour est cliquable tant que la récompense n'a pas été prise. */
+  .dailyCalendarCard.aPrendre { cursor: pointer; background: linear-gradient(160deg, var(--panel-bg), #e8f3e2); }
+  .dailyCalendarCard.aPrendre:hover { transform: translateY(-2px); }
   .dailyCalendarCard.past { opacity: 0.5; }
   .dailyCalendarCard .dayLabel { font-weight: 700; font-size: 11px; margin-bottom: 4px; }
-  .dailyCalendarCard .dayReward { font-size: 11px; font-weight: 700; color: var(--accent-dark); line-height: 1.45; }
+  .dailyCalendarCard .dayReward { font-size: 11px; font-weight: 700; color: var(--accent-texte); line-height: 1.45; }
   /* Pas de letter-spacing ni de majuscules forcées : "AUJOURD'HUI" débordait de sa carte. */
   .dailyCalendarCard .dayState { font-size: 9px; opacity: 0.6; margin-top: 6px; }
   .dailyCalendarCard.today { border-color: var(--accent); border-width: 3px; }
-  .dailyCalendarCard.today .dayState { opacity: 1; color: var(--accent-dark); font-weight: 700; }
+  .dailyCalendarCard.today .dayState { opacity: 1; color: var(--accent-texte); font-weight: 700; }
   /* Le jour 7 est le point d'arrivée du cycle : il doit se repérer d'un coup d'œil. */
-  .dailyCalendarCard.final { border-color: var(--purple); background: linear-gradient(160deg, var(--panel-bg), #f3ecff); }
-  .dailyCalendarCard.final .dayReward { color: var(--purple); }
+  .dailyCalendarCard.final { border-color: var(--purple-texte); background: linear-gradient(160deg, var(--panel-bg), #f3ecff); }
+  .dailyCalendarCard.final .dayReward { color: var(--purple-texte); }
   .dailyStatus { font-size: 12.5px; font-weight: 700; text-align: center; margin: 0 0 12px 0; }
 
   .galleryLightboxOverlay { position: fixed; inset: 0; z-index: 360; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 20px; }
@@ -710,11 +743,11 @@
   .upgrade .info { text-align: left; flex: 1; min-width: 0; }
   .upgrade .name { font-weight: 700; font-size: 12.5px; line-height: 1.5; }
   .upgrade .desc { font-size: 10px; opacity: 0.65; line-height: 1.6; margin-top: 4px; display: block; }
-  .upgrade .price { font-size: 12px; color: var(--accent-dark); font-weight: 700; white-space: nowrap; margin-left: 10px; }
-  .upgrade .owned { background: #e0f2e0; border-radius: 8px; padding: 2px 8px; font-size: 11px; margin-left: 6px; }
+  .upgrade .price { font-size: 12px; color: var(--accent-texte); font-weight: 700; white-space: nowrap; margin-left: 10px; }
+  .upgrade .owned { background: #e0f2e0; color: #23331a; border-radius: 8px; padding: 2px 8px; font-size: 11px; margin-left: 6px; }
   /* Ce que rapporte le compagnon : l'information la plus décisive de la ligne, elle était
      noyée en fin de description à 10px et 65% d'opacité. */
-  .upgrade .prodLine { font-size: 11.5px; color: var(--accent-dark); font-weight: 700; margin-top: 5px; display: block; }
+  .upgrade .prodLine { font-size: 11.5px; color: var(--accent-texte); font-weight: 700; margin-top: 5px; display: block; }
   .upgrade .prodLine b { font-size: 13px; }
   .upgrade .prodTotal { opacity: 0.75; font-weight: 600; }
   .itemIconAuto { display: flex; align-items: center; justify-content: center; font-size: 26px; }
@@ -728,18 +761,19 @@
   #modeTestPanel button { border: none; border-radius: 6px; padding: 5px 7px; background: #5a4a3c; color: inherit; font: inherit; cursor: pointer; }
   #modeTestPanel button.actif { background: #7fa377; }
   #modeTestPanel .mtAide { margin-top: 10px; opacity: 0.5; }
-  .upgrade.defiEnCours { border-color: var(--accent-dark); }
+  .upgrade.defiEnCours { border-color: var(--accent-texte); }
   .defiChrono { font-size: 11px; font-weight: 700; margin-bottom: 6px; text-align: right; }
   .defiAttente { display: inline-block; max-width: 110px; white-space: normal; text-align: center; line-height: 1.5; }
   .autoSeuil { display: flex; align-items: center; gap: 6px; margin-top: 7px; font-size: 11px; font-weight: 700; }
   .autoSeuil b { min-width: 34px; text-align: center; font-size: 13px; }
   .autoStep { padding: 3px 8px; border: none; border-radius: 6px; background: rgba(0,0,0,0.1); color: inherit; font: inherit; cursor: pointer; }
   .upgrade .palierLine { font-size: 10.5px; opacity: 0.85; margin-top: 5px; display: block; }
-  .upgrade .palierBonus { color: var(--accent-dark); font-weight: 700; }
+  .upgrade .palierBonus { color: var(--accent-texte); font-weight: 700; }
   .upgrade .palierBar { height: 4px; max-width: 220px; margin-top: 3px; background: rgba(0,0,0,0.1); border-radius: 3px; overflow: hidden; }
   .upgrade .palierFill { width: 0; height: 100%; background: var(--accent-dark); border-radius: 3px; transition: width 0.4s ease; }
   .upgrade .synergy { font-size: 10px; color: #ef6c00; }
-  .upgrade .roiBadge { font-size: 10px; color: #2e7d32; font-weight: 700; }
+  /* Vert en dur : il devenait illisible sur la carte sombre du mode sombre force. */
+  .upgrade .roiBadge { font-size: 10px; color: var(--accent-texte); font-weight: 700; }
 
   .prestigeBox { background: linear-gradient(135deg, #f3e9ff, #e6d9ff); border-radius: var(--radius); padding: 18px; margin-bottom: 14px; text-align: center; color: var(--panel-text); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
   #prestigeBtn { padding: 11px 22px; border-radius: 12px; border: none; background: linear-gradient(180deg, #9a7fd4, var(--purple)); color: white; cursor: pointer; font-size: 14px; font-weight: 700; box-shadow: 0 3px 0 #5e3b9c; }
@@ -749,9 +783,9 @@
   .achv { background: var(--panel-bg); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; font-size: 13px; color: var(--panel-text); }
   .achv.locked { opacity: 0.55; }
   .achvTop { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-  .achvBonus { font-weight: 700; white-space: nowrap; color: var(--accent-dark); }
+  .achvBonus { font-weight: 700; white-space: nowrap; color: var(--accent-texte); }
   .achvSummary { background: var(--panel-bg); border-radius: 12px; padding: 12px 16px; margin-bottom: 12px; font-size: 12px; line-height: 1.7; color: var(--panel-text); }
-  .achvSummary b { color: var(--accent-dark); }
+  .achvSummary b { color: var(--accent-texte); }
   .achv .name { font-weight: 700; line-height: 1.5; }
   .achv .desc { font-size: 11px; opacity: 0.65; margin-top: 4px; display: block; line-height: 1.6; }
   .achvBarWrap { background: #e4e4e4; border-radius: 6px; height: 6px; margin-top: 8px; overflow: hidden; }
@@ -778,12 +812,12 @@
   .smallBtn { padding: 10px 16px; border-radius: 10px; border: none; background: #f2f2f2; cursor: pointer; font-size: 13px; font-weight: 700; }
 
   .toastContainer { position: fixed; bottom: calc(16px + env(safe-area-inset-bottom)); right: calc(16px + env(safe-area-inset-right)); z-index: 200; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: none; }
-  .toast { background: var(--accent-dark); color: white; padding: 10px 18px; border-radius: 10px; font-size: 13px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); animation: toastIn 0.3s ease-out, toastOut 0.3s ease-in 2.7s forwards; white-space: nowrap; }
+  .toast { background: var(--accent-texte); color: white; padding: 10px 18px; border-radius: 10px; font-size: 13px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); animation: toastIn 0.3s ease-out, toastOut 0.3s ease-in 2.7s forwards; white-space: nowrap; }
   @keyframes toastIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: translateX(0); } }
   @keyframes toastOut { to { opacity: 0; } }
 
   /* ===== Click particles ===== */
-  .particle { position: fixed; pointer-events: none; font-size: 15px; z-index: 60; animation: particleMove 0.65s ease-out forwards; will-change: transform, opacity; }
+  .particle { position: fixed; pointer-events: none; font-size: 15px; z-index: 60; animation: particleMove 0.65s ease-out forwards; }
   @keyframes particleMove { 0% { transform: translate(0,0) scale(1) rotate(0deg); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(0.35) rotate(var(--rot)); opacity: 0; } }
 
   /* ===== Combo indicator ===== */
@@ -797,7 +831,8 @@
   @keyframes bumpAnim { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
 
   .soundToggleBtn { display:flex; align-items:center; justify-content:space-between; background: var(--panel-bg); border-radius:12px; padding:15px 18px; margin-bottom:12px; box-shadow:0 2px 6px rgba(0,0,0,0.08); cursor:pointer; color: var(--panel-text); font-weight:700; font-size:13px; gap: 10px; line-height: 1.5; }
-  .soundToggleBtn .state { font-size: 12px; padding: 4px 10px; border-radius: 20px; background: #eee; white-space: nowrap; }
+  /* Fond clair fixe : la couleur du texte doit l'etre aussi, sinon le mode sombre force la rend illisible. */
+  .soundToggleBtn .state { font-size: 12px; padding: 4px 10px; border-radius: 20px; background: #eee; color: #23331a; white-space: nowrap; }
   .settingsCard { background: var(--panel-bg); border-radius: 12px; padding: 16px 18px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); color: var(--panel-text); }
   .settingsCardLabel { font-weight: 700; font-size: 13px; }
   .settingsCardVersion { font-weight: 400; font-size: 11px; opacity: 0.6; }
@@ -824,6 +859,9 @@
     --ink: #d4a574;
     --accent: #8fae72;
     --accent-dark: #6d8a55;
+    --accent-texte: #bcd9a0;
+    --purple-texte: #cbb6f0;
+    --blue-texte: #a8cfe8;
   }
   /* .shopPageHeader utilise --ink comme FOND (pas comme texte) — a besoin de sa propre
      redéfinition en mode sombre, sinon il redevient clair comme les autres usages de --ink. */
@@ -862,7 +900,7 @@
   .itemPopupOverlay { position: fixed; inset: 0; z-index: 350; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
   .itemPopupBox { background: var(--card-bg); border: 4px solid var(--ink); border-radius: 18px; padding: 26px; width: 320px; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.4); animation: itemPopupIn 0.3s ease-out; }
   @keyframes itemPopupIn { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
-  .itemPopupTitle { font-weight: 800; font-size: 13px; line-height: 1.5; color: var(--accent-dark); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+  .itemPopupTitle { font-weight: 800; font-size: 13px; line-height: 1.5; color: var(--accent-texte); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
   .itemPopupIcon { width: 96px; height: 96px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.25)); margin-bottom: 12px; }
   .dailyPopupIcon { font-size: 64px; margin-bottom: 8px; }
   .itemPopupName { font-weight: 700; font-size: 15px; color: var(--ink); margin-bottom: 8px; }
@@ -884,10 +922,10 @@
      accentuée, titre en capitales), avec une ligne par information et le gain mis en avant. */
   .offlineBox { background: var(--panel-bg); color: var(--panel-text); border-radius: 20px; padding: 24px 26px; width: 340px; text-align: center; border: 3px solid var(--accent); box-shadow: 0 12px 40px rgba(0,0,0,0.35); animation: itemPopupIn 0.3s ease-out; }
   .offlineIcon { font-size: 52px; line-height: 1; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.25)); }
-  .offlineBox h2 { margin: 10px 0 16px; font-size: 13px; line-height: 1.5; color: var(--accent-dark); text-transform: uppercase; letter-spacing: 1px; }
+  .offlineBox h2 { margin: 10px 0 16px; font-size: 13px; line-height: 1.5; color: var(--accent-texte); text-transform: uppercase; letter-spacing: 1px; }
   .offlineLigne { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 11.5px; padding: 9px 12px; border-radius: 10px; background: var(--card-bg); margin-bottom: 8px; text-align: left; }
   .offlineLigne b { font-size: 12.5px; color: var(--ink); white-space: nowrap; }
-  .offlineGain { font-size: 15px; font-weight: 800; color: var(--accent-dark); margin: 16px 0 18px; }
+  .offlineGain { font-size: 15px; font-weight: 800; color: var(--accent-texte); margin: 16px 0 18px; }
   .offlineBtn { width: 100%; padding: 12px; border: none; border-radius: 10px; background: var(--accent); color: white; font-weight: 700; font-size: 13px; cursor: pointer; }
   .offlineBtn:hover { background: var(--accent-dark); }
   #tutorialCloseBtn { margin-top: 0; width: 100%; padding: 12px; border: none; border-radius: 10px; background: var(--accent); color: white; font-weight: 700; font-size: 14px; cursor: pointer; }
@@ -1292,7 +1330,7 @@
       <div class="tabPanel" id="tab-dailyreward">
         <p class="tabIntro" data-i18n="dailyCycleIntro">Le calendrier tourne sur <b>7 jours</b> : reviens chaque jour pour avancer dedans, et le <b>jour 7</b> offre le plus gros lot. Un jour manqué et la série repart au jour 1.</p>
         <p class="dailyStatus" id="dailyRewardStatus"></p>
-        <button class="smallBtn" id="dailyRewardClaimBtn" style="width:100%; margin-bottom:14px; display:none;">Réclamer</button>
+        <button class="dailyClaimBtn" id="dailyRewardClaimBtn" style="display:none;">🎁 Réclamer</button>
         <div id="dailyRewardCalendar"></div>
       </div>
 
@@ -1639,7 +1677,7 @@ const UI_STRINGS = {
     updatesLabel: '🔄 Mises à jour', checkBtn: 'Vérifier', installBtn: 'Installer', updateNow: 'Mettre à jour maintenant', laterBtn: 'Plus tard', checkingLabel: 'Vérification...',
     clickHere: 'Clique ici !',
     dailyCycleIntro: "Le calendrier tourne sur <b>7 jours</b> : reviens chaque jour pour avancer dedans, et le <b>jour 7</b> offre le plus gros lot. Un jour manqué et la série repart au jour 1.",
-    dailyToday: "Aujourd'hui",
+    dailyTapToClaim: 'Clique pour prendre', dailyToday: "Aujourd'hui",
     dailyClaimed: 'Récupéré',
     dailySoon: 'À venir',
     boosts: 'Booste',
@@ -1679,7 +1717,7 @@ const UI_STRINGS = {
     updatesLabel: '🔄 Updates', checkBtn: 'Check', installBtn: 'Install', updateNow: 'Update now', laterBtn: 'Later', checkingLabel: 'Checking...',
     clickHere: 'Click here!',
     dailyCycleIntro: 'The calendar runs on a <b>7-day</b> cycle: come back every day to move through it, and <b>day 7</b> has the biggest prize. Miss a day and the streak restarts at day 1.',
-    dailyToday: 'Today',
+    dailyTapToClaim: 'Tap to claim', dailyToday: 'Today',
     dailyClaimed: 'Claimed',
     dailySoon: 'Upcoming',
     boosts: 'Boosts',
@@ -1781,6 +1819,16 @@ const PAPI_LINES = {
       "Ta cousine têtard a mangé un moustique entier ce matin. Productive, elle.",
       "Bramble m'a appelé. Depuis un yacht. Un yacht, Leroy.",
       "Même le têtard motivé en fait plus que toi. Et il ne fait rien.",
+      "Je ne fais que passer. Comme d'habitude. Comme hier.",
+      "Tu as déplacé cette pierre, ou je perds la tête ?",
+      "Le voisin dit que ton terrain a de l'allure. Je lui ai dit de se taire.",
+      "Alors, ça pousse ? Ne réponds pas, je vois bien.",
+      "J'ai failli ne pas venir. Failli.",
+      "Tu ne me demandes jamais comment je vais. C'est bien, continue.",
+      "Il y a encore une grenouille qui dort dans ton seau.",
+      "Je me demande ce que ce terrain pense de toi. Rien de bon, j'imagine.",
+      "Tu sais que je compte les mauvaises herbes à chaque visite ? Non ? Tant mieux.",
+      "Ne fais pas cette tête, je ne suis là que pour deux minutes. Ou trois heures.",
     ],
     en: [
       "Still alive, I see.",
@@ -1809,6 +1857,16 @@ const PAPI_LINES = {
       "Your tadpole cousin ate a whole mosquito this morning. Productive, that one.",
       "Bramble called me. From a yacht. A yacht, Leroy.",
       "Even the motivated tadpole does more than you. And he does nothing.",
+      "Just passing through. Like always. Like yesterday.",
+      "Did you move that rock, or am I losing my mind?",
+      "The neighbour says your land is looking sharp. I told him to be quiet.",
+      "So, is it growing? Do not answer, I can see for myself.",
+      "I almost did not come. Almost.",
+      "You never ask how I am doing. Good, keep it that way.",
+      "There is still a frog asleep in your bucket.",
+      "I wonder what this land thinks of you. Nothing good, I imagine.",
+      "You know I count the weeds on every visit? No? All the better.",
+      "Do not pull that face, I am only here for two minutes. Or three hours.",
     ],
   },
   leaving: {
@@ -1818,6 +1876,15 @@ const PAPI_LINES = {
       "À la prochaine. Si tu es toujours là.",
       "Bon. J'ai d'autres petits-enfants à décevoir.",
       "Je reviendrai. C'est une promesse. Ou une menace. Au choix.",
+      "Allez, je m'en vais. Le terrain a l'air de survivre, c'est déjà ça.",
+      "Je te laisse. Essaie de ne pas m'appeler pour une histoire de limace.",
+      "Voilà, j'ai vu ce que je voulais voir. Je repars.",
+      "Je pars avant que tu me demandes un conseil.",
+      "On se revoit bientôt. Trop tôt, sans doute.",
+      "Je file, j'ai une réunion. Avec ma chaise.",
+      "Bon, tu gères. Je n'ai jamais dit ça, d'ailleurs.",
+      "Je m'en vais content. Ne t'habitue pas.",
+      "Je rentre. Ne touche à rien de dangereux, c'est-à-dire à rien du tout.",
     ],
     en: [
       "Alright, I'm off. Try not to ruin everything before I'm back.",
@@ -1825,6 +1892,15 @@ const PAPI_LINES = {
       "See you next time. If you're still around.",
       "Alright. I've got other grandkids to disappoint.",
       "I'll be back. That's a promise. Or a threat. Your call.",
+      "Right, I am off. The land seems to be surviving, that is something.",
+      "I will leave you to it. Try not to call me about a slug.",
+      "There, I have seen what I came to see. I am going.",
+      "I am leaving before you ask me for advice.",
+      "See you soon. Too soon, probably.",
+      "I am off, I have a meeting. With my chair.",
+      "Fine, you have got this. I never said that, by the way.",
+      "I am leaving pleased. Do not get used to it.",
+      "I am heading home. Do not touch anything dangerous, which means anything.",
     ],
   },
   bigUpgrade: {
@@ -1836,6 +1912,13 @@ const PAPI_LINES = {
       "Je vais devoir revoir mes attentes. À la baisse… enfin, non, à la hausse. Bref.",
       "Alors ça… je l'avoue, je ne m'y attendais pas.",
       "Presque impressionnant. J'ai dit presque.",
+      "Ça, c'est du sérieux. Presque du travail de grand-père.",
+      "Je ne vais pas te féliciter. Voilà, c'est fait, je ne l'ai pas fait.",
+      "Le terrain vient de changer de catégorie. Toi, pas encore.",
+      "Quelqu'un t'a aidé ? Non ? Bon.",
+      "Je crois que je viens d'avoir une bouffée de fierté. Ça passera.",
+      "Si ta grand-mère voyait ça, elle dirait la même chose que moi. En plus gentil.",
+      "Continue comme ça et je vais devoir t'inventer un compliment.",
     ],
     en: [
       "Oh. You actually did something right. I need to sit down, the shock.",
@@ -1845,6 +1928,13 @@ const PAPI_LINES = {
       "I'll have to reconsider my expectations. Lower them… no wait, raise them. Whatever.",
       "Well now… I'll admit, didn't see that coming.",
       "Almost impressive. I said almost.",
+      "Now that is serious. Almost grandfather-grade work.",
+      "I am not going to congratulate you. There, done, I did not do it.",
+      "The land just moved up a class. You have not, yet.",
+      "Did somebody help you? No? Fine.",
+      "I think I just felt a wave of pride. It will pass.",
+      "If your grandmother saw this, she would say the same as me. But nicer.",
+      "Keep this up and I will have to invent a compliment for you.",
     ],
   },
   inactivity: {
@@ -1856,6 +1946,13 @@ const PAPI_LINES = {
       "À ce rythme, les mauvaises herbes vont te réclamer un loyer.",
       "Tu hibernes ou tu ne travailles pas ? Chez toi, je ne vois plus la différence.",
       "Ce terrain a connu plus d'action pendant l'orage d'hier que depuis que tu es là.",
+      "Tu es toujours là ? Cligne des yeux si tu m'entends.",
+      "J'ai vu un escargot traverser tout le terrain. Deux fois. Toi, rien.",
+      "Le terrain a poussé sans toi. C'est vexant, non ?",
+      "Je te laisse réfléchir. Prends ton temps. Visiblement, tu le prends.",
+      "Tu médites, ou tu as oublié le jeu ouvert ?",
+      "J'ai eu le temps de faire un mot croisé entier.",
+      "Les grenouilles commencent à se demander qui commande ici.",
     ],
     en: [
       "What have you done since last time? Nothing? Shocking.",
@@ -1865,40 +1962,87 @@ const PAPI_LINES = {
       "At this rate, the weeds are gonna start charging you rent.",
       "Are you hibernating or just not working, hard to tell with you.",
       "This land saw more action during yesterday's storm than since you got here.",
+      "Still there? Blink if you can hear me.",
+      "I watched a snail cross the whole plot. Twice. You did nothing.",
+      "The land grew without you. Insulting, isn't it?",
+      "I will let you think. Take your time. Clearly you are taking it.",
+      "Are you meditating, or did you just leave the game open?",
+      "I had time to finish an entire crossword.",
+      "The frogs are starting to wonder who is in charge here.",
     ],
   },
   firstPurchase: {
     fr: [
       "Ta première dépense… Je suis presque ému. Presque.",
       "Regarde-toi, tu deviens un adulte responsable. Enfin, une grenouille responsable.",
+      "Une dépense. Une vraie. Note la date.",
+      "Tu as donné de l'argent à quelqu'un pour travailler. C'est ça, la vie d'adulte.",
+      "Je croyais que tu gardais tout sous ton matelas. Bien joué.",
+      "Voilà comment ça commence. Ensuite, on ne s'arrête plus.",
+      "Ton premier employé. Sois gentil avec lui, il n'a pas demandé à être là.",
+      "Tu as embauché. Je ne sais pas si je dois rire ou applaudir.",
     ],
     en: [
       "Your first purchase… I'm almost touched. Almost.",
       "Look at you, becoming a responsible adult. Well, a responsible frog.",
+      "A purchase. A real one. Mark the date.",
+      "You gave someone money to work. That is adult life right there.",
+      "I thought you kept it all under your mattress. Well done.",
+      "This is how it starts. After this, you never stop.",
+      "Your first employee. Be kind to him, he did not ask to be here.",
+      "You hired someone. I do not know whether to laugh or applaud.",
     ],
   },
   milestone: {
     fr: [
       "C'est officiel, tu me coûtes moins cher que prévu.",
       "Je vais devoir revoir mon opinion sur toi. Un petit peu. Très légèrement.",
+      "Encore un palier. À ce rythme, tu vas finir par savoir faire quelque chose.",
+      "Le terrain avance. Je surveille, je note.",
+      "Tu progresses plus vite que mes rhumatismes. C'est un compliment.",
+      "Bien. Ne t'arrête pas maintenant, ce serait dommage pour moi.",
+      "Je commence à comprendre pourquoi je t'ai donné ce terrain. Un peu.",
+      "Un palier de plus. Je vais devoir agrandir la liste de mes reproches.",
+      "Tu tiens le rythme. C'est nouveau, chez toi.",
+      "Ce terrain te ressemble de plus en plus. Il devient presque fréquentable.",
     ],
     en: [
       "It's official, you're costing me less than I expected.",
       "I might have to reconsider my opinion of you. Slightly. Very slightly.",
+      "Another milestone. At this rate you might learn to do something.",
+      "The land is moving forward. I am watching, I am taking notes.",
+      "You are progressing faster than my rheumatism. That is a compliment.",
+      "Good. Do not stop now, it would be a shame for me.",
+      "I am starting to see why I gave you this land. A little.",
+      "One more milestone. I will have to extend my list of complaints.",
+      "You are keeping pace. That is new, for you.",
+      "This land looks more like you every day. It is becoming almost respectable.",
     ],
   },
   hugeMilestone: {
     fr: [
-      "Bon. Je vais devoir arrêter de dire à tout le monde que t'es un incapable. C'est vexant pour moi.",
+      "Bon. Je vais devoir arrêter de dire à tout le monde que tu es un incapable. C'est vexant pour moi.",
       "Tu sais quoi, garde le terrain. J'en trouverai un autre.",
       "Bon. Peut-être que je te lègue le reste de mes terrains, finalement.",
       "Je vais devoir trouver une nouvelle victime à embêter. Enfin, presque.",
+      "Bon. Là, je n'ai plus de réplique. Ça ne m'était pas arrivé depuis longtemps.",
+      "Tu viens de dépasser ce que j'avais fait de ce terrain. Ne le répète pas.",
+      "Je vais devoir m'asseoir et réviser toute mon opinion sur toi.",
+      "Ton cousin Bramble ne saura jamais faire ça. Voilà, je l'ai dit.",
+      "Ce n'est plus un terrain. C'est une affaire de famille sérieuse.",
+      "J'ai raconté ça au voisin. Il ne m'a pas cru. Je le comprends.",
     ],
     en: [
       "Alright. I'm gonna have to stop telling everyone you're useless. This is embarrassing for me.",
       "You know what, keep the land. I'll find another one.",
       "Alright. Maybe I'll leave you the rest of my land after all.",
       "I'll have to find a new target to bother. Well, almost.",
+      "Right. Now I am out of remarks. That has not happened in a long while.",
+      "You just passed what I ever did with this land. Do not repeat that.",
+      "I will have to sit down and revise my entire opinion of you.",
+      "Your cousin Bramble will never manage this. There, I said it.",
+      "This is not a plot of land any more. This is serious family business.",
+      "I told the neighbour about this. He did not believe me. I understand him.",
     ],
   },
   bigPurchase: {
@@ -1907,12 +2051,24 @@ const PAPI_LINES = {
       "Tu as vraiment dépensé tout ça ? Sur un caprice de grenouille ?",
       "Tout ça pour ça ? Enfin, ce n'est pas mal, mais quand même.",
       "Tu as vidé tes économies. J'espère que ça valait le coup.",
+      "À ce prix-là, j'espère que ça travaille la nuit aussi.",
+      "Tu viens de dépenser en une fois ce que j'ai mis dix ans à économiser.",
+      "Je n'ai pas regardé le prix. Menteur, je l'ai regardé.",
+      "C'est énorme. Et tu as même l'air content de toi.",
+      "Si ça ne marche pas, je ne te connais pas.",
+      "Voilà ce que j'appelle un investissement. Ou une bêtise. On verra.",
     ],
     en: [
       "That's expensive. I hope you know what you're doing. I sure don't.",
       "You actually spent all that? On a frog's whim?",
       "All that for this? I mean, it's decent, but still.",
       "You emptied your savings. Hope it was worth it.",
+      "At that price, I hope it works nights too.",
+      "You just spent in one go what took me ten years to save.",
+      "I did not look at the price. That is a lie, I looked.",
+      "That is huge. And you even look pleased with yourself.",
+      "If this does not work out, I do not know you.",
+      "That is what I call an investment. Or a blunder. We shall see.",
     ],
   },
   randomUnrelated: {
@@ -1923,6 +2079,16 @@ const PAPI_LINES = {
       "Un héron m'a regardé bizarrement ce matin. Je pense qu'il me connaît.",
       "J'ai retrouvé une vieille photo de moi quand j'étais jeune. J'étais terrifiant. Tant mieux.",
       "Il paraît qu'il va pleuvoir. Ou pas. Je m'en fiche un peu, en fait.",
+      "J'ai croisé ta grand-mère en rêve. Elle m'a dit de te laisser tranquille. Je n'écoute pas.",
+      "Le boulanger a changé sa farine. Je le sais, je l'ai senti.",
+      "Il y a un crapaud, au village, qui chante faux. Tous les soirs.",
+      "J'ai mal au dos depuis 1987. Ce n'est pas nouveau, mais je le dis.",
+      "Ne mange jamais de champignon que tu n'as pas insulté d'abord.",
+      "Mon voisin a repeint sa barrière en bleu. Un bleu discutable.",
+      "J'ai rêvé que le terrain me parlait. Il se plaignait de toi.",
+      "Les hérons connaissent mon prénom. Je ne sais pas comment.",
+      "J'ai gagné un concours de silence, une fois. On m'a disqualifié pour avoir crié de joie.",
+      "Un jour je te raconterai l'histoire du puits. Pas aujourd'hui.",
     ],
     en: [
       "Saw a slug yesterday. It was faster than you.",
@@ -1931,6 +2097,16 @@ const PAPI_LINES = {
       "A heron gave me a weird look this morning. I think it knows me.",
       "Found an old photo of myself young. I was terrifying. Good.",
       "Apparently it's gonna rain. Or not. I don't really care, actually.",
+      "I met your grandmother in a dream. She told me to leave you alone. I am not listening.",
+      "The baker changed his flour. I know, I could smell it.",
+      "There is a toad in the village that sings out of tune. Every evening.",
+      "My back has hurt since 1987. Not news, but I am saying it.",
+      "Never eat a mushroom you have not insulted first.",
+      "My neighbour repainted his fence blue. A questionable blue.",
+      "I dreamt the land was talking to me. It was complaining about you.",
+      "The herons know my first name. I do not know how.",
+      "I won a silence contest once. They disqualified me for shouting with joy.",
+      "One day I will tell you the story of the well. Not today.",
     ],
   },
   quitGame: {
@@ -1941,6 +2117,12 @@ const PAPI_LINES = {
       "Bonne pause. Le terrain, lui, ne se repose jamais. Ni moi, d'ailleurs.",
       "Reviens vite. J'ai encore plein de choses à ne pas te dire.",
       "On se reverra. Malheureusement pour l'un de nous deux.",
+      "Va, repose-toi. Le terrain fera le travail, comme toujours.",
+      "Ferme bien derrière toi. Il y a des courants d'air, ici.",
+      "Pars. Je vais en profiter pour tout déplacer de deux centimètres.",
+      "À tout à l'heure. Ou à dans trois semaines. Je connais mon petit-fils.",
+      "Je reste encore un peu. Quelqu'un doit surveiller.",
+      "Dors bien. Moi, je ne dors plus vraiment depuis longtemps.",
     ],
     en: [
       "Leaving already? The land won't wait forever. Actually, it will. Never mind.",
@@ -1949,16 +2131,365 @@ const PAPI_LINES = {
       "Enjoy your break. The land never rests. Neither do I, actually.",
       "Come back soon. I've got plenty more things not to tell you.",
       "We'll meet again. Unfortunately, for one of us.",
+      "Go on, get some rest. The land will do the work, as usual.",
+      "Close the gate behind you. There are draughts around here.",
+      "Off you go. I will use the time to move everything two centimetres.",
+      "See you shortly. Or in three weeks. I know my grandson.",
+      "I will stay a little longer. Someone has to keep watch.",
+      "Sleep well. I have not really slept in years.",
     ],
   },
   returnAfterBreak: {
     fr: [
       "Tu reviens vite. Ou pas assez vite. Difficile à dire avec toi.",
       "Ah, te revoilà. Le terrain se demandait où tu étais passé. Moi, non.",
+      "Te revoilà. J'ai gardé ta place. Personne ne la voulait.",
+      "Tu es parti longtemps. Le terrain a survécu. Moi aussi, merci de demander.",
+      "Ah, le revoilà. J'allais mettre une annonce.",
+      "J'ai arrosé pendant ton absence. Ne me remercie pas, je l'ai mal fait exprès.",
+      "Tu reviens. Les grenouilles vont être déçues, elles s'organisaient très bien.",
+      "Je commençais à croire que tu avais trouvé un vrai travail.",
+      "Bon retour. Rien n'a changé. C'est un peu triste, non ?",
+      "Tu m'as manqué. Voilà, c'est dit, n'en parlons plus.",
     ],
     en: [
       "You're back fast. Or not fast enough. Hard to tell with you.",
       "Oh, there you are. The land was wondering where you went. I wasn't.",
+      "There you are. I kept your spot. Nobody wanted it.",
+      "You were gone a while. The land survived. So did I, thanks for asking.",
+      "Ah, he is back. I was about to post a notice.",
+      "I watered things while you were away. Do not thank me, I did it badly on purpose.",
+      "You are back. The frogs will be disappointed, they were managing fine.",
+      "I was starting to think you had found a real job.",
+      "Welcome back. Nothing has changed. A bit sad, isn't it?",
+      "I missed you. There, it is said, let us never mention it again.",
+    ],
+  },
+  // Papi débarque sur le terrain et s'installe pour regarder par-dessus l'épaule (production -30 %).
+  arrivee: {
+    fr: [
+      "Bon. Je m'installe. Fais comme si je n'étais pas là.",
+      "Ne t'arrête pas pour moi. Continue, je regarde.",
+      "Je viens vérifier deux ou trois choses. Trois, plutôt.",
+      "Tiens, je vais rester un moment. Tu as l'air d'avoir besoin d'un public.",
+      "Je me mets là. Ne fais pas attention à moi. C'est impossible, je sais.",
+      "J'arrive au bon moment, on dirait. Au mauvais, pour toi.",
+      "Alors, on travaille ? Montre-moi ça de plus près.",
+      "Je passe l'inspection. Ce n'est pas officiel. Enfin, si.",
+      "Ne sois pas nerveux. Tu es nerveux.",
+      "Je reste jusqu'à ce que tu me prouves quelque chose.",
+      "Fais-moi voir comment tu t'y prends. Depuis le début, oui.",
+      "Je m'assois sur ta pierre. Elle est à moi aussi, techniquement.",
+    ],
+    en: [
+      "Right. I am settling in. Pretend I am not here.",
+      "Do not stop for me. Carry on, I am watching.",
+      "I came to check two or three things. Three, rather.",
+      "You know what, I will stay a while. You look like you need an audience.",
+      "I will stand here. Pay me no attention. Impossible, I know.",
+      "I arrive at the right moment, it seems. The wrong one, for you.",
+      "So, working hard? Let me see that up close.",
+      "This is an inspection. Not an official one. Well, yes it is.",
+      "Do not be nervous. You are nervous.",
+      "I am staying until you prove something to me.",
+      "Show me how you go about it. From the start, yes.",
+      "I am sitting on your rock. It is mine too, technically.",
+    ],
+  },
+  // Juste après une Terraformation (Prestige).
+  prestige: {
+    fr: [
+      "Tu as tout rasé. Volontairement. Je respecte ça.",
+      "Recommencer à zéro, mais en mieux. C'est toute une philosophie.",
+      "Le terrain est nu, et tu souris. Tu commences à comprendre.",
+      "J'ai connu ça. On repart, on refait, on recommence. C'est le métier.",
+      "Ces graines valent plus cher que tout ce que tu viens de perdre. Réfléchis-y.",
+      "Tu as eu le courage de tout jeter. Ton cousin n'aurait jamais osé.",
+      "Encore une vie de terrain derrière nous. Il en reste.",
+    ],
+    en: [
+      "You flattened everything. On purpose. I respect that.",
+      "Starting from nothing, but better. That is a whole philosophy.",
+      "The land is bare and you are smiling. You are starting to understand.",
+      "I know that feeling. You restart, you rebuild, you go again. That is the job.",
+      "Those seeds are worth more than everything you just lost. Think about it.",
+      "You had the nerve to throw it all away. Your cousin never would have.",
+      "Another life of this land behind us. There are more to come.",
+    ],
+  },
+  // Juste après une Ascension.
+  ascension: {
+    fr: [
+      "Tu es monté plus haut que le terrain lui-même. Je ne sais pas quoi en penser.",
+      "Des éclats d'étoile. Sur mon terrain. Enfin, ton terrain.",
+      "Ta grand-mère parlait de ça, parfois. Je croyais qu'elle plaisantait.",
+      "Tu as échangé tes graines contre le ciel. C'est un bon marché.",
+      "Là, tu dépasses ce que j'avais prévu pour toi. Et de loin.",
+      "Ce n'est plus du jardinage. Je ne sais pas ce que c'est, mais continue.",
+    ],
+    en: [
+      "You climbed higher than the land itself. I do not know what to make of it.",
+      "Stellar shards. On my land. Well, your land.",
+      "Your grandmother used to mention this. I thought she was joking.",
+      "You traded your seeds for the sky. That is a fair deal.",
+      "Now you are going past anything I planned for you. By a long way.",
+      "This is not gardening any more. I do not know what it is, but keep going.",
+    ],
+  },
+  // Quand le temps tourne mal.
+  meteo: {
+    fr: [
+      "Regarde-moi ce ciel. Il t'en veut personnellement.",
+      "Ce n'est pas la météo, c'est un avertissement.",
+      "Par ce temps-là, même les limaces restent chez elles.",
+      "J'ai connu pire. En 62. On n'en parle pas.",
+      "Ne t'inquiète pas, la terre aime ça. Toi, un peu moins.",
+      "Couvre-toi. Non, je ne m'inquiète pas, je constate.",
+      "Un temps pareil, ça forge un jardinier. Ou ça l'enterre.",
+    ],
+    en: [
+      "Look at that sky. It has something against you personally.",
+      "That is not weather, that is a warning.",
+      "In weather like this, even the slugs stay home.",
+      "I have seen worse. Back in 62. We do not talk about it.",
+      "Do not worry, the soil loves this. You, rather less.",
+      "Wrap up warm. No, I am not worried, I am observing.",
+      "Weather like this makes a gardener. Or buries one.",
+    ],
+  },
+  // Quand le joueur joue tard dans la nuit.
+  nuit: {
+    fr: [
+      "Il est tard. Même les grenouilles dorment.",
+      "Tu jardines à cette heure-ci ? Tu es bien mon petit-fils.",
+      "La nuit, le terrain fait des bruits. Ne cherche pas d'où ils viennent.",
+      "Va te coucher. Je dis ça, je ne dis rien, mais va te coucher.",
+      "À cette heure, on ne voit plus les mauvaises herbes. Pratique.",
+      "Moi aussi je veille. C'est de famille, apparemment.",
+      "Le terrain est plus calme la nuit. Plus honnête, aussi.",
+    ],
+    en: [
+      "It is late. Even the frogs are asleep.",
+      "Gardening at this hour? You really are my grandson.",
+      "At night, the land makes noises. Do not go looking for the source.",
+      "Go to bed. I am not telling you what to do, but go to bed.",
+      "At this hour you cannot see the weeds. Convenient.",
+      "I stay up too. Runs in the family, apparently.",
+      "The land is quieter at night. More honest, too.",
+    ],
+  },
+  // Defis : au lancement et a la reussite.
+  defi: {
+    fr: [
+      "Tu te compliques la vie volontairement. J'aime cette famille.",
+      "Une règle en plus, et tu acceptes. Tu as pris un coup sur la tête ?",
+      "Voilà une contrainte idiote. Donc intéressante.",
+      "Si tu réussis ça, je t'offre un compliment. Un seul.",
+      "Réussi. Bon. Je n'avais pas parié sur toi, tant mieux pour mon porte-monnaie.",
+      "Tu as tenu jusqu'au bout. Note bien que je n'ai pas dit le contraire.",
+    ],
+    en: [
+      "You are making life harder on purpose. I love this family.",
+      "One more rule, and you agreed to it. Did you hit your head?",
+      "Now there is a silly constraint. Which makes it interesting.",
+      "If you pull this off, I will give you a compliment. One.",
+      "Done. Fine. I had not bet on you, which is good for my wallet.",
+      "You saw it through. Note that I never said otherwise.",
+    ],
+  },
+  // Quand le joueur choisit un familier.
+  familier: {
+    fr: [
+      "Tu as un animal de compagnie. Il travaille, lui, au moins ?",
+      "Fais attention à lui. Il a l'air plus fiable que toi.",
+      "Ta grand-mère avait un escargot. Il a vécu plus vieux qu'elle ne l'espérait.",
+      "Bien choisi. Ne lui donne pas de nom, ça complique tout.",
+      "Un compagnon sur le terrain. Ça faisait longtemps.",
+    ],
+    en: [
+      "You have a pet. Does it work, at least?",
+      "Look after it. It seems more reliable than you.",
+      "Your grandmother had a snail. It lived longer than she expected.",
+      "Good choice. Do not give it a name, that complicates everything.",
+      "A companion on the land. It has been a while.",
+    ],
+  },
+  // Quand le joueur declenche une capacite.
+  capacite: {
+    fr: [
+      "Voilà, tu utilises tes outils. Ça a mis le temps.",
+      "Joli coup. Ne prends pas l'habitude de te reposer dessus.",
+      "C'est pour ça que tu l'as acheté, alors sers-t'en.",
+      "Tu vois quand tu veux. Enfin, quand tu veux bien.",
+    ],
+    en: [
+      "There, you are using your tools. It took you long enough.",
+      "Nice move. Do not get used to leaning on it.",
+      "That is what you bought it for, so use it.",
+      "See, you can do it. When you feel like it, anyway.",
+    ],
+  },
+  // --- Achats, onglet par onglet : chaque rayon du magasin a son propre commentaire ---
+  achatProduction: {
+    fr: [
+      "Encore une bouche à nourrir. Enfin, une bouche qui travaille.",
+      "Tu embauches. Attention, ils vont finir par demander des vacances.",
+      "Un de plus sur le terrain. Bientôt il faudra un règlement intérieur.",
+      "Celui-là a intérêt à en faire plus que toi. Ce n'est pas très difficile.",
+      "Tu montes une équipe. Ta grand-mère appelait ça une famille.",
+      "Encore un salaire. Enfin, si tu les payais.",
+    ],
+    en: [
+      "Another mouth to feed. Well, a mouth that works.",
+      "You are hiring. Careful, they will start asking for holidays.",
+      "One more on the land. Soon you will need house rules.",
+      "That one had better do more than you. Not a high bar.",
+      "You are building a team. Your grandmother called that a family.",
+      "Another wage. If you paid them, that is.",
+    ],
+  },
+  achatClic: {
+    fr: [
+      "Tu t'améliores le doigt. On appelle ça un investissement, paraît-il.",
+      "Un clic plus fort. Ton poignet te remerciera. Ou pas.",
+      "Tu veux tout faire à la main. Je reconnais bien la famille.",
+      "À force, tu vas creuser un trou dans ce terrain.",
+      "Un doigt affûté. Voilà une carrière.",
+      "Tu tapes plus fort. Ce n'est pas fin, mais ça marche.",
+    ],
+    en: [
+      "Upgrading the finger. They call that an investment, apparently.",
+      "Stronger clicks. Your wrist will thank you. Or not.",
+      "You want to do it all by hand. That is my family alright.",
+      "Keep that up and you will dig a hole in this land.",
+      "A sharpened finger. What a career.",
+      "You hit harder now. Not subtle, but it works.",
+    ],
+  },
+  achatBatiments: {
+    fr: [
+      "Tu construis, maintenant. Ça devient sérieux, ce terrain.",
+      "Du dur. Enfin quelque chose qui tiendra après toi.",
+      "Une construction. J'espère que tu as vérifié les fondations.",
+      "Voilà qui donne de l'allure. Presque autant que moi.",
+      "Tu bâtis pour tes compagnons. Ils ne te remercieront pas.",
+      "Ça, ça ne se déplace plus. Réfléchis avant de tout recommencer.",
+    ],
+    en: [
+      "Building now, are we. This land is getting serious.",
+      "Something solid. Finally, something that outlasts you.",
+      "A building. I hope you checked the foundations.",
+      "That gives the place some class. Almost as much as me.",
+      "You are building for your companions. They will not thank you.",
+      "That one is not moving again. Think before you start over.",
+    ],
+  },
+  achatSpecial: {
+    fr: [
+      "Un objet rare. Ne le casse pas, je n'en ai pas d'autre.",
+      "Celui-là, on ne l'achète qu'une fois. Comme un mariage.",
+      "Tu collectionnes, maintenant. C'est comme ça que ça commence.",
+      "Utile, ce truc. Sers-t'en, ne le laisse pas prendre la poussière.",
+      "Voilà une dépense que j'approuve. Presque.",
+      "Range-le bien. Le voisin a les doigts qui collent.",
+    ],
+    en: [
+      "A rare item. Do not break it, I have no spares.",
+      "That one you buy once. Like a wedding.",
+      "You are a collector now. That is how it starts.",
+      "Useful, that thing. Use it, do not let it gather dust.",
+      "Now there is a purchase I approve of. Almost.",
+      "Put it somewhere safe. The neighbour has sticky fingers.",
+    ],
+  },
+  achatRecherche: {
+    fr: [
+      "Tu lis, maintenant ? Ta grand-mère aurait aimé voir ça.",
+      "De la science sur mon terrain. On aura tout vu.",
+      "Tu apprends. C'est plus lent que de creuser, mais ça paie mieux.",
+      "Voilà où passent tes Connaissances. Au moins, ce n'est pas perdu.",
+      "Continue comme ça et tu finiras par m'expliquer mon propre métier.",
+      "Un livre coûte cher. Un livre non lu coûte encore plus cher.",
+    ],
+    en: [
+      "Reading now, are we? Your grandmother would have loved to see this.",
+      "Science on my land. Now I have seen everything.",
+      "You are learning. Slower than digging, but it pays better.",
+      "So that is where your Knowledge goes. At least it is not wasted.",
+      "Keep this up and you will end up explaining my own trade to me.",
+      "A book is expensive. An unread book is more expensive still.",
+    ],
+  },
+  achatPrestige: {
+    fr: [
+      "Tu dépenses tes graines. J'espère que tu sais ce que tu fais.",
+      "Ces graines-là valent plus que tout le terrain. Ne me demande pas pourquoi.",
+      "Une amélioration qui survit à tout. Même à toi.",
+      "Voilà, tu joues avec les grandes règles maintenant.",
+      "Tu investis dans l'avenir. C'est nouveau, chez toi.",
+      "Chaque graine dépensée, c'est une vie de terrain en moins. Ou en plus. Je ne sais plus.",
+    ],
+    en: [
+      "Spending your seeds. I hope you know what you are doing.",
+      "Those seeds are worth more than the whole plot. Do not ask me why.",
+      "An upgrade that survives everything. Even you.",
+      "There, you are playing by the big rules now.",
+      "Investing in the future. That is new, for you.",
+      "Every seed spent is one life of this land less. Or more. I forget.",
+    ],
+  },
+  achatFamiliers: {
+    fr: [
+      "Tu t'occupes de ton animal. C'est mieux que de t'occuper de moi.",
+      "Il travaille plus que toi, tu sais. Ne le vexe pas.",
+      "Ta grand-mère aussi avait son favori. Il ne faisait rien non plus.",
+      "Fais-le monter en niveau. Ça lui donnera un but dans la vie.",
+      "Un compagnon bien traité, ça rapporte. Note-le quelque part.",
+      "Il te suit partout. Au moins quelqu'un.",
+    ],
+    en: [
+      "Taking care of your pet. Better than taking care of me.",
+      "It works harder than you, you know. Do not upset it.",
+      "Your grandmother had a favourite too. It did nothing either.",
+      "Level it up. It will give the creature a purpose in life.",
+      "A well-treated companion pays off. Write that down.",
+      "It follows you everywhere. At least someone does.",
+    ],
+  },
+  achatAscension: {
+    fr: [
+      "Des éclats d'étoile pour du jardinage. Le monde tourne à l'envers.",
+      "Tu achètes avec de la lumière, maintenant. Je ne commente pas.",
+      "Ça, c'est au-dessus de moi. Littéralement.",
+      "Ces améliorations-là ne disparaîtront jamais. Comme mes reproches.",
+      "Tu montes haut. Regarde quand même où tu mets les pieds.",
+      "Je ne comprends pas la moitié de ce que tu achètes ici. Continue.",
+    ],
+    en: [
+      "Stellar shards for gardening. The world is upside down.",
+      "Buying things with starlight now. No comment.",
+      "This one is above me. Literally.",
+      "Those upgrades never go away. Like my complaints.",
+      "You are climbing high. Watch where you put your feet all the same.",
+      "I do not understand half of what you buy here. Carry on.",
+    ],
+  },
+  achatAutomatisation: {
+    fr: [
+      "Tu délègues. Te voilà patron, dis donc.",
+      "Une machine pour faire ton travail. J'aurais aimé y penser.",
+      "Pendant qu'elle travaille, tu fais quoi, toi ?",
+      "Attention, un jour elles n'auront plus besoin de toi.",
+      "C'est ça, le progrès. Moi, j'avais une brouette.",
+      "Tu automatises le jardinage. Ta grand-mère se retourne. De plaisir, sans doute.",
+    ],
+    en: [
+      "Delegating, are we. Look at you, the boss.",
+      "A machine to do your job. I wish I had thought of that.",
+      "While it works, what exactly do you do?",
+      "Careful, one day they will not need you at all.",
+      "That is progress. I had a wheelbarrow.",
+      "Automating the gardening. Your grandmother is turning in her grave. With joy, surely.",
     ],
   },
   mysteryTeaser: {
@@ -1973,6 +2504,10 @@ const PAPI_LINES = {
       "Tu sais ce qu'il y avait ici avant toi ? Non. Et c'est très bien comme ça.",
       "Certains voudraient bien mettre la main sur ce terrain. Pas juste toi.",
       "Un jour, tu comprendras pourquoi je passe si souvent. Ce jour n'est pas aujourd'hui.",
+      "Il y a une pierre, au fond, que je n'ai jamais réussi à soulever. Laisse-la où elle est.",
+      "Ta grand-mère savait, elle. Elle n'a jamais voulu en parler non plus.",
+      "Ce terrain ne m'a pas coûté d'argent. Il m'a coûté autre chose.",
+      "Tu entendras peut-être quelque chose, la nuit. Ne réponds pas.",
     ],
     en: [
       "Keep this up, and maybe I'll tell you why this land matters so much to me.",
@@ -1985,6 +2520,10 @@ const PAPI_LINES = {
       "Know what was here before you? No. And that's for the best.",
       "Some people would love to get their hands on this land. Not just you.",
       "One day, you'll understand why I visit so often. Today is not that day.",
+      "There is a stone at the back I never managed to lift. Leave it where it is.",
+      "Your grandmother knew. She never wanted to talk about it either.",
+      "This land did not cost me money. It cost me something else.",
+      "You might hear something at night. Do not answer it.",
     ],
   },
 };
@@ -2011,7 +2550,9 @@ function pickPapiLine(category) {
 // sur l'écran principal (aucune fenêtre/modale ouverte) — sinon la réplique est simplement
 // ignorée pour cette fois plutôt que d'interrompre un menu.
 function papiSaysFromCategory(category, options = {}) {
-  if (isMainScreenBlocked()) return false;
+  // Une remarque spontanée n'a pas à couvrir une présentation en cours : `isMainScreenBlocked`
+  // ne voit pas une bulle de tutoriel affichée sans fenêtre ouverte, `tutorialInProgress` si.
+  if (isMainScreenBlocked() || tutorialInProgress()) return false;
   const line = pickPapiLine(category);
   if (!line) return false;
   // Remarque spontanée : elle s'efface toute seule, le joueur n'a pas à cliquer dessus.
@@ -2635,6 +3176,9 @@ function evenementMult() { const ev = evenementActif(); return ev ? 1 + ev.bonus
 // ================= ACHIEVEMENTS =================
 // `progress` retourne [valeur actuelle, valeur cible] pour afficher une barre sur les succès verrouillés.
 const ACHIEVEMENTS = [
+  // En tête parce que c'est le premier succès que la plupart des joueurs décrochent, et celui
+  // qui leur ouvre l'onglet : le chercher en bas de liste n'avait aucun sens.
+  { id: 'a_secret_clicker', name: { fr: 'Frénésie', en: 'Frenzy' }, desc: { fr: 'Cliquer 30 fois en moins de 5 secondes.', en: 'Click 30 times in under 5 seconds.' }, bonus: 0.03, check: s => (s.maxClicksIn5s || 0) >= 30, secret: true },
   { id: 'a_click100', name: { fr: 'Petit bras', en: 'Weak Arm' }, desc: { fr: '100 clics effectués.', en: '100 clicks performed.' }, bonus: 0.01, check: s => s.totalClicks >= 100, progress: s => [s.totalClicks, 100] },
   { id: 'a_click1000', name: { fr: 'Poignet solide', en: 'Solid Wrist' }, desc: { fr: '1000 clics effectués.', en: '1000 clicks performed.' }, bonus: 0.02, check: s => s.totalClicks >= 1000, progress: s => [s.totalClicks, 1000] },
   { id: 'a_earn1k', name: { fr: 'Premiers légumes', en: 'First Vegetables' }, desc: { fr: '1 000 Verdure gagnée au total.', en: '1,000 Greenery earned in total.' }, bonus: 0.01, check: s => s.totalEarned >= 1000, progress: s => [s.totalEarned, 1000] },
@@ -2676,7 +3220,6 @@ const ACHIEVEMENTS = [
   // --- Succès secrets : condition non affichée tant qu'ils ne sont pas débloqués (pas de barre de progression) ---
   { id: 'a_secret_owl', name: { fr: 'Oiseau de nuit', en: 'Night Owl' }, desc: { fr: 'Cliquer entre 2h et 4h du matin.', en: 'Click between 2am and 4am.' }, bonus: 0.03, check: s => { const h = new Date().getHours(); return h >= 2 && h < 4 && s.totalClicks > 0; }, secret: true },
   { id: 'a_secret_patience', name: { fr: 'Zen absolu', en: 'Absolute Zen' }, desc: { fr: "Rester 10 minutes sans cliquer une seule fois (hors défi « Mains dans les poches »).", en: "Stay on screen for 10 minutes without clicking once (outside the Hands in Pockets challenge)." }, bonus: 0.04, check: s => (s.maxIdleGapSec || 0) >= 600, secret: true },
-  { id: 'a_secret_clicker', name: { fr: 'Frénésie', en: 'Frenzy' }, desc: { fr: 'Cliquer 30 fois en moins de 5 secondes.', en: 'Click 30 times in under 5 seconds.' }, bonus: 0.03, check: s => (s.maxClicksIn5s || 0) >= 30, secret: true },
 ];
 
 const QUEST_POOL = ['click', 'earn', 'buy', 'golden'];
@@ -2820,7 +3363,10 @@ function familierBonus(id) {
 function choisirFamilier(id) {
   const f = FAMILIERS_BY_ID[id];
   if (!f || !f.unlock(state)) return;
+  const changement = state.familiers.actif !== id;
   state.familiers.actif = id;
+  // En file : le choix se fait dans le magasin, donc la remarque attend qu'on en sorte.
+  if (changement) queueOrShowPapi('familier', { position: 'top-right' });
   saveGame(); renderAll();
 }
 function ameliorerFamilier(id) {
@@ -2830,8 +3376,7 @@ function ameliorerFamilier(id) {
   if (state.cosmicSeeds < cout) return;
   state.cosmicSeeds -= cout;
   state.familiers.niveaux[id] = niv + 1;
-  playBuySound();
-  saveGame(); renderAll();
+  finaliserAchat({ onglet: 'familiers' });
 }
 
 // ================= ONBOARDING / UNLOCKS =================
@@ -2847,7 +3392,10 @@ const TAB_DEFS = [
   { id: 'special', label: { fr: 'Spécial', en: 'Special' }, icon: '✨', unlock: s => s.verdure >= 2.5e6, group: 'shop' },
   // Recherche demande d'avoir DÉJÀ vu Bâtiments et 30 min de jeu : c'est l'onglet qui introduit
   // les Connaissances, elles-mêmes invisibles jusque-là (voir knowledgeUnlocked).
-  { id: 'recherche', label: { fr: 'Recherche', en: 'Research' }, icon: '🔬', unlock: s => !!s.tabsSeen.batiments && (s.totalPlayTimeSec || 0) >= 1800, group: 'shop' },
+  // `tabsDescribed` et non `tabsSeen` : il faut que Papi ait FINI de présenter Bâtiments, pas
+  // seulement que l'onglet soit apparu. Sinon, un joueur qui laisse tourner le jeu débloque les
+  // deux à la suite immédiate et enchaîne deux présentations sur le même écran.
+  { id: 'recherche', label: { fr: 'Recherche', en: 'Research' }, icon: '🔬', unlock: s => !!(s.tabsDescribed || {}).batiments && (s.totalPlayTimeSec || 0) >= 1800, group: 'shop' },
   { id: 'prestige', label: { fr: 'Prestige', en: 'Prestige' }, icon: '🌍', unlock: s => s.verdure >= 5e8, group: 'shop' },
   { id: 'familiers', label: { fr: 'Familiers', en: 'Pets' }, icon: '🐾', unlock: s => (s.prestigeCount || 0) >= 1, group: 'shop' },
   { id: 'ascension', label: { fr: 'Ascension', en: 'Ascension' }, icon: '🌟', unlock: s => (s.totalSeedsEarned || 0) >= ASCENSION_SEED_DIVISOR, group: 'shop' },
@@ -2931,6 +3479,7 @@ function defaultState() {
     lang: 'fr',
     langChosen: false,
     hasEverPurchased: false,
+    ongletsAchetes: {}, // premier achat fait dans chaque onglet : Papi le commente toujours
     itemPopupsShown: {},
     dailyLoginStreak: 0,
     lastDailyLoginDate: null,
@@ -3078,6 +3627,8 @@ appliquerConfort();
 const NUM_UNITS = ['K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc','UDc','DDc','TDc','QaDc','QiDc','SxDc','SpDc','OcDc','NoDc','Vg'];
 // 2 décimales sans zéros de fin : un nombre rond doit se lire rond (« 6 », « 2.5 », pas « 6.00 »).
 function trimZeros(x) { return x.toFixed(2).replace(/\.?0+$/, ''); }
+// Au-delà, l'arrondi à deux décimales afficherait « 1000 » : il faut passer à l'unité suivante.
+const MAX_PAR_UNITE = 999.995;
 function formatNum(n) {
   if (n === Infinity) return '∞';
   const sign = n < 0 ? '-' : '';
@@ -3085,9 +3636,12 @@ function formatNum(n) {
   if (original < 1000) return sign + Math.floor(original).toString();
   let n2 = original;
   let unitIndex = -1;
-  while (n2 >= 1000 && unitIndex < NUM_UNITS.length - 1) { n2 /= 1000; unitIndex++; }
+  // Seuil de changement d'unité : c'est l'ARRONDI affiché qui compte, pas la valeur exacte.
+  // 999 999 donne 999,999 K, que les deux décimales de trimZeros transforment en « 1000K » : on
+  // change donc d'unité dès que l'affichage atteindrait le millier. (Dérivé du toFixed(2).)
+  while (n2 >= MAX_PAR_UNITE && unitIndex < NUM_UNITS.length - 1) { n2 /= 1000; unitIndex++; }
   // Au-delà de la dernière unité nommée (~10^66), notation scientifique précise plutôt qu'un nombre sans suffixe.
-  if (n2 >= 1000) return sign + original.toExponential(3).replace('e+', 'e');
+  if (n2 >= MAX_PAR_UNITE) return sign + original.toExponential(3).replace('e+', 'e');
   // 2 décimales de précision (ex: 1.60K), comme dans la plupart des idle games — assez pour
   // savoir si un achat est possible, sans perdre en lisibilité.
   // Zéros de fin retirés : un prix rond doit se lire rond (« 6M », « 2.5M », pas « 6.00M »).
@@ -3112,7 +3666,10 @@ function formatRate(n) {
   if (original === 0) return '0';
   // Sous 1 000, un débit s'affiche en nombre ENTIER, jamais en dessous de 1 s'il n'est pas nul
   // (un malus météo peut faire passer un débit réel sous 1 : on n'affiche pas « 0 » pour autant).
-  if (original < 1000) return sign + Math.max(1, Math.round(original));
+  // L'arrondi est fait AVANT la comparaison : sinon 999,6 s'affichait « 1000 » sans unité, alors
+  // que 1 001 donnait « 1K » (même défaut que celui corrigé dans formatNum).
+  const arrondi = Math.max(1, Math.round(original));
+  if (arrondi < 1000) return sign + arrondi;
   return formatNum(n);
 }
 
@@ -3397,17 +3954,67 @@ function maxAffordable(b) {
   let n = Math.floor(Math.log(val) / Math.log(GROWTH));
   return Math.max(0, Math.min(n, 10000));
 }
-// Appelée à chaque achat réussi (bâtiment, unique...) pour déclencher la réaction de Papi
-// adaptée : première dépense jamais faite, ou dépense particulièrement chère.
-function notifyPurchase(cost) {
+// Appelée à chaque achat réussi, quel que soit l'onglet du magasin. Papi réagit :
+//  - toujours à la toute première dépense, et au premier achat fait dans chaque onglet ;
+//  - sinon de temps en temps seulement. Commenter CHAQUE achat serait intenable : avec les
+//    modes x10 / x100 / MAX, une séance d'achats en enchaîne plusieurs par seconde, et une
+//    blague répétée quarante fois cesse d'être une blague. Mettre CHANCE_MOT à 1 et
+//    PAUSE_MOT_MS à 0 suffit à le faire parler à chaque fois.
+//  - jamais sur un achat fait par l'automatisation : ce n'est pas le joueur qui agit.
+const CHANCE_MOT = 0.25;
+const PAUSE_MOT_MS = 25000;
+let _dernierMotAchat = 0;
+// Déclarée plutôt que recomposée à partir de l'id d'onglet : une faute de frappe se voit ici,
+// alors qu'une concaténation ratée ne produisait qu'un Papi silencieux, sans erreur.
+const CATEGORIE_ACHAT = {
+  production: 'achatProduction', clic: 'achatClic', batiments: 'achatBatiments',
+  special: 'achatSpecial', recherche: 'achatRecherche', prestige: 'achatPrestige',
+  familiers: 'achatFamiliers', ascension: 'achatAscension', automatisation: 'achatAutomatisation',
+};
+// Fin commune à TOUS les achats du magasin, quel que soit l'onglet et la monnaie : le son, les
+// succès, la réaction de Papi, la sauvegarde et le rendu. Une nouvelle façon d'acheter n'a plus
+// qu'à appeler ceci pour être complète — avant, chaque fonction recopiait ces cinq lignes et
+// deux d'entre elles avaient déjà oublié de prévenir Papi.
+// `coutVerdure` : le prix EN VERDURE, ou 0 quand l'achat se paie dans une autre monnaie.
+function finaliserAchat({ coutVerdure = 0, onglet, auto } = {}) {
+  if (!auto) playBuySound();
+  checkAchievements();
+  notifyPurchase(coutVerdure, onglet, auto);
+  saveGame();
+  renderAll();
+}
+
+// `coutVerdure` : le prix EN VERDURE, ou 0 quand l'achat se paie dans une autre monnaie
+// (Connaissances, Graines, Éclats) — il ne sert qu'à repérer une dépense énorme.
+function notifyPurchase(coutVerdure, onglet, auto) {
+  // En premier : un achat de l'automatisation n'est pas une action du joueur. Le compter comme
+  // telle repoussait `lastActionTime` jusqu'à vingt fois par seconde, et Papi ne pouvait plus
+  // jamais remarquer que le joueur ne faisait rien.
+  if (auto) return;
   state.lastActionTime = Date.now();
   state.inactivityAnnounced = false;
   if (!state.hasEverPurchased) {
     state.hasEverPurchased = true;
+    _dernierMotAchat = Date.now();
     showShopComment('firstPurchase');
     return;
   }
-  if (cost >= 1e9) showShopComment('bigPurchase');
+  const categorie = CATEGORIE_ACHAT[onglet];
+  // Premier achat dans cet onglet : c'est une découverte, Papi la commente toujours.
+  if (categorie && !state.ongletsAchetes[onglet]) {
+    state.ongletsAchetes[onglet] = true;
+    _dernierMotAchat = Date.now();
+    showShopComment(categorie);
+    return;
+  }
+  if (Date.now() - _dernierMotAchat < PAUSE_MOT_MS) return;
+  // Dépense énorme : relative à ce que le joueur possède, et non un montant fixe qui finit
+  // par être atteint par n'importe quel achat en fin de partie.
+  const grosseDepense = coutVerdure >= Math.max(1e6, (state.verdure + coutVerdure) * 0.6);
+  if (!grosseDepense && Math.random() > CHANCE_MOT) return;
+  _dernierMotAchat = Date.now();
+  if (grosseDepense) showShopComment('bigPurchase');
+  else if (categorie) showShopComment(categorie);
 }
 
 // `auto` : achat fait par l'automatisation — voir runAutomations.
@@ -3442,12 +4049,8 @@ function buyBuilding(id, forceN, auto) {
       }
       return true; // succès, sauvegarde et rendu vérifiés une seule fois par vague, par l'appelant
     }
-    checkAchievements();
-    playBuySound();
-    notifyPurchase(cost);
+    finaliserAchat({ coutVerdure: cost, onglet: 'production', auto });
     if (!wasOwned) maybeShowItemAcquiredPopup(id, 'building');
-    saveGame();
-    renderAll();
   }
 }
 
@@ -3457,11 +4060,8 @@ function buyClickUpgrade(id) {
   if (state.verdure < c.cost) return;
   state.verdure -= c.cost;
   state.clickUpgrades[id] = true;
-  playBuySound();
-  checkAchievements();
+  finaliserAchat({ coutVerdure: c.cost, onglet: 'clic' });
   maybeShowItemAcquiredPopup(id, 'clickUpgrade');
-  saveGame();
-  renderAll();
 }
 
 function activeCooldownRemaining(id) {
@@ -3490,6 +4090,8 @@ function activateUniqueAbility(id) {
                           `🔥 ${L(u,'name')} activated! +${formatNum(gain)} Greenery instantly`));
   }
   state.activeCooldowns[id] = Date.now() + a.cooldownMs;
+  // Une capacité sur six : de quoi souligner le geste sans commenter chaque déclenchement.
+  if (Math.random() < 0.16) papiSaysFromCategory('capacite', { position: 'top-right' });
   playGoldenSound();
   saveGame(); renderAll();
 }
@@ -3503,10 +4105,7 @@ function buyUnique(id) {
   if (state.verdure >= cost) {
     state.verdure -= cost;
     state.uniqueBuildings[id] = true;
-    playBuySound();
-    checkAchievements();
-    notifyPurchase(cost);
-    saveGame(); renderAll();
+    finaliserAchat({ coutVerdure: cost, onglet: 'special' });
     showToast(state.lang === 'en' ? `✨ Special item acquired: ${L(u,'name')}` : `✨ Objet spécial acquis : ${L(u,'name')}`);
     maybeShowItemAcquiredPopup(id, 'unique', 'rare');
   }
@@ -3521,10 +4120,7 @@ function buyCompanionBuilding(id) {
   if (state.verdure < cost) return;
   state.verdure -= cost;
   state.companionBuildings[id] = true;
-  playBuySound();
-  checkAchievements();
-  notifyPurchase(cost);
-  saveGame(); renderAll();
+  finaliserAchat({ coutVerdure: cost, onglet: 'batiments' });
   const target = BUILDINGS.find(x => x.id === b.targetId);
   showToast(state.lang === 'en'
     ? `🏗️ Building acquired: ${L(b,'name')} (${target ? L(target,'name') : ''} boosted)`
@@ -3539,9 +4135,7 @@ function buyResearch(id) {
   if (state.knowledge < r.cost) return;
   state.knowledge -= r.cost;
   state.researchUpgrades[id] = true;
-  playBuySound();
-  checkAchievements();
-  saveGame(); renderAll();
+  finaliserAchat({ onglet: 'recherche' });
 }
 
 function researchInfiniteCost(item) {
@@ -3555,9 +4149,7 @@ function buyResearchInfinite(id) {
   if (state.knowledge < cost) return;
   state.knowledge -= cost;
   state.researchInfiniteLevels[id] = (state.researchInfiniteLevels[id] || 0) + 1;
-  playBuySound();
-  checkAchievements();
-  saveGame(); renderAll();
+  finaliserAchat({ onglet: 'recherche' });
 }
 
 // Diviseur du calcul de Graines Cosmiques : plus il est grand, plus le Prestige est lointain.
@@ -3608,6 +4200,7 @@ function startChallenge(id) {
   const cpsAvantReset = totalCps() / boostMult('ability');
   state.challengeActive = id;
   state.challengeStartPlayTime = state.totalPlayTimeSec || 0;
+  queueOrShowPapi('defi', { position: 'top-right' });
   resetRun(cpsAvantReset, 1000); // minimum pour acheter les premiers compagnons
   saveGame(); renderAll();
   showToast(en ? `🏅 Challenge started: ${L(c,'name')}` : `🏅 Défi lancé : ${L(c,'name')}`);
@@ -3657,6 +4250,7 @@ function doPrestige(auto) {
   showToast(state.lang === 'en'
     ? `🌍 Terraforming successful! +${gain} Cosmic Seed(s)` + (defi ? (defiReussi ? ` 🏅 Challenge completed: ${L(defi,'name')}` : '. Challenge failed') : '')
     : `🌍 Terraformation réussie ! +${gain} Graine(s) Cosmique(s)` + (defi ? (defiReussi ? ` 🏅 Défi réussi : ${L(defi,'name')}` : '. Défi raté') : ''));
+  if (!auto) queueOrShowPapi('prestige', { position: 'top-right' });
 }
 
 const ASCENSION_SEED_DIVISOR = 15; // banc d'équilibrage : 1re Ascension vers 45-55 h de jeu actif
@@ -3693,6 +4287,7 @@ function doAscension(auto) {
   showToast(state.lang === 'en'
     ? `🌟 Ascension successful! +${gain} Stellar Shard(s). Total production x${shardMultiplier().toFixed(2)}`
     : `🌟 Ascension réussie ! +${gain} Éclat(s) Stellaire(s). Production x${shardMultiplier().toFixed(2)} au total`);
+  if (!auto) queueOrShowPapi('ascension', { position: 'top-right' });
 }
 
 function buyAscensionUpgrade(id) {
@@ -3702,8 +4297,7 @@ function buyAscensionUpgrade(id) {
   if ((state.stellarShards || 0) < au.cost) return;
   state.stellarShards -= au.cost;
   state.ascensionUpgrades[id] = true;
-  playBuySound();
-  saveGame(); renderAll();
+  finaliserAchat({ onglet: 'ascension' });
 }
 
 function buyPrestigeUpgrade(id) {
@@ -3713,7 +4307,7 @@ function buyPrestigeUpgrade(id) {
   if (state.cosmicSeeds < pu.cost) return;
   state.cosmicSeeds -= pu.cost;
   state.prestigeUpgrades[id] = true;
-  saveGame(); renderAll();
+  finaliserAchat({ onglet: 'prestige' });
 }
 
 function checkAchievements() {
@@ -3764,8 +4358,7 @@ function buySkin(id) {
   if (state.cosmicSeeds < sk.cost) return;
   state.cosmicSeeds -= sk.cost;
   state.ownedSkins[id] = true;
-  playBuySound();
-  saveGame(); renderAll();
+  finaliserAchat({ onglet: 'clic' }); // les cosmétiques vivent dans l'onglet Clic
   showToast(state.lang === 'en' ? `🎨 Cosmetic unlocked: ${L(sk,'name')}` : `🎨 Cosmétique débloqué : ${L(sk,'name')}`);
 }
 function selectSkin(id) {
@@ -3933,9 +4526,11 @@ function playClickSound() { playTone(560 + Math.random() * 90, 0.05, 'sine', 0.0
 function playBuySound() { playTone(320, 0.1, 'triangle', 0.045); }
 // Première fois qu'un compagnon / une amélioration de clic est révélé(e) : petit motif à deux
 // notes, franc et court. Distinct du jingle des objets rares (playRareItemSound, plus long).
+// Volume nettement au-dessus des autres effets : c'est un événement rare (la toute première
+// acquisition d'un objet) et il passait inaperçu par-dessus la musique.
 function playFirstPurchaseSound() {
-  playTone(523, 0.09, 'triangle', 0.05);
-  setTimeout(() => playTone(784, 0.16, 'triangle', 0.055), 95);
+  playTone(523, 0.09, 'triangle', 0.13);
+  setTimeout(() => playTone(784, 0.18, 'triangle', 0.15), 95);
 }
 function playAchievementSound() { playTone(520, 0.09, 'sine', 0.05); setTimeout(() => playTone(760, 0.14, 'sine', 0.05), 90); }
 function playPrestigeSound() { playTone(220, 0.15, 'sawtooth', 0.04); setTimeout(() => playTone(440, 0.2, 'sine', 0.05), 120); setTimeout(() => playTone(660, 0.25, 'sine', 0.04), 260); }
@@ -3951,12 +4546,40 @@ function playRareItemSound() {
 }
 
 // ================= CLICK PARTICLES =================
+// Décor éphémère du clic (particules, « +N » qui monte). Deux raisons de passer par un
+// réservoir d'éléments réutilisés plutôt que d'en créer à chaque clic :
+//  - chacun est composé sur sa propre couche le temps de son animation ; sans limite, une salve
+//    de clics en créait des centaines par seconde et le compositeur redessinait tout autour ;
+//  - la limite est ici la taille du réservoir, pas un compteur à incrémenter et décrémenter à
+//    la main dans deux blocs de code différents.
+// La taille laisse passer le rythme du succès « Frénésie » (30 clics en 5 secondes).
+const EPHEMERES_MAX = { particule: 30, texte: 12 };
+const _ephemeresLibres = { particule: [], texte: [] };
+const _ephemeresCrees = { particule: 0, texte: 0 };
+// Rend un élément prêt à servir, ou null si le réservoir est à sec (tout est déjà à l'écran).
+function prendreEphemere(type, classe) {
+  const libre = _ephemeresLibres[type].pop();
+  if (libre) return libre;
+  if (_ephemeresCrees[type] >= EPHEMERES_MAX[type]) return null;
+  _ephemeresCrees[type]++;
+  const el = document.createElement('div');
+  el.className = classe;
+  return el;
+}
+function lancerEphemere(type, el, dureeMs) {
+  document.body.appendChild(el);
+  // Un élément réutilisé garde son animation terminée : on la relance explicitement. Passer par
+  // les animations CSS (plutôt que de les redéclarer en JS) garde le réglage « moins
+  // d'animations » actif, qui agit par une règle de style.
+  el.getAnimations().forEach(a => { a.cancel(); a.play(); });
+  setTimeout(() => { el.remove(); _ephemeresLibres[type].push(el); }, dureeMs);
+}
 function spawnClickParticles(x, y) {
   const emojis = activeSkinEmojis();
   const count = 4 + Math.floor(Math.random() * 3);
   for (let i = 0; i < count; i++) {
-    const p = document.createElement('div');
-    p.className = 'particle';
+    const p = prendreEphemere('particule', 'particle');
+    if (!p) return; // réservoir à sec : l'écran en est déjà plein
     p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
     const angle = Math.random() * Math.PI * 2;
     const dist = 28 + Math.random() * 46;
@@ -3965,8 +4588,7 @@ function spawnClickParticles(x, y) {
     p.style.setProperty('--dx', (Math.cos(angle) * dist) + 'px');
     p.style.setProperty('--dy', (Math.sin(angle) * dist - 10) + 'px');
     p.style.setProperty('--rot', (Math.random() * 180 - 90) + 'deg');
-    document.body.appendChild(p);
-    setTimeout(() => p.remove(), 700);
+    lancerEphemere('particule', p, 700);
   }
 }
 
@@ -4010,6 +4632,9 @@ function maybeChangeWeather() {
     state.lastWeatherChange = Date.now();
     if (!state.weatherSeen.includes(newWeather)) state.weatherSeen.push(newWeather);
     checkAchievements();
+    // Une fois sur trois quand le temps tourne mal : assez pour que le ciel existe, assez rare
+    // pour ne pas transformer la météo en bavardage.
+    if (WEATHERS[newWeather].negative && Math.random() < 0.34) papiSaysFromCategory('meteo', { position: 'top-right' });
     saveGame();
   }
 }
@@ -4022,7 +4647,8 @@ function maybeSpawnInvasive() {
   const chance = 0.01 * uniqueMultipliers().invasiveRate;
   if (Math.random() < chance) {
     state.invasiveWeed = { active: true, needed: 5, done: 0 };
-    papiSaysFromCategory('randomVisit');
+    // Il dit qu'il débarque : une remarque de passage ne donnait aucun sens à la bannière.
+    papiSaysFromCategory('arrivee');
     saveGame();
   }
 }
@@ -4034,7 +4660,9 @@ function clickInvasive() {
     state.invasiveDefeated += 1;
     checkAchievements();
     showToast(state.lang === 'en' ? '✅ Gramps left convinced you can handle it!' : '✅ Papi est reparti convaincu que tu gères !');
-    if (!isMainScreenBlocked()) papiSaysFromCategory('leaving', { position: 'top-right' });
+    // En file d'attente : s'il est dans un menu au moment du départ, la réplique attend la
+    // fermeture du menu plutôt que d'être perdue (Papi doit parler en arrivant ET en partant).
+    queueOrShowPapi('leaving', { position: 'top-right' });
   }
   saveGame(); renderAll();
 }
@@ -4050,8 +4678,8 @@ function dateStrForOffset(daysAgo) {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }
 function todayStr() { return dateStrForOffset(0); }
-function dailyRewardForDay(day) {
-  const cps = Math.max(1, totalCps());
+function dailyRewardForDay(day, cpsConnu) {
+  const cps = cpsConnu !== undefined ? cpsConnu : Math.max(1, totalCps());
   switch (day) {
     case 1: return { verdure: Math.max(50, cps * 20) };
     case 2: return { verdure: Math.max(100, cps * 40) };
@@ -4154,34 +4782,42 @@ function renderDailyRewardModal() {
   }
 
   const cal = document.getElementById('dailyRewardCalendar');
-  cal.innerHTML = '';
   cal.className = 'dailyCalendar';
+  // Une seule mesure de production pour les sept jours : chaque appel parcourt tous les
+  // compagnons et toute la pile de multiplicateurs.
+  const cps = Math.max(1, totalCps());
+  let html = '';
   for (let d = 1; d <= 7; d++) {
-    const reward = dailyRewardForDay(d);
-    const parts = [];
-    if (reward.verdure) parts.push(`+${formatNum(reward.verdure)} 🌿`);
-    if (reward.knowledge) parts.push(`+${formatNum(reward.knowledge)} 📚`);
-    if (reward.seeds) parts.push(`+${reward.seeds} 🌌`);
+    const parts = dailyRewardParts(dailyRewardForDay(d, cps), true);
     const isToday = d === currentDay;
     const isPast = !isToday && (alreadyClaimedToday ? d < currentDay || (currentDay === 7 && d !== 7) : d < currentDay);
-    const card = document.createElement('div');
+    const isFinal = d === 7;
+    const aPrendre = isToday && !alreadyClaimedToday;
     // Chaque carte dit explicitement OÙ on en est : récupéré / aujourd'hui / à venir. Sans ce
     // libellé, seule une nuance d'opacité distinguait un jour passé d'un jour à venir.
-    const etat = isToday ? tr('dailyToday') : (isPast ? tr('dailyClaimed') : tr('dailySoon'));
-    const isFinal = d === 7;
-    card.className = 'dailyCalendarCard' + (isToday ? ' today' : '') + (isPast ? ' past' : '') + (isFinal ? ' final' : '');
-    card.innerHTML = `<div class="dayLabel">${isFinal ? '🏆 ' : ''}${en ? 'Day' : 'Jour'} ${d}</div>`
+    const etat = aPrendre ? tr('dailyTapToClaim')
+      : isToday ? tr('dailyToday') : (isPast ? tr('dailyClaimed') : tr('dailySoon'));
+    html += `<div class="dailyCalendarCard${isToday ? ' today' : ''}${isPast ? ' past' : ''}`
+      + `${isFinal ? ' final' : ''}${aPrendre ? ' aPrendre' : ''}">`
+      + `<div class="dayLabel">${isFinal ? '🏆 ' : ''}${en ? 'Day' : 'Jour'} ${d}</div>`
       + `<div class="dayReward">${parts.join('<br>')}</div>`
-      + `<div class="dayState">${etat}</div>`;
-    cal.appendChild(card);
+      + `<div class="dayState">${etat}</div></div>`;
   }
+  setHtmlIfChanged(cal, html);
 }
-document.getElementById('dailyRewardClaimBtn').addEventListener('click', () => {
+document.getElementById('dailyRewardClaimBtn').addEventListener('click', () => reclamerBonusDuJour());
+// Cliquer la carte du jour fait la même chose que le bouton : c'est là que le regard va.
+// Délégué au calendrier, donc posé une seule fois plutôt qu'à chaque redessin des cartes.
+document.getElementById('dailyRewardCalendar').addEventListener('click', (e) => {
+  if (e.target.closest('.dailyCalendarCard.aPrendre')) reclamerBonusDuJour();
+});
+// Un seul chemin de réclamation, partagé par le bouton et par la carte du jour.
+function reclamerBonusDuJour() {
   const claim = claimDailyLoginReward();
   renderDailyRewardModal();
   if (!claim) return;
   showToast(`🎁 ${state.lang === 'en' ? 'Day' : 'Jour'} ${claim.day} : ${dailyRewardParts(claim.reward, true).join(' ')}`);
-});
+}
 function generateQuests() {
   const today = todayStr();
   if (state.dailyQuests && state.dailyQuests.date === today) return;
@@ -4768,8 +5404,10 @@ function tabAnnouncementLines(t) {
 }
 function announceNewTabsSequentially(tabs) {
   if (tabs.length === 0) return;
+  // Une présentation d'un AUTRE groupe est en cours : celle-ci attend la fermeture de sa fenêtre
+  // (voir rendreLaMain), sinon Papi parlerait d'un autre menu pendant qu'on est encore dedans.
   if (_pendingSpotlightGroup && tabs[0].group !== _pendingSpotlightGroup) {
-    _pendingTabAnnouncements.push(...tabs);
+    for (const t of tabs) if (!_pendingTabAnnouncements.includes(t)) _pendingTabAnnouncements.push(t);
     return;
   }
   const t = tabs[0];
@@ -4815,7 +5453,9 @@ function announceNewTabsSequentially(tabs) {
   reveler(); // l'onglet surgit dans sa rangée en même temps que Papi l'annonce
   showDialogue('papi', [combined], { position: 'top-right', blockAdvance: true });
   renderAll();
-  highlightNewFeature(t.group, t.id, () => announceNewTabsSequentially(rest));
+  highlightNewFeature(t.group, t.id, () => {
+    announceNewTabsSequentially(rest.concat(_pendingTabAnnouncements.splice(0)));
+  });
 }
 
 const GROUP_TO_FLOAT_BTN = { shop: 'shopBtn', settings: 'settingsBtn', quests: 'questsBtn', achievements: 'achievementsBtn' };
@@ -5241,19 +5881,21 @@ function renderMiniTabsRow(containerId, group, activeId, onSelect, revealed) {
   });
 }
 
-function renderTabsRow() {
-  if (!isMainScreenBlocked()) {
-    // Un onglet n'est marqué « vu » QUE lorsque son annonce commence (voir
-    // announceNewTabsSequentially) : il apparaît donc dans la rangée à son tour, pas avec tout
-    // le lot détecté au même tick. `_tabsQueuedForAnnounce` évite de le re-détecter à chaque
-    // rendu pendant qu'il patiente dans la file.
-    const nouveaux = unlockedTabs().filter(t => !state.tabsSeen[t.id] && !_tabsQueuedForAnnounce.has(t.id));
-    if (nouveaux.length) {
-      nouveaux.forEach(t => _tabsQueuedForAnnounce.add(t.id));
-      announceNewTabsSequentially(nouveaux);
-    }
-  }
+// Détection des onglets fraîchement débloqués. Appelée depuis le tick de jeu, et SURTOUT PAS
+// depuis un rendu : une annonce redessine l'écran en cours de route, et détecter là revenait à
+// lancer une deuxième annonce à l'intérieur de la première (deux doigts, deux bulles).
+// Un onglet n'est marqué « vu » QUE lorsque son annonce commence (voir
+// announceNewTabsSequentially) : il apparaît donc dans la rangée à son tour, pas avec tout le
+// lot détecté d'un coup. `_tabsQueuedForAnnounce` évite de le re-détecter pendant qu'il patiente.
+function verifierNouveauxOnglets() {
+  if (isMainScreenBlocked()) return;
+  const nouveaux = unlockedTabs().filter(t => !state.tabsSeen[t.id] && !_tabsQueuedForAnnounce.has(t.id));
+  if (!nouveaux.length) return;
+  nouveaux.forEach(t => _tabsQueuedForAnnounce.add(t.id));
+  announceNewTabsSequentially(nouveaux);
+}
 
+function renderTabsRow() {
   // L'onglet actif doit être un onglet VISIBLE, pas seulement débloqué.
   const revealed = revealedTabs();
   if (!revealed.find(t => t.id === activeShopTab && t.group === 'shop')) activeShopTab = 'production';
@@ -5653,7 +6295,12 @@ function renderAutomation() {
         <div class="desc">${L(a,'desc')}</div>
         ${seuil}`,
       onAction: ok ? action => {
-        if (action === 'toggle') a0[a.id] = !a0[a.id];
+        if (action === 'toggle') {
+          a0[a.id] = !a0[a.id];
+          // Pas un achat (rien n'est dépensé) : on ne passe donc pas par finaliserAchat, mais
+          // Papi commente quand même, c'est l'activation qui fait l'événement.
+          if (a0[a.id]) notifyPurchase(0, 'automatisation');
+        }
         else a0.prestigeSeeds = Math.max(1, (a0.prestigeSeeds || 1) + parseInt(action, 10));
         saveGame(); renderAll();
       } : null,
@@ -6048,6 +6695,20 @@ function renderNextGoal() {
   setHtmlIfChanged(box, html);
 }
 
+// Les succès secrets encore verrouillés passent en fin de liste, pour ne pas ouvrir le panneau
+// sur un « ??? ». L'ordre ne change qu'au déblocage d'un secret : inutile de le recalculer à
+// chaque image (le panneau est redessiné jusqu'à soixante fois par seconde tant qu'il est ouvert).
+let _ordreSucces = null, _ordreSuccesCle = null;
+function ordreAffichageSucces() {
+  const cle = ACHIEVEMENTS.filter(a => a.secret && state.achievements[a.id]).length;
+  if (cle !== _ordreSuccesCle) {
+    _ordreSuccesCle = cle;
+    _ordreSucces = ACHIEVEMENTS.filter(a => !(a.secret && !state.achievements[a.id]))
+      .concat(ACHIEVEMENTS.filter(a => a.secret && !state.achievements[a.id]));
+  }
+  return _ordreSucces;
+}
+
 function renderAchievements() {
   const list = document.getElementById('achvList');
   // Le pourcentage affiché sur chaque succès s'additionne en un bonus PERMANENT de production :
@@ -6061,7 +6722,7 @@ function renderAchievements() {
   // Liste construite en texte puis ecrite seulement si elle change (une barre de progression qui
   // avance), au lieu d'etre reconstruite a chaque rafraichissement.
   let html = '';
-  for (const a of ACHIEVEMENTS) {
+  for (const a of ordreAffichageSucces()) {
     const unlocked = !!state.achievements[a.id];
     let barHtml = '';
     if (!unlocked && a.progress) {
@@ -6373,13 +7034,13 @@ document.getElementById('clickZone').addEventListener('click', (e) => {
   _recentClickTimes = _recentClickTimes.filter(t => now - t <= 5000);
   if (_recentClickTimes.length > state.maxClicksIn5s) state.maxClicksIn5s = _recentClickTimes.length;
 
-  const floatEl = document.createElement('div');
-  floatEl.className = 'floatText';
-  floatEl.textContent = `+${formatNum(gain)}`;
-  floatEl.style.left = (e.clientX - 10) + 'px';
-  floatEl.style.top = (e.clientY - 10) + 'px';
-  document.body.appendChild(floatEl);
-  setTimeout(() => floatEl.remove(), 800);
+  const floatEl = prendreEphemere('texte', 'floatText');
+  if (floatEl) {
+    floatEl.textContent = `+${formatNum(gain)}`;
+    floatEl.style.left = (e.clientX - 10) + 'px';
+    floatEl.style.top = (e.clientY - 10) + 'px';
+    lancerEphemere('texte', floatEl, 800);
+  }
 
   spawnClickParticles(e.clientX, e.clientY);
   playClickSound();
@@ -6556,7 +7217,9 @@ function maybeShowRandomUnrelated() {
   if (isMainScreenBlocked()) return;
   if (state.invasiveWeed && state.invasiveWeed.active) return; // pas pendant qu'une visite à malus est déjà en cours
   if (Math.random() < 0.0025) {
-    const category = Math.random() < 0.3 ? 'mysteryTeaser' : 'randomUnrelated';
+    const heure = new Date().getHours();
+    const tard = heure >= 23 || heure < 5;
+    const category = Math.random() < 0.3 ? 'mysteryTeaser' : (tard && Math.random() < 0.6 ? 'nuit' : 'randomUnrelated');
     papiSaysFromCategory(category, { position: 'top-right' });
   }
 }
@@ -6721,6 +7384,7 @@ setInterval(() => {
   accrue(_vitesseTest, boostMult('golden'));
   maybeShowDailyLoginReward();
   checkAchievements();
+  verifierNouveauxOnglets(); // après checkAchievements : l'onglet Succès dépend d'un succès obtenu
   _idleTickCount = (_idleTickCount || 0) + 1;
   if (_idleTickCount % 5 === 0) saveGame(); // écriture disque toutes les 5s seulement, pas à chaque tick
   // Passe par renderAll (groupé sur la frame) plutôt que d'appeler les rendus un par un :
