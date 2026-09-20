@@ -86,7 +86,7 @@ const bilanOnglets = (p) => p.evaluate(() => {
   await p.evaluate(() => {
     window.saveGame = () => {};
     const st = { ...state, langChosen: true, tutorialSeen: true, lastDailyLoginDate: todayStr(),
-      totalClicks: 400, totalPlayTimeSec: 4000, verdure: 20000, totalEarned: 50000,
+      totalClicks: 400, totalPlayTimeSec: 4000, verdure: seuilOnglet('batiments') * 1.2, totalEarned: 1e6,
       achievements: { a_click100: true } };
     st.tabsSeen = { production: true, clic: true, options: true, stats: true };
     st.tabsDescribed = { production: true, clic: true, options: true, stats: true };

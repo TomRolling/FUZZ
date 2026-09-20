@@ -12,8 +12,8 @@ const fail = (...m) => { console.log('  X', ...m); problems++; };
 const ETAPES = [
   { id: 'production', debloque: () => { state.totalClicks = 200; } },
   { id: 'clic',       debloque: null }, // arrive a la suite de Production
-  { id: 'batiments',  debloque: () => { state.verdure = 16000; } },
-  { id: 'special',    debloque: () => { state.verdure = 2.6e6; } },
+  { id: 'batiments',  debloque: () => { state.verdure = seuilOnglet('batiments') * 1.05; } },
+  { id: 'special',    debloque: () => { state.verdure = seuilOnglet('special') * 1.05; } },
   { id: 'recherche',  debloque: () => { state.totalPlayTimeSec = 1900; } },
   { id: 'prestige',   debloque: () => { state.verdure = 6e8; } },
 ];

@@ -2,6 +2,12 @@ const fs = require('fs');
 const path = require('path');
 const html = fs.readFileSync(require('path').resolve(__dirname, '../dist/index.html'), 'utf8');
 
+// Une table peut se referer a une constante du jeu (ex. cost: CLICS_POUR_LE_MAGASIN). Comme on
+// evalue le litteral tout seul, hors de la page, on relit d'abord les constantes numeriques
+// simples du fichier pour les fournir a l'evaluation.
+const CONSTANTES = {};
+for (const m of html.matchAll(/^const ([A-Z][A-Z0-9_]*) = (-?[0-9.]+(?:e[+-]?[0-9]+)?);/gm)) CONSTANTES[m[1]] = Number(m[2]);
+
 function extractLiteral(name, open, close) {
   const marker = `const ${name} = ${open}`;
   const startIdx = html.indexOf(marker);
@@ -12,7 +18,8 @@ function extractLiteral(name, open, close) {
     else if (html[i] === close) { depth--; if (depth === 0) { i++; break; } }
   }
   const text = html.slice(startIdx + marker.length - 1, i);
-  return new Function('return ' + text.replace(/requires:\s*s\s*=>[^,}]+/g, 'requires: null').replace(/check:\s*s\s*=>[^,}]+/g, 'check: null'))();
+  const corps = 'return ' + text.replace(/requires:\s*s\s*=>[^,}]+/g, 'requires: null').replace(/check:\s*s\s*=>[^,}]+/g, 'check: null');
+  return new Function(...Object.keys(CONSTANTES), corps)(...Object.values(CONSTANTES));
 }
 
 const tables = {

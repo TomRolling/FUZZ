@@ -129,7 +129,7 @@ async function boot(browser, tuto) {
       state.totalClicks = 200; state.tabsSeen = { options: true, stats: true, production: true, clic: true };
       state.verdure = 0; renderAll();
       // On laisse le JEU detecter le deblocage (c'est lui qui arme l'animation), magasin FERME.
-      state.verdure = 15000;
+      state.verdure = seuilOnglet('batiments');
       renderTabsRow();
       await new Promise(r => setTimeout(r, 400));
       const rangeeCachee = document.getElementById('shopTabsRow').offsetParent === null;

@@ -37,6 +37,28 @@ const verifie = (c, ...m) => { if (!c) fail(...m); };
     if (lang === 'fr') await p.screenshot({ path: __dirname + '/captures/hors-ligne.png', clip: { x: 430, y: 240, width: 420, height: 340 } });
     await p.close();
   }
+
+  // Absence longue : la fenetre doit afficher la VRAIE duree (20 h) et dire que la production
+  // n'est comptee que sur 8 h. Avant, elle affichait « 8 h » comme duree d'absence.
+  for (const lang of ['fr', 'en']) {
+    const p = await b.newPage({ viewport: { width: 1280, height: 820 } });
+    p.on('pageerror', e => fail('pageerror:', e.message));
+    await p.goto(filePath);
+    await p.evaluate((lang) => {
+      window.saveGame = () => {};
+      const st = { ...state, lang, langChosen: true, tutorialSeen: true, lastDailyLoginDate: todayStr(), verdure: 1e6, lastSave: Date.now() - 20 * 3600000 };
+      for (const t of TAB_DEFS) { st.tabsSeen[t.id] = true; st.tabsDescribed[t.id] = true; }
+      st.buildings = { stagiaire: 30, voisin: 20 };
+      localStorage.setItem(SAVE_KEY, JSON.stringify(st));
+    }, lang);
+    await p.reload(); await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+    await p.waitForTimeout(900);
+    const corps = await p.evaluate(() => document.getElementById('offlineBody').textContent.replace(/\s+/g, ' ').trim());
+    console.log(' ', lang, '20 h :', corps);
+    verifie(/20 h/.test(corps), lang, ': la duree reelle de 20 h n est pas affichee');
+    verifie(/8 h/.test(corps) && /(maximum|max)/i.test(corps), lang, ': le plafond de 8 h n est pas explique');
+    await p.close();
+  }
   console.log(problems ? `\n${problems} PROBLEME(S)` : '\nTOUT EST OK');
   await b.close();
   process.exitCode = problems ? 1 : 0;

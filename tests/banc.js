@@ -86,7 +86,7 @@ const HEURES_MAX = parseFloat(process.argv[5] || '150');
         const boost = 1 + (combinedUpgradeValue('prestigeSeedMult') || 0);
         return (typeof verdureForSeeds !== 'undefined' && !window.__PRESTIGE_DIVISOR && cfg.racinePrestige === 3) ? verdureForSeeds(c.goal) : (window.__PRESTIGE_DIVISOR || PRESTIGE_DIVISOR) * Math.pow(c.goal, cfg.racinePrestige) / boost;
       }
-      const seuils = [['batiments', 15000], ['special', 2.5e6], ['prestige', 5e8]].filter(([id]) => !vu(id));
+      const seuils = ['batiments', 'special', 'prestige'].filter(id => !vu(id)).map(id => [id, seuilOnglet(id)]);
       if (seuils.length) return seuils[0][1];
       const depuis = state.seedsSinceAscension || 0;
       const vise = depuis === 0 ? 1 : Math.max(1, Math.round(cfg.prestigePolicy * depuis));
@@ -125,7 +125,7 @@ const HEURES_MAX = parseFloat(process.argv[5] || '150');
         for (const u of visibles) if (!hasUnique(u.id) && !caches.has(u.id)) {
           const a = u.active;
           let gain = 0;
-          if (u.passiveValue) gain = u.passiveValue(c, I);
+          if (u.id === 'chatJardin') gain = bonusChatJardin(c) / 3600;
           else if (a && ATTENTIF) {
             if (a.type === 'boostMult') gain = c * E_OR * (a.value - 1) * a.durationMs / a.cooldownMs;
             else if (a.type === 'instantGain') gain = c * a.minutesEquivalent * 60000 / a.cooldownMs;
@@ -210,7 +210,7 @@ const HEURES_MAX = parseFloat(process.argv[5] || '150');
       if (B.t % 10 === 0) maybeChangeWeather();
       B.parts.herbes += evenements();
       B.parts.capacites += capacites();
-      if (B.t >= B.prochainChat) { B.prochainChat += 3600; if (hasUnique('chatJardin') && !UNIQUE_BUILDINGS.find(u => u.id === 'chatJardin').passiveValue) { const v = Math.max(20, totalCps() * 180); state.verdure += v; state.totalEarned += v; B.parts.capacites += v; } }
+      if (B.t >= B.prochainChat) { B.prochainChat += 3600; if (hasUnique('chatJardin')) { const v = bonusChatJardin(totalCps()); state.verdure += v; state.totalEarned += v; B.parts.capacites += v; } }
       if (cfg.chaqueSeconde) cfg.chaqueSeconde; // reserve
       const cps = totalCps(), sansCapacite = cps / boostMult('ability'), or = boostMult('golden');
       state.verdure += cps * or; state.totalEarned += cps * or;
@@ -220,7 +220,15 @@ const HEURES_MAX = parseFloat(process.argv[5] || '150');
       const clic = (typeof challengeIs !== 'undefined' && challengeIs('mains')) ? 0 : clickGain() * CPS_CLICS, pap = boostMult('click');
       state.verdure += clic; state.totalEarned += clic; state.totalClicks += CPS_CLICS; state.clicksThisRun += CPS_CLICS;
       B.parts.clics += clic / pap; B.parts.papillons += clic - clic / pap;
-      for (const t of TAB_DEFS) if (!state.tabsSeen[t.id] && t.unlock(state)) { state.tabsSeen[t.id] = true; B.jalons[t.id] = B.t; B.evenements.push({ t: B.t, quoi: 'onglet ' + t.id }); }
+      // Le robot suit les presentations de Papi comme un vrai joueur : un onglet revele est aussi
+      // considere comme explique. Sans ca, les deblocages qui attendent la FIN d'une presentation
+      // (Recherche attend celle de Batiments) ne se produisaient jamais, et tout le banc mesurait
+      // une partie sans Recherche.
+      for (const t of TAB_DEFS) if (!state.tabsSeen[t.id] && t.unlock(state)) {
+        state.tabsSeen[t.id] = true; state.tabsDescribed[t.id] = true;
+        if (t.aLOuverture) t.aLOuverture(state);
+        B.jalons[t.id] = B.t; B.evenements.push({ t: B.t, quoi: 'onglet ' + t.id });
+      }
       if (B.t % 5 === 0) checkAchievements();
       if (B.t % 5 === 0) {
         acheter();
@@ -275,6 +283,11 @@ const HEURES_MAX = parseFloat(process.argv[5] || '150');
   let r;
   for (let heure = 0; heure < HEURES_MAX; heure++) {
     r = await page.evaluate(() => __bot.courir(3600));
+    if (process.env.BANC_CPS) {
+      // Production horaire, lue dans la page (les fonctions du jeu n'existent que là).
+      const m = await page.evaluate(() => ({ cps: totalCps(), verdure: state.verdure }));
+      process.stderr.write(`  [${h(r.t)}] cps=${Math.round(m.cps)} verdure=${Math.round(m.verdure)}\n`);
+    }
     if (heure % 12 === 11) process.stderr.write(`  [${h(r.t)}] prestiges=${r.prestiges} ascensions=${r.ascensions} graines=${r.graines} (${Math.round((Date.now() - t0) / 1000)} s)\n`);
     if (CONFIG.stopApresAscensions && r.ascensions >= CONFIG.stopApresAscensions) break;
   }

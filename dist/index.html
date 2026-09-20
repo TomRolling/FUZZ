@@ -540,6 +540,15 @@
     min-width: 58px;
   }
   .drawerBtn .icon { font-size: 18px; }
+  /* Onglets du magasin : une grille de cases TOUTES identiques. Sur une seule ligne, les neuf
+     cases égales feraient 72 px chacune, trop peu pour « Automatisation » (119 px de texte) :
+     on remplit donc autant de colonnes d'au moins 125 px que la largeur en permet (cinq à la
+     taille de référence, ~134 px chacune), et la rangée reste régulière quel que soit le nombre
+     d'onglets débloqués, au lieu de cases de tailles différentes. */
+  #shopTabsRow { display: grid; grid-template-columns: repeat(auto-fit, minmax(125px, 1fr)); }
+  #shopTabsRow .drawerBtn { min-width: 0; padding: 8px 6px; }
+  /* Le curseur natif du navigateur était bleu : seul élément de l'interface hors palette. */
+  #volumeSlider { accent-color: var(--accent-texte); }
   .drawerBtn.active { background: var(--accent); color: white; }
   .drawerBtn.locked { opacity: 0.4; cursor: not-allowed; }
   .drawerBtn .newBadge { position: absolute; top: -4px; right: -2px; }
@@ -565,11 +574,17 @@
      suivent (voir suivreFenetrePendantAnimation). `translate` et non `transform` : aucune position
      existante n'est écrasée. */
   .sideModalOverlay.open { animation: fenetreEntree 0.18s ease-out; }
-  .sideModalOverlay.fermeture { display: flex; pointer-events: none; animation: fenetreSortie 0.16s ease-in forwards; }
+  /* Une seule sortie pour les fenêtres latérales ET les petites fenêtres (Nouvel objet, Bonus
+     du jour, Absence) : elles s'ouvraient en douceur mais disparaissaient d'un coup. */
+  .sideModalOverlay.fermeture, .fermetureSurgissante { pointer-events: none; animation: fenetreSortie 0.16s ease-in forwards; }
+  .sideModalOverlay.fermeture { display: flex; }
   @keyframes fenetreEntree { from { opacity: 0; } to { opacity: 1; } }
   @keyframes fenetreSortie { from { opacity: 1; } to { opacity: 0; } }
   .shopPageOverlay.open { animation: magasinMonte 0.32s cubic-bezier(0.22, 1, 0.36, 1); }
   .shopPageOverlay.fermeture { display: flex; pointer-events: none; animation: magasinDescend 0.26s cubic-bezier(0.55, 0, 0.9, 0.4) forwards; }
+  /* Mise en page anticipée du magasin (voir preparerMagasin) : affiché pour le calcul, jamais
+     vu. Après les règles ci-dessus, donc sans !important pour passer devant. */
+  .shopPageOverlay.prechauffe { display: flex; visibility: hidden; animation: none; }
   @keyframes magasinMonte { from { translate: 0 100%; } to { translate: 0 0; } }
   @keyframes magasinDescend { from { translate: 0 0; } to { translate: 0 100%; } }
   .shopPage { position: relative; display: flex; flex-direction: column; width: 100%; height: 100%; min-height: 0; }
@@ -622,17 +637,19 @@
     padding: 20px calc(20px + env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left));
     gap: 20px;
   }
-  /* Emplacement réservé pour l'illustration (Papi + son magasin) — à remplacer par le vrai visuel.
-     Colonne à gauche, pleine hauteur. Largeur en POURCENTAGE et non en px : la largeur de
-     dessin varie avec la taille de la fenêtre (voir fitGameViewport), et une largeur fixe
-     faisait rétrécir cet emplacement à vue d'œil dès que la fenêtre était maximisée. */
+  /* Colonne de gauche du magasin, pleine hauteur : elle accueillera l'illustration (Papi + sa
+     boutique), et c'est là que Papi commente les achats. Le cadre en pointillés disait
+     « chantier » à tous les joueurs : en attendant l'illustration, simple fond discret.
+     Largeur en POURCENTAGE et non en px : la largeur de dessin varie avec la taille de la
+     fenêtre (voir fitGameViewport), et une largeur fixe faisait rétrécir cet emplacement à vue
+     d'œil dès que la fenêtre était maximisée. */
   .shopImagePlaceholder {
     position: relative; /* repere pour la bulle de Papi, ancree en bas (voir .shopComment) */
     flex-shrink: 0;
     width: 40%;
     min-width: 420px;
     max-width: 640px;
-    border: 3px dashed rgba(255,255,255,0.4);
+    background: rgba(255,255,255,0.04);
     border-radius: 14px;
     color: rgba(255,255,255,0.6);
     text-align: center;
@@ -1347,7 +1364,6 @@
     <div class="shopResourceBar" id="shopResourceBar"></div>
     <div class="shopPageRow">
       <div class="shopImagePlaceholder" id="shopImagePlaceholder">
-        <span data-i18n="shopImgPlaceholder">🖼️ Emplacement réservé pour l'illustration de Papi et de son magasin (à intégrer)</span>
         <div class="shopComment" id="shopComment" style="display:none;">
           <div class="shopCommentName" id="shopCommentName">Papi Feuillage</div>
           <div class="shopCommentText" id="shopCommentText"></div>
@@ -1587,9 +1603,20 @@ function maybeShowItemAcquiredPopup(id, kind, soundVariant) {
     playSound: isRare ? 'rare' : true,
   });
 }
-document.getElementById('itemPopupCloseBtn').addEventListener('click', () => {
-  document.getElementById('itemPopupOverlay').style.display = 'none';
-});
+// Referme une petite fenêtre en fondu, puis la retire. `apres` s'exécute une fois qu'elle a
+// disparu, pour que ce qui suit (une réplique de Papi, un rafraîchissement) ne se joue pas
+// par-dessus une fenêtre encore visible.
+function fermerSurgissante(id, apres) {
+  const el = document.getElementById(id);
+  if (!el || el.style.display === 'none' || el.classList.contains('fermetureSurgissante')) return;
+  el.classList.add('fermetureSurgissante');
+  setTimeout(() => {
+    el.classList.remove('fermetureSurgissante');
+    el.style.display = 'none';
+    if (apres) apres();
+  }, dureeAnimationMs(el));
+}
+document.getElementById('itemPopupCloseBtn').addEventListener('click', () => fermerSurgissante('itemPopupOverlay'));
 
 // Compagnons (onglet Production) : des créatures que Leroy embauche, de la mare du coin
 // jusqu'aux batraciens cosmiques. Les id restent ceux d'origine — ils sont référencés par
@@ -1661,7 +1688,7 @@ const UI_STRINGS = {
     max: 'MAX', acquired: '✔ Acquis', active: '✔ Actif', owned: 'Possédé', free: 'Gratuit', use: 'Utiliser',
     activate: 'Activer', locked: '(nécessite d\'abord une autre amélioration)',
     settingsTitle: '⚙️ Paramètres', achievementsTitle: '🏆 Succès', questsTitle: '📓 Quêtes & Défis',
-    shopTitle: '🛒 Magasin de Papi Feuillage', shopImgPlaceholder: "🖼️ Emplacement réservé pour l'illustration de Papi et de son magasin (à intégrer)",
+    shopTitle: '🛒 Magasin de Papi Feuillage',
     soundLabel: '🔊 Sons du jeu', enabled: 'Activés', disabled: 'Désactivés', enabledSingular: 'Activé', disabledSingular: 'Désactivé', volumeLabel: 'Volume',
     darkModeLabel: '🌙 Mode sombre forcé', vacationLabel: '🏖️ Mode vacances (plus de visites de Papi)',
     animLabel: '🎬 Réduire les animations', animAuto: 'Système', zoomLabel: "🔍 Taille de l'affichage",
@@ -1701,7 +1728,7 @@ const UI_STRINGS = {
     max: 'MAX', acquired: '✔ Owned', active: '✔ Active', owned: 'Owned', free: 'Free', use: 'Use',
     activate: 'Activate', locked: '(requires another upgrade first)',
     settingsTitle: '⚙️ Settings', achievementsTitle: '🏆 Achievements', questsTitle: '📓 Quests & Challenges',
-    shopTitle: '🛒 Gramps Weeds\' Shop', shopImgPlaceholder: "🖼️ Placeholder for Gramps' illustration and shop art (to be added)",
+    shopTitle: '🛒 Gramps Weeds\' Shop',
     soundLabel: '🔊 Game sounds', enabled: 'On', disabled: 'Off', enabledSingular: 'On', disabledSingular: 'Off', volumeLabel: 'Volume',
     darkModeLabel: '🌙 Force dark mode', vacationLabel: '🏖️ Vacation mode (no more visits from Gramps)',
     animLabel: '🎬 Reduce animations', animAuto: 'System', zoomLabel: '🔍 Display size',
@@ -2707,7 +2734,34 @@ function showDialogue(characterId, lines, options = {}) {
 
   overlay.classList.add('visible');
   advanceDialogue();
+  // Après advanceDialogue : la bulle a pris la taille de sa réplique complète (voir data-reste).
+  if (!finalOptions.modal) placerSousLeBandeau(box); // sans effet hors « en haut à droite »
 }
+
+// La position « en haut à droite » était fixe (150 px du haut) alors que le bandeau grandit au
+// fil de la partie (saison, objectif, visite de Papi, bonus actifs) : en fin de partie, la bulle
+// cachait l'objectif, la barre « Prochain » et même la bannière « Papi débarque ». On la pose
+// donc juste sous le bas RÉEL du bandeau, sans jamais sortir de l'écran. Un tutoriel qui accroche
+// la bulle à un élément (anchorDialogueTo) passe après et garde la main.
+function placerSousLeBandeau(box) {
+  if (!box || !box.classList.contains('pos-top-right')) return;
+  let bas = 0;
+  for (const el of [document.querySelector('.topBar'), document.getElementById('boostRow')]) {
+    if (!el || !el.offsetParent) continue;
+    const r = rectInGameViewport(el); // une seule mesure : la géométrie coûte un calcul de mise en page
+    if (r.height < 2) continue;
+    bas = Math.max(bas, r.bottom);
+  }
+  const hauteurJeu = window._gameH || 820;
+  const hauteurBulle = box.offsetHeight || 180;
+  const haut = Math.max(150, Math.min(bas + 12, hauteurJeu - hauteurBulle - 16));
+  box.style.top = Math.round(haut) + 'px';
+}
+// Fenêtre redimensionnée pendant qu'une bulle nommée est à l'écran : on la recale.
+window.addEventListener('gameviewportfit', () => {
+  const box = document.getElementById('dialogueBox');
+  if (box && isDialogueVisible() && !_dialogueAnchorTimer && !_dialogueAnchorRecalage) placerSousLeBandeau(box);
+});
 
 let _dialogueCurrentFullText = '';
 function advanceDialogue() {
@@ -2838,8 +2892,14 @@ document.getElementById('sceneSkipBtn').addEventListener('click', (e) => {
 // ================= CLICK UPGRADES (parallèle aux bâtiments) =================
 // 'flatMult' : multiplie le gain de clic de base
 // 'cpsPercent' : ajoute un % de la production/seconde totale au gain de clic (additif, garde le clic utile très loin)
+// Nombre de clics avant que Papi n'ouvre son magasin. Lu aussi par la barre « Prochain », qui
+// montre ce seuil tant que le magasin n'existe pas, et par le prix du premier objet de l'onglet
+// Clic ci-dessous. Déclaré ici, avant les tables qui s'en servent.
+const CLICS_POUR_LE_MAGASIN = 200;
 const CLICK_UPGRADES = [
-  { id: 'c1', name: { fr: 'Gants renforcés', en: 'Reinforced Gloves' }, desc: { fr: '+100% de Verdure par clic.', en: '+100% Greenery per click.' }, cost: 400, type: 'flatMult', value: 2 },
+  // Prix = ce que le joueur a en poche quand le magasin s'ouvre (un clic donne 1 Verdure) :
+  // l'onglet Clic est donc présenté avec un achat possible, comme tous les autres.
+  { id: 'c1', name: { fr: 'Gants renforcés', en: 'Reinforced Gloves' }, desc: { fr: '+100% de Verdure par clic.', en: '+100% Greenery per click.' }, cost: CLICS_POUR_LE_MAGASIN, type: 'flatMult', value: 2 },
   { id: 'c2', name: { fr: 'Clic synchronisé', en: 'Synced Click' }, desc: { fr: "Chaque clic ajoute 0.025% de ta production/seconde.", en: "Each click adds 0.025% of your production/second." }, cost: 3000, type: 'cpsPercent', value: 0.00025 },
   { id: 'c3', name: { fr: "Poignet d'acier", en: 'Steel Wrist' }, desc: { fr: '+100% de Verdure par clic en plus.', en: '+100% additional Greenery per click.' }, cost: 40000, type: 'flatMult', value: 2 },
   { id: 'c4', name: { fr: 'Clic en rafale', en: 'Burst Click' }, desc: { fr: "+0.025% supplémentaire de ta production/seconde par clic.", en: "An additional +0.025% of your production/second per click." }, cost: 400000, type: 'cpsPercent', value: 0.00025 },
@@ -2918,11 +2978,15 @@ const COMPANION_BUILDINGS = [
 // recharge), soit un effet qui n'a aucun équivalent dans Recherche / Clic / Bâtiments.
 // Tout bonus "production globale / connaissances / coût / hors-ligne / clic" appartient
 // désormais aux autres onglets, pour que chaque onglet ait un rôle clair.
+// Prix des quatre premiers : chacun rapporte environ +5 % de production en moyenne, et le Spécial
+// repart de zéro à chaque Prestige. Plus chers, aucun n'était rentable dans une partie (le banc ne
+// les achetait jamais) ; à ces prix, ils le deviennent l'un après l'autre au fil de la première
+// partie. Les suivants restent calés pour les parties d'après.
 const UNIQUE_BUILDINGS = [
-  { id: 'chatJardin', name: { fr: 'Le Chat de la Mare', en: 'The Pond Cat' }, desc: { fr: "Rapporte un bonus aléatoire de Verdure toutes les heures.", en: "Brings a random Greenery bonus every hour." }, cost: 1e+7 },
-  { id: 'siffletMare', name: { fr: 'Sifflet de la Mare', en: 'Pond Whistle' }, desc: { fr: "Capacité active : x1.5 production pendant 2 min (recharge 20 min).", en: "Active ability: x1.5 production for 2 min (20 min cooldown)." }, cost: 2e+8, active: { cooldownMs: 20 * 60000, type: 'boostMult', value: 1.5, durationMs: 120000 } },
-  { id: 'grelotVent', name: { fr: 'Grelot du Vent', en: 'Wind Chime' }, desc: { fr: "Capacité active : x2 production pendant 1 min (recharge 15 min).", en: "Active ability: x2 production for 1 min (15 min cooldown)." }, cost: 6e+9, active: { cooldownMs: 15 * 60000, type: 'boostMult', value: 2, durationMs: 60000 } },
-  { id: 'tamtamCrapauds', name: { fr: 'Tam-tam des crapauds', en: 'Toad Drums' }, desc: { fr: "Capacité active : x3 Verdure par clic pendant 1 min (recharge 15 min).", en: "Active ability: x3 Greenery per click for 1 min (15 min cooldown)." }, cost: 4e+10, active: { cooldownMs: 15 * 60000, type: 'clickBoost', value: 3, durationMs: 60000 } },
+  { id: 'chatJardin', name: { fr: 'Le Chat de la Mare', en: 'The Pond Cat' }, desc: { fr: "Rapporte un bonus aléatoire de Verdure toutes les heures.", en: "Brings a random Greenery bonus every hour." }, cost: 4e+6 },
+  { id: 'siffletMare', name: { fr: 'Sifflet de la Mare', en: 'Pond Whistle' }, desc: { fr: "Capacité active : x1.5 production pendant 2 min (recharge 20 min).", en: "Active ability: x1.5 production for 2 min (20 min cooldown)." }, cost: 5e+7, active: { cooldownMs: 20 * 60000, type: 'boostMult', value: 1.5, durationMs: 120000 } },
+  { id: 'grelotVent', name: { fr: 'Grelot du Vent', en: 'Wind Chime' }, desc: { fr: "Capacité active : x2 production pendant 1 min (recharge 15 min).", en: "Active ability: x2 production for 1 min (15 min cooldown)." }, cost: 6e+8, active: { cooldownMs: 15 * 60000, type: 'boostMult', value: 2, durationMs: 60000 } },
+  { id: 'tamtamCrapauds', name: { fr: 'Tam-tam des crapauds', en: 'Toad Drums' }, desc: { fr: "Capacité active : x3 Verdure par clic pendant 1 min (recharge 15 min).", en: "Active ability: x3 Greenery per click for 1 min (15 min cooldown)." }, cost: 5e+9, active: { cooldownMs: 15 * 60000, type: 'clickBoost', value: 3, durationMs: 60000 } },
   { id: 'reveilTetards', name: { fr: 'Réveil des têtards', en: 'Tadpole Reveille' }, desc: { fr: "Capacité active : gain instantané égal à 30 s de production (recharge 15 min).", en: "Active ability: instant gain equal to 30 s of production (15 min cooldown)." }, cost: 1.5e+12, active: { cooldownMs: 15 * 60000, type: 'instantGain', minutesEquivalent: 0.5 } },
   { id: 'coeurBraise', name: { fr: 'Cœur de Braise', en: 'Ember Heart' }, desc: { fr: "Capacité active : gain instantané égal à 1 min 30 s de production (recharge 30 min).", en: "Active ability: instant gain equal to 1 min 30 s of production (30 min cooldown)." }, cost: 1.2e+14, active: { cooldownMs: 30 * 60000, type: 'instantGain', minutesEquivalent: 1.5 } },
   { id: 'sentinelleTemporelle', name: { fr: 'Sentinelle Temporelle', en: 'Temporal Sentinel' }, desc: { fr: "Réduit de 50% les visites surprises de Papi Feuillage.", en: "Reduces Gramps Weeds' surprise visits by 50%." }, cost: 1e+15 },
@@ -3384,19 +3448,41 @@ function ameliorerFamilier(id) {
 // quoi s'en servir, et Papi le présente à ce moment-là (voir announceNewTabsSequentially).
 // Les seuils de Verdure portent sur la Verdure EN POCHE (state.verdure), pas sur le cumul :
 // c'est ce que le joueur voit à l'écran, donc le seul chiffre qu'il puisse anticiper.
+// Verdure EN POCHE qui fait apparaître un onglet. Pour Bâtiments et Spécial, c'est le prix de
+// leur objet le moins cher : ils apparaissaient à 15 000 et 2,5 M pour un premier prix à 50 000
+// et 10 M, et Papi désignait du doigt un onglet où rien n'était achetable. Calculé plutôt que
+// recopié, pour suivre tout changement de prix. Le banc d'équilibrage lit aussi cette fonction,
+// depuis sa boucle de simulation : le résultat est donc retenu (les tables sont figées).
+const _seuilsOnglets = {};
+function seuilOnglet(id) {
+  if (_seuilsOnglets[id] === undefined) {
+    if (id === 'batiments') _seuilsOnglets[id] = Math.min(...COMPANION_BUILDINGS.map(b => b.cost));
+    else if (id === 'special') _seuilsOnglets[id] = Math.min(...UNIQUE_BUILDINGS.filter(u => !u.requires).map(u => u.cost));
+    else if (id === 'prestige') _seuilsOnglets[id] = 5e8;
+    else _seuilsOnglets[id] = Infinity;
+  }
+  return _seuilsOnglets[id];
+}
+// Prix de la recherche la moins chère parmi celles qui n'ont pas de prérequis.
+function prixPremiereRecherche() {
+  return Math.min(...RESEARCH.filter(r => !r.requires).map(r => r.cost));
+}
 const TAB_DEFS = [
   // --- Magasin : n'apparaît qu'à 200 clics, avec Production et Clic pour seul contenu ---
-  { id: 'production', label: { fr: 'Production', en: 'Production' }, icon: '🐸', unlock: s => s.totalClicks >= 200, group: 'shop' },
-  { id: 'clic', label: { fr: 'Clic', en: 'Click' }, icon: '👆', unlock: s => s.totalClicks >= 200, group: 'shop' },
-  { id: 'batiments', label: { fr: 'Bâtiments', en: 'Buildings' }, icon: '🏗️', unlock: s => s.verdure >= 15000, group: 'shop' },
-  { id: 'special', label: { fr: 'Spécial', en: 'Special' }, icon: '✨', unlock: s => s.verdure >= 2.5e6, group: 'shop' },
+  { id: 'production', label: { fr: 'Production', en: 'Production' }, icon: '🐸', unlock: s => s.totalClicks >= CLICS_POUR_LE_MAGASIN, group: 'shop' },
+  { id: 'clic', label: { fr: 'Clic', en: 'Click' }, icon: '👆', unlock: s => s.totalClicks >= CLICS_POUR_LE_MAGASIN, group: 'shop' },
+  { id: 'batiments', label: { fr: 'Bâtiments', en: 'Buildings' }, icon: '🏗️', unlock: s => s.verdure >= seuilOnglet('batiments'), group: 'shop' },
+  { id: 'special', label: { fr: 'Spécial', en: 'Special' }, icon: '✨', unlock: s => s.verdure >= seuilOnglet('special'), group: 'shop' },
   // Recherche demande d'avoir DÉJÀ vu Bâtiments et 30 min de jeu : c'est l'onglet qui introduit
   // les Connaissances, elles-mêmes invisibles jusque-là (voir knowledgeUnlocked).
   // `tabsDescribed` et non `tabsSeen` : il faut que Papi ait FINI de présenter Bâtiments, pas
   // seulement que l'onglet soit apparu. Sinon, un joueur qui laisse tourner le jeu débloque les
   // deux à la suite immédiate et enchaîne deux présentations sur le même écran.
-  { id: 'recherche', label: { fr: 'Recherche', en: 'Research' }, icon: '🔬', unlock: s => !!(s.tabsDescribed || {}).batiments && (s.totalPlayTimeSec || 0) >= 1800, group: 'shop' },
-  { id: 'prestige', label: { fr: 'Prestige', en: 'Prestige' }, icon: '🌍', unlock: s => s.verdure >= 5e8, group: 'shop' },
+  { id: 'recherche', label: { fr: 'Recherche', en: 'Research' }, icon: '🔬', unlock: s => !!(s.tabsDescribed || {}).batiments && (s.totalPlayTimeSec || 0) >= 1800, group: 'shop',
+    // Les Connaissances ne commencent à tomber qu'à l'apparition de l'onglet : sans ce coup de
+    // pouce, il arrivait vide, et rien n'y était possible pendant près de vingt minutes.
+    aLOuverture: s => { s.knowledge = Math.max(s.knowledge || 0, prixPremiereRecherche()); } },
+  { id: 'prestige', label: { fr: 'Prestige', en: 'Prestige' }, icon: '🌍', unlock: s => s.verdure >= seuilOnglet('prestige'), group: 'shop' },
   { id: 'familiers', label: { fr: 'Familiers', en: 'Pets' }, icon: '🐾', unlock: s => (s.prestigeCount || 0) >= 1, group: 'shop' },
   { id: 'ascension', label: { fr: 'Ascension', en: 'Ascension' }, icon: '🌟', unlock: s => (s.totalSeedsEarned || 0) >= ASCENSION_SEED_DIVISOR, group: 'shop' },
   { id: 'automatisation', label: { fr: 'Automatisation', en: 'Automation' }, icon: '🤖', unlock: s => AUTOMATIONS.some(a => a.unlock(s)), group: 'shop' },
@@ -4330,12 +4416,22 @@ function checkAchievements() {
   }
 }
 
+// Au-delà de quatre notifications à l'écran, on retire les plus anciennes : une rafale (achats
+// en série, automatisation) les empilait jusqu'à sortir par le haut de l'écran.
+const TOASTS_MAX = 4;
 function showToast(msg) {
   const container = document.getElementById('toastContainer');
   const t = document.createElement('div');
   t.className = 'toast'; t.textContent = msg;
   container.appendChild(t);
-  setTimeout(() => t.remove(), 3000);
+  // Retirer la notification annule aussi son minuteur : une rafale en laissait des dizaines
+  // armés, chacun retenant un élément déjà sorti de la page.
+  while (container.children.length > TOASTS_MAX) {
+    const vieille = container.firstElementChild;
+    clearTimeout(vieille._minuteur);
+    vieille.remove();
+  }
+  t._minuteur = setTimeout(() => t.remove(), 3000);
 }
 
 function bump(id) {
@@ -4742,7 +4838,7 @@ function showDailyLoginPopup(day, reward) {
   document.getElementById('dailyPopupOverlay').style.display = 'flex';
 }
 document.getElementById('dailyPopupCloseBtn').addEventListener('click', () => {
-  document.getElementById('dailyPopupOverlay').style.display = 'none';
+  fermerSurgissante('dailyPopupOverlay');
   // Le panneau "Bonus quotidien" peut être resté ouvert en dessous (ex: premier déblocage, où le
   // clic sur le bouton flottant ouvre le panneau ET déclenche l'auto-réclamation) — sans ce
   // rafraîchissement il continuerait à afficher "prête à réclamer" alors que c'est déjà fait.
@@ -4903,9 +4999,10 @@ let activeShopTab = 'production';
 let activeSettingsTab = 'options';
 let activeQuestsTab = 'quetes';
 
-// Les panneaux d'onglets partagent un seul conteneur à défilement par fenêtre : sans remise à
-// zéro, rouvrir une fenêtre (ou passer d'un onglet à l'autre) reprenait à la position où on
-// avait laissé le précédent, souvent au milieu de nulle part.
+// Les panneaux d'onglets partagent un seul conteneur à défilement par fenêtre : sans cette
+// remise à zéro, une fenêtre rouverte reprenait à la position laissée la fois d'avant, souvent
+// au milieu de nulle part. D'un onglet à l'autre, en revanche, la position est mémorisée
+// (voir _defilementOnglets).
 function resetScrollPanes(root) {
   if (!root) return;
   root.querySelectorAll('.sideModalContent, .shopPageContent').forEach(el => { el.scrollTop = 0; });
@@ -4976,6 +5073,8 @@ function suivreFenetrePendantAnimation(overlay) {
 }
 function closeModal(overlayId) {
   if (isTutorialHoldingModal(overlayId)) return;
+  // Fenêtre fermée : ses onglets oublient leur position, on la rouvrira en haut.
+  for (const cle of Object.keys(_defilementOnglets)) delete _defilementOnglets[cle];
   const overlay = document.getElementById(overlayId);
   // Fondu de sortie seulement pour une fenêtre réellement ouverte : le reset ferme toutes les
   // fenêtres d'un coup, et celles déjà fermées ne doivent pas réapparaître un instant.
@@ -5418,6 +5517,7 @@ function announceNewTabsSequentially(tabs) {
   const reveler = () => {
     if (!state.tabsSeen[t.id]) {
       state.tabsSeen[t.id] = true;
+      if (t.aLOuverture) t.aLOuverture(state); // cadeau d'ouverture éventuel (voir TAB_DEFS)
       _tabsPendingAppear.add(t.id);
       _tabsQueuedForAnnounce.delete(t.id);
       saveGame();
@@ -5802,16 +5902,31 @@ function markTabAppearing(tabId) {
 // celui-ci (y compris pendant le descriptif, après que son halo se soit déjà éteint).
 let _lockedToTabId = null;
 
+// Position de défilement de chaque onglet (les identifiants d'onglets sont uniques, tous menus
+// confondus), le temps que sa fenêtre reste ouverte. Sans elle, revenir sur Production après un
+// détour par Clic renvoyait en haut d'une liste de trente compagnons. Oubliée à la fermeture :
+// une fenêtre rouverte repart du haut.
+const _defilementOnglets = {};
+function ongletActifDu(groupe) {
+  return { shop: activeShopTab, settings: activeSettingsTab, quests: activeQuestsTab }[groupe];
+}
 function miniTabClick(t, onSelect) {
+  const zone = document.querySelector(`#${GROUP_TO_OVERLAY[t.group]} .shopPageContent, #${GROUP_TO_OVERLAY[t.group]} .sideModalContent`);
+  const quitte = ongletActifDu(t.group);
+  if (zone && quitte) _defilementOnglets[quitte] = zone.scrollTop;
   _highlightedTabIds.delete(t.id);
   // Le doigt ne s'efface que si le joueur a cliqué l'onglet DÉSIGNÉ. S'il en explore un autre
   // entre-temps, l'indication doit rester à l'écran, sinon plus rien ne lui dit où aller.
   if (!_pointedTabId || _pointedTabId === t.id) clearMiniTabArrow();
   onSelect(t.id);
-  // Changer d'onglet doit repartir du haut : le conteneur à défilement est partagé par tous
-  // les panneaux du menu (onSelect ne passe pas par setActiveTabForGroup).
-  const overlayId = GROUP_TO_OVERLAY[t.group];
-  if (overlayId) resetScrollPanes(document.getElementById(overlayId));
+  // Le conteneur à défilement est partagé par tous les panneaux du menu : on le ramène à la
+  // position mémorisée pour l'onglet d'arrivée (le haut s'il n'a jamais été ouvert), une fois
+  // son contenu dessiné, sinon la hauteur n'est pas encore la bonne.
+  if (zone) {
+    zone.scrollTop = 0;
+    const retour = _defilementOnglets[t.id] || 0;
+    if (retour) requestAnimationFrame(() => { zone.scrollTop = retour; });
+  }
   dismissDialogue();
   revealPendingDescription(t.id, () => {
     // Papi a fini de parler : re-rendre dégrise les autres mini-onglets (le verrou ne tient que
@@ -6000,6 +6115,20 @@ function construireDecorEvenement(ev) {
 }
 
 function renderNextPurchaseBar() {
+  const fill = document.getElementById('nextPurchaseFill');
+  const label = document.getElementById('nextPurchaseLabel');
+  if (!fill || !label) return;
+  // Tant que le magasin n'existe pas, le seul objectif réel est de l'ouvrir. Montrer le prochain
+  // compagnon promettait des achats impossibles (« Cousin têtard : 100 / 100 ») sans jamais dire
+  // ce qu'il fallait vraiment faire.
+  if (!state.tabsSeen.production) {
+    const clics = Math.min(state.totalClicks || 0, CLICS_POUR_LE_MAGASIN);
+    fill.style.width = (clics / CLICS_POUR_LE_MAGASIN * 100).toFixed(1) + '%';
+    label.textContent = selonLangue(
+      `Prochain : le magasin de Papi (${clics} / ${CLICS_POUR_LE_MAGASIN} clics)`,
+      `Next: Gramps' shop (${clics} / ${CLICS_POUR_LE_MAGASIN} clicks)`);
+    return;
+  }
   let target = null, targetCost = Infinity;
   // Le facteur de réduction est le même pour tous : le sortir de la boucle évite 28 parcours
   // identiques de la table des améliorations à chaque rendu.
@@ -6008,9 +6137,6 @@ function renderNextPurchaseBar() {
     const cost = buildingCost(b, 1, prixMult);
     if (cost < targetCost && state.verdure < cost) { targetCost = cost; target = b; }
   }
-  const fill = document.getElementById('nextPurchaseFill');
-  const label = document.getElementById('nextPurchaseLabel');
-  if (!fill || !label) return;
   if (!target) { fill.style.width = '100%'; label.textContent = state.lang === 'en' ? 'Everything is affordable right now!' : 'Tout est abordable en ce moment !'; return; }
   const pct = Math.min(100, (state.verdure / targetCost) * 100);
   fill.style.width = pct.toFixed(1) + '%';
@@ -6968,6 +7094,14 @@ function renderAbilityBar() {
     if (el._sec !== sec) { el._sec = sec; el.lastElementChild.innerHTML = sec > 0 ? abilityTimeHtml(sec) : ''; } // HTML fixe : le temps est le dernier enfant
   });
 }
+// Tout ce que le magasin affiche, en un seul endroit : appelé par renderAll quand la fenêtre est
+// ouverte, et par preparerMagasin qui met en page exactement la même chose avant la première
+// ouverture. Ajouter une zone ici la fait suivre des deux côtés.
+function renderPanneauxMagasin() {
+  renderShopResourceBar();
+  renderBuyModeRow();
+  (PANEL_RENDERERS[activeShopTab] || noop)();
+}
 function renderAll() {
   renderTabsRow();
   renderPanelsVisibility();
@@ -6978,11 +7112,7 @@ function renderAll() {
   // Un seul panneau est visible par fenêtre : les autres sont en display:none. On ne dessine
   // donc que celui de l'onglet actif — les autres étaient reconstruits en pure perte, soit
   // ~157 lignes de HTML par rendu pour en afficher une trentaine.
-  if (isOverlayOpen('shopPageOverlay')) {
-    renderShopResourceBar();
-    renderBuyModeRow();
-    (PANEL_RENDERERS[activeShopTab] || noop)();
-  }
+  if (isOverlayOpen('shopPageOverlay')) renderPanneauxMagasin();
   if (isOverlayOpen('questsModalOverlay')) (PANEL_RENDERERS[activeQuestsTab] || noop)();
   if (isOverlayOpen('achievementsModalOverlay')) renderAchievements();
   if (isOverlayOpen('settingsModalOverlay')) {
@@ -7127,12 +7257,17 @@ setInterval(() => {
 }, 5000);
 
 // ================= CHAT DU JARDIN (bonus horaire) =================
+// Trois minutes de production offertes, une fois par heure. Le banc d'équilibrage lit cette
+// fonction pour simuler le chat ET pour estimer ce qu'il vaut : une seule formule pour les deux.
+const CHAT_SECONDES_OFFERTES = 180;
+function bonusChatJardin(cps) { return Math.max(20, cps * CHAT_SECONDES_OFFERTES); }
 setInterval(() => {
   if (uniqueActive('chatJardin')) {
-    const bonus = Math.max(20, totalCps() * 180);
+    const bonus = bonusChatJardin(totalCps());
     state.verdure += bonus; state.totalEarned += bonus;
     saveGame(); renderAll();
-    showToast(state.lang === 'en' ? `🐈 The Garden Cat brings back +${formatNum(bonus)} Greenery!` : `🐈 Le Chat du Jardin ramène +${formatNum(bonus)} Verdure !`);
+    const chat = L(UNIQUE_BUILDINGS.find(u => u.id === 'chatJardin'), 'name');
+    showToast(selonLangue(`🐈 ${chat} ramène +${formatNum(bonus)} Verdure !`, `🐈 ${chat} brings back +${formatNum(bonus)} Greenery!`));
   }
 }, 3600000);
 
@@ -7253,7 +7388,12 @@ function toutDebloquerModeTest() {
   document.getElementById('tutorialOverlay').style.display = 'none';
   state.tutorialSeen = true;
   _suppressTabAnnouncements = false;
-  for (const t of TAB_DEFS) { state.tabsSeen[t.id] = true; state.tabsDescribed[t.id] = true; }
+  // Même cadeau d'ouverture que par le chemin normal (voir reveler) : sans lui, Recherche
+  // s'ouvrait à 0 Connaissance en mode test, c'est-à-dire vide.
+  for (const t of TAB_DEFS) {
+    state.tabsSeen[t.id] = true; state.tabsDescribed[t.id] = true;
+    if (t.aLOuverture) t.aLOuverture(state);
+  }
   syncRevealedButtonsOnLoad();
 }
 
@@ -7370,6 +7510,27 @@ function basculerModeTest() {
 document.addEventListener('keydown', (e) => {
   if (e.ctrlKey && e.shiftKey && (e.key === 'D' || e.key === 'd')) { e.preventDefault(); basculerModeTest(); }
 });
+// Échap ferme ce qui est ouvert, de la fenêtre la plus au-dessus à la plus en dessous, en
+// passant par sa croix (donc avec exactement les mêmes effets qu'un clic). Jamais pendant une
+// présentation de Papi : c'est lui qui guide, et closeModal refuserait de toute façon.
+const FERMETURES_ECHAP = [
+  ['galleryLightboxOverlay', 'galleryLightboxOverlay'],
+  ['itemPopupOverlay', 'itemPopupCloseBtn'],
+  ['dailyPopupOverlay', 'dailyPopupCloseBtn'],
+  ['offlineOverlay', 'offlineCloseBtn'],
+  ['shopPageOverlay', 'shopPageCloseBtn'],
+  ['questsModalOverlay', 'questsModalCloseBtn'],
+  ['achievementsModalOverlay', 'achievementsModalCloseBtn'],
+  ['settingsModalOverlay', 'settingsModalCloseBtn'],
+];
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape' || _pendingSpotlightGroup) return;
+  for (const [overlayId, boutonId] of FERMETURES_ECHAP) {
+    const el = document.getElementById(overlayId);
+    const ouvert = el && (isOverlayOpen(overlayId) || el.style.display === 'flex');
+    if (ouvert) { document.getElementById(boutonId).click(); e.preventDefault(); return; }
+  }
+});
 
 // ================= IDLE TICK =================
 let _idleTickCount = 0;
@@ -7394,9 +7555,14 @@ setInterval(() => {
 }, 1000);
 
 // ================= OFFLINE PROGRESS =================
+// Au-delà, l'absence ne rapporte plus rien : le jeu récompense qu'on revienne, pas qu'on parte.
+const ABSENCE_COMPTEE_MAX_SEC = 8 * 3600;
 function applyOfflineProgress() {
-  const elapsedMs = Date.now() - (state.lastSave || Date.now());
-  const elapsedSec = Math.min(elapsedMs / 1000, 8 * 3600);
+  // Deux durées distinctes : celle de l'absence réelle (affichée telle quelle), et celle qui
+  // produit (plafonnée). Afficher la seconde à la place de la première faisait lire « 8 h »
+  // à un joueur parti vingt heures.
+  const absenceSec = Math.max(0, (Date.now() - (state.lastSave || Date.now())) / 1000);
+  const elapsedSec = Math.min(absenceSec, ABSENCE_COMPTEE_MAX_SEC);
   if (elapsedSec > 10) {
     const baseEff = combinedUpgradeValue('offline') || 0.5;
     const bonusEff = combinedUpgradeValue('offlineBonus') || 0;
@@ -7406,11 +7572,16 @@ function applyOfflineProgress() {
     if (gain > 0) {
       state.verdure += gain; state.totalEarned += gain;
       const mins = Math.floor(elapsedSec / 60);
-      const timeLabel = formatDureeCourte(mins * 60);
+      const timeLabel = formatDureeCourte(Math.floor(absenceSec / 60) * 60);
       if (elapsedSec > 60) {
         const en = state.lang === 'en', rendement = (efficiency * 100).toFixed(0);
+        // Le plafond n'est dit que quand il a servi : inutile d'en parler après une heure d'absence.
+        const plafond = absenceSec > ABSENCE_COMPTEE_MAX_SEC
+          ? `<div class="offlineLigne"><span>${en ? 'Production counted' : 'Production comptée'}</span><b>${formatDureeCourte(ABSENCE_COMPTEE_MAX_SEC)} ${en ? '(max)' : '(maximum)'}</b></div>`
+          : '';
         document.getElementById('offlineBody').innerHTML =
           `<div class="offlineLigne"><span>${en ? 'Time away' : 'Durée de ton absence'}</span><b>${timeLabel}</b></div>` +
+          plafond +
           `<div class="offlineLigne"><span>${en ? 'Garden efficiency' : 'Rendement du jardin'}</span><b>${en ? rendement + '%' : rendement + ' %'}</b></div>` +
           `<div class="offlineGain">🌿 +${formatNum(gain)} ${en ? 'Greenery' : 'Verdure'}</div>`;
         document.getElementById('offlineOverlay').style.display = 'flex';
@@ -7964,9 +8135,25 @@ document.getElementById('tutorialCloseBtn').addEventListener('click', () => {
 });
 let _shouldShowReturnLine = false;
 document.getElementById('offlineCloseBtn').addEventListener('click', () => {
-  document.getElementById('offlineOverlay').style.display = 'none';
-  if (_shouldShowReturnLine) { _shouldShowReturnLine = false; papiSaysFromCategory('returnAfterBreak', { position: 'top-right' }); }
+  fermerSurgissante('offlineOverlay', () => {
+    if (_shouldShowReturnLine) { _shouldShowReturnLine = false; papiSaysFromCategory('returnAfterBreak', { position: 'top-right' }); }
+  });
 });
+
+// La toute première ouverture du magasin coûtait ~50 ms (une image sautée au départ de
+// l'animation de montée), les suivantes 2 ms : ce n'est pas le dessin des lignes mais le premier
+// calcul de mise en page de toute la fenêtre, fait au moment où elle s'affiche. On le fait donc
+// faire pendant un temps mort : lignes dessinées, puis fenêtre mise en page une fois en restant
+// invisible et incliquable, et aussitôt remise en place.
+function preparerMagasin() {
+  if (!state.tabsSeen.production || isOverlayOpen('shopPageOverlay')) return;
+  renderPanneauxMagasin();
+  const ov = document.getElementById('shopPageOverlay');
+  ov.classList.add('prechauffe');
+  void ov.offsetHeight; // force la mise en page maintenant, pendant que personne ne regarde
+  ov.classList.remove('prechauffe');
+}
+(window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(preparerMagasin, { timeout: 4000 });
 
 // ================= INIT =================
 applyOfflineProgress();

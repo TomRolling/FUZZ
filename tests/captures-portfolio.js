@@ -38,10 +38,9 @@ const sortie = path.resolve(__dirname, '../docs/portfolio');
     console.log('  ecrit :', nom + '.png');
   };
 
-  // Dans le magasin, la colonne de gauche porte encore le cadre « illustration a integrer ».
-  // On y met ce qu'elle affiche vraiment en jeu : Papi qui commente pendant qu'on achete.
+  // La colonne de gauche du magasin attend l'illustration de la boutique : en attendant, on y
+  // montre ce qu'elle affiche vraiment en jeu, Papi qui commente pendant qu'on achete.
   const commentaire = (texte) => {
-    document.getElementById('shopImagePlaceholder').querySelector('span[data-i18n]').style.display = 'none';
     const box = document.getElementById('shopComment');
     box.style.display = 'block';
     document.getElementById('shopCommentName').textContent = charName('papi');
