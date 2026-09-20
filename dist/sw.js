@@ -23,10 +23,24 @@ const COQUILLE = [
 ];
 
 self.addEventListener('install', (e) => {
-  // addAll echoue en entier si un seul fichier manque : on ajoute un par un.
-  e.waitUntil(caches.open(CACHE)
-    .then(c => Promise.all(COQUILLE.map(u => c.add(u).catch(() => {}))))
-    .then(() => self.skipWaiting()));
+  e.waitUntil((async () => {
+    const c = await caches.open(CACHE);
+    // Les scripts du jeu font partie de la coquille au meme titre que la page : sans eux,
+    // index.html hors ligne n'affiche rien. On lit leur liste DANS index.html plutot que
+    // de la tenir a la main ici : un fichier ajoute au jeu est mis en cache sans rien
+    // toucher a ce service worker.
+    let scripts = [];
+    try {
+      const rep = await fetch('./index.html');
+      // La MEME reponse sert a remplir le cache et a lire la liste : deux requetes separees
+      // pourraient tomber de part et d'autre d'un deploiement et melanger deux versions.
+      await c.put('./index.html', rep.clone());
+      scripts = [...(await rep.text()).matchAll(/<script src="([^"]+)"/g)].map(m => './' + m[1]);
+    } catch (err) { /* hors ligne a l'install : les scripts entreront en cache a l'usage */ }
+    // addAll echoue en entier si un seul fichier manque : on ajoute un par un, en une vague.
+    await Promise.all([...COQUILLE, ...scripts].map(u => c.add(u).catch(() => {})));
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener('activate', (e) => {

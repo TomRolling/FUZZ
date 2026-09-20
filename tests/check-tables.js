@@ -1,6 +1,14 @@
 const fs = require('fs');
 const path = require('path');
-const html = fs.readFileSync(require('path').resolve(__dirname, '../dist/index.html'), 'utf8');
+// Le jeu est decoupe en fichiers (voir dist/jeu/). La liste qui fait autorite est celle des
+// balises <script src> d'index.html, dans leur ordre de chargement : la lire evite de ramasser
+// un .js etranger tombe dans le dossier (cache d'outil, sauvegarde), qui serait analyse comme
+// s'il etait le jeu.
+const RACINE = path.resolve(__dirname, '../dist');
+const INDEX = fs.readFileSync(path.join(RACINE, 'index.html'), 'utf8');
+const FICHIERS_JEU = [...INDEX.matchAll(/<script src="([^"]+)"/g)].map(m => m[1]);
+const SOURCES = FICHIERS_JEU.map(rel => ({ rel, code: fs.readFileSync(path.join(RACINE, rel), 'utf8') }));
+const html = [INDEX].concat(SOURCES.map(s => s.code)).join('\n');
 
 // Une table peut se referer a une constante du jeu (ex. cost: CLICS_POUR_LE_MAGASIN). Comme on
 // evalue le litteral tout seul, hors de la page, on relit d'abord les constantes numeriques
@@ -91,6 +99,52 @@ for (const [id, entry] of Object.entries(ITEM_SPRITES)) {
   if (!fs.existsSync(f)) fail('fichier sprite manquant:', entry.src);
 }
 for (const [id, t] of allItems) if (!ITEM_SPRITES[id]) fail('objet sans sprite:', id, '(' + t + ')');
+
+// ===== Decoupage en fichiers : trois invariants que rien d'autre ne verifie =====
+// Le jeu partage un seul espace global entre 23 fichiers charges a la suite. Trois pannes
+// deviennent possibles, toutes silencieuses, et aucune n'existait du temps du fichier unique.
+const declare = new Map();          // nom -> premier fichier qui le declare
+const doublons = [];
+for (const { rel, code } of SOURCES) {
+  for (const m of code.matchAll(/^(?:function|const|let|var|class)\s+([A-Za-z_$][\w$]*)/gm)) {
+    if (declare.has(m[1])) doublons.push(`${m[1]} : ${declare.get(m[1])} et ${rel}`);
+    else declare.set(m[1], rel);
+  }
+}
+// 1. Unicite : deux fichiers qui declarent le meme nom, c'est le dernier charge qui gagne,
+//    en silence. Impossible avant le decoupage, invisible aujourd'hui.
+for (const d of doublons) fail('nom declare dans deux fichiers:', d);
+
+// 2. Ordre : une ligne executee AU CHARGEMENT ne peut utiliser qu'un nom deja declare, le
+//    hissage des fonctions ne traversant pas les fichiers.
+const rang = new Map(FICHIERS_JEU.map((f, i) => [f, i]));
+for (const { rel, code } of SOURCES) {
+  for (const ligne of code.split(/\r?\n/)) {
+    // Colonne 0 SANS indentation : c'est ce qui distingue une instruction executee au
+    // chargement d'un appel ecrit dans un corps de fonction, qui lui se resout a l'execution.
+    if (!/^[A-Za-z_$][\w$]*\(/.test(ligne)) continue;
+    const appel = ligne.match(/^([A-Za-z_$][\w$]*)\(/)[1];
+    const ou = declare.get(appel);
+    if (ou && rang.get(ou) > rang.get(rel)) {
+      fail(`appel au chargement avant sa declaration: ${appel}() dans ${rel}, declare dans ${ou}`);
+    }
+  }
+}
+
+// 3. Completude : un fichier present sur le disque mais absent d'index.html ne s'execute
+//    jamais, et rien ne le signale.
+const surDisque = [];
+(function parcours(d, prefixe) {
+  for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+    const p = path.join(d, e.name);
+    if (e.isDirectory()) parcours(p, prefixe + e.name + '/');
+    else if (e.name.endsWith('.js')) surDisque.push(prefixe + e.name);
+  }
+})(path.join(RACINE, 'jeu'), 'jeu/');
+const charges = new Set(FICHIERS_JEU);
+for (const f of surDisque) if (!charges.has(f)) fail('fichier jamais charge par index.html:', f);
+for (const f of FICHIERS_JEU) if (!fs.existsSync(path.join(RACINE, f))) fail('script introuvable sur le disque:', f);
+console.log(`decoupage: ${FICHIERS_JEU.length} fichiers charges, ${declare.size} noms de premier niveau, ${doublons.length} doublon(s)`);
 
 console.log(problems === 0 ? '\nTOUT EST OK' : `\n${problems} PROBLEME(S)`);
 process.exitCode = problems ? 1 : 0;

@@ -1,6 +1,6 @@
 # Tests de FUZZ
 
-Tests automatiques du jeu (`dist/index.html`), lancés dans un navigateur par Playwright.
+Tests automatiques du jeu (`dist/index.html`, qui charge les fichiers de `dist/jeu/`), lancés dans un navigateur par Playwright.
 
 ```bash
 cd tests

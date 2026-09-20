@@ -1,11 +1,27 @@
-// Passe statique de traduction sur dist/index.html :
+// Passe statique de traduction sur le jeu (index.html + les fichiers de dist/jeu/) :
 //  1. champs bilingues { fr, en } incomplets ;
 //  2. cles presentes dans UI_STRINGS.fr mais absentes de UI_STRINGS.en (et l'inverse) ;
 //  3. chaines francaises ecrites en dur dans le JS, hors des regions « fr: » et hors
 //     ternaires de langue (en ? ... : ..., state.lang === 'en').
 // Complete test-traduction.js, qui lui verifie a l'execution ce qui s'affiche vraiment.
 const fs = require('fs'); const path = require('path');
-const src = fs.readFileSync(path.resolve(__dirname, '../dist/index.html'), 'utf8');
+// Le jeu vit dans dist/jeu/ : on lit les fichiers DANS L'ORDRE ou index.html les charge, plus
+// les blocs <script> restes en ligne dans la page. Sans ca, ce controle ne verrait plus une
+// seule chaine du jeu et passerait au vert sans rien verifier.
+const RACINE = path.resolve(__dirname, '../dist');
+const indexHtml = fs.readFileSync(path.join(RACINE, 'index.html'), 'utf8');
+const blocs = [];   // { code, base } : base = decalage du bloc dans `src`
+for (const m of indexHtml.matchAll(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/g)) {
+  blocs.push({ code: m[1], base: m.index + m[0].indexOf(m[1]) });
+}
+let src = indexHtml;
+for (const m of indexHtml.matchAll(/<script src="([^"]+)"/g)) {
+  const code = fs.readFileSync(path.join(RACINE, m[1]), 'utf8');
+  src += '\n';
+  blocs.push({ code, base: src.length });
+  src += code;
+}
+if (blocs.length < 20) { console.log('  X seulement ' + blocs.length + ' bloc(s) de JS trouve(s) : le scan ne verifie presque rien'); process.exitCode = 1; }
 
 const MOTS_FR = /\b(le|la|les|des|une|du|de|tu|ton|ta|tes|vous|pour|avec|coût|prêt|prête|jardin|graine|graines|éclat|éclats|verdure|améliore|gagne|chaque|toutes|tous|sans|déjà|encore|quand|dans|sur|par)\b/i;
 const ACCENTS = /[éèêëàâçùûîïôœ]/i;
@@ -35,10 +51,9 @@ for (const k of clesEn) if (!clesFr.has(k)) problemes.push(`UI_STRINGS : « ${k}
 // --- 3. francais en dur ---
 // Parcours caractere par caractere du JS : on repere les chaines, et on masque toute region
 // qui est la valeur d'une cle « fr » (chaine, tableau ou objet, meme sur plusieurs lignes).
-const scripts = [...src.matchAll(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/g)];
 const chaines = [];   // { texte, index, masquee }
-for (const s of scripts) {
-  const code = s[1], base = s.index + s[0].indexOf(code);
+for (const bloc of blocs) {
+  const code = bloc.code, base = bloc.base;
   let i = 0, finFr = -1;            // finFr : position de fin de la region « fr: » courante
   while (i < code.length) {
     const c = code[i];
