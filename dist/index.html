@@ -582,9 +582,9 @@
   @keyframes fenetreSortie { from { opacity: 1; } to { opacity: 0; } }
   .shopPageOverlay.open { animation: magasinMonte 0.32s cubic-bezier(0.22, 1, 0.36, 1); }
   .shopPageOverlay.fermeture { display: flex; pointer-events: none; animation: magasinDescend 0.26s cubic-bezier(0.55, 0, 0.9, 0.4) forwards; }
-  /* Mise en page anticipée du magasin (voir preparerMagasin) : affiché pour le calcul, jamais
-     vu. Après les règles ci-dessus, donc sans !important pour passer devant. */
-  .shopPageOverlay.prechauffe { display: flex; visibility: hidden; animation: none; }
+  /* Mise en page anticipée d'une fenêtre (voir prechaufferFenetre) : affichée pour le calcul,
+     jamais vue. Après les règles ci-dessus, donc sans !important pour passer devant. */
+  .shopPageOverlay.prechauffe, .sideModalOverlay.prechauffe { display: flex; visibility: hidden; animation: none; }
   @keyframes magasinMonte { from { translate: 0 100%; } to { translate: 0 0; } }
   @keyframes magasinDescend { from { translate: 0 0; } to { translate: 0 100%; } }
   .shopPage { position: relative; display: flex; flex-direction: column; width: 100%; height: 100%; min-height: 0; }
@@ -1464,7 +1464,7 @@ const SAVE_VERSION = 2;
 // Version affichée du jeu. L'app native connaît la sienne (tauri.conf.json) mais la version web
 // n'a aucun moyen de la lire : elle est donc écrite ici, et tests/check-tables.js vérifie que
 // les deux restent d'accord. Sert au signalement de bug (voir rapportDeBug).
-const VERSION_JEU = '0.6.5';
+const VERSION_JEU = '0.6.6';
 // Trois dernières erreurs JavaScript, gardées en mémoire pour le rapport de bug : sans elles, un
 // signalement de joueur dit « ça a planté » et rien de plus. Jamais écrites sur le disque.
 const _erreursRecentes = [];
@@ -7154,9 +7154,13 @@ function renderAbilityBar() {
     if (el._sec !== sec) { el._sec = sec; el.lastElementChild.innerHTML = sec > 0 ? abilityTimeHtml(sec) : ''; } // HTML fixe : le temps est le dernier enfant
   });
 }
+// Une fenêtre est dessinée quand elle est ouverte — ou quand on la met en page à l'avance
+// (voir prechaufferFenetre). Le préchauffage passe ainsi par le rendu normal, au lieu d'en
+// recopier une partie : une zone ajoutée à renderAll est préchauffée sans rien faire de plus.
+let _fenetrePrechauffee = null;
+function doitDessiner(overlayId) { return isOverlayOpen(overlayId) || _fenetrePrechauffee === overlayId; }
 // Tout ce que le magasin affiche, en un seul endroit : appelé par renderAll quand la fenêtre est
-// ouverte, et par preparerMagasin qui met en page exactement la même chose avant la première
-// ouverture. Ajouter une zone ici la fait suivre des deux côtés.
+// ouverte, et pendant son préchauffage. Ajouter une zone ici la fait suivre des deux côtés.
 function renderPanneauxMagasin() {
   renderShopResourceBar();
   renderBuyModeRow();
@@ -7172,10 +7176,10 @@ function renderAll() {
   // Un seul panneau est visible par fenêtre : les autres sont en display:none. On ne dessine
   // donc que celui de l'onglet actif — les autres étaient reconstruits en pure perte, soit
   // ~157 lignes de HTML par rendu pour en afficher une trentaine.
-  if (isOverlayOpen('shopPageOverlay')) renderPanneauxMagasin();
-  if (isOverlayOpen('questsModalOverlay')) (PANEL_RENDERERS[activeQuestsTab] || noop)();
-  if (isOverlayOpen('achievementsModalOverlay')) renderAchievements();
-  if (isOverlayOpen('settingsModalOverlay')) {
+  if (doitDessiner('shopPageOverlay')) renderPanneauxMagasin();
+  if (doitDessiner('questsModalOverlay')) (PANEL_RENDERERS[activeQuestsTab] || noop)();
+  if (doitDessiner('achievementsModalOverlay')) renderAchievements();
+  if (doitDessiner('settingsModalOverlay')) {
     (PANEL_RENDERERS[activeSettingsTab] || noop)();
     renderSoundToggle();
     renderConfortToggles();
@@ -8264,20 +8268,36 @@ document.getElementById('offlineCloseBtn').addEventListener('click', () => {
   });
 });
 
-// La toute première ouverture du magasin coûtait ~50 ms (une image sautée au départ de
-// l'animation de montée), les suivantes 2 ms : ce n'est pas le dessin des lignes mais le premier
-// calcul de mise en page de toute la fenêtre, fait au moment où elle s'affiche. On le fait donc
-// faire pendant un temps mort : lignes dessinées, puis fenêtre mise en page une fois en restant
-// invisible et incliquable, et aussitôt remise en place.
-function preparerMagasin() {
-  if (!state.tabsSeen.production || isOverlayOpen('shopPageOverlay')) return;
-  renderPanneauxMagasin();
-  const ov = document.getElementById('shopPageOverlay');
-  ov.classList.add('prechauffe');
-  void ov.offsetHeight; // force la mise en page maintenant, pendant que personne ne regarde
-  ov.classList.remove('prechauffe');
+// La toute première ouverture d'une fenêtre coûtait cher (magasin ~50 ms, Paramètres ~26 ms),
+// les suivantes 2 à 3 ms : ce n'est pas le dessin des lignes mais le premier calcul de mise en
+// page de toute la fenêtre, fait au moment où elle s'affiche. On le fait donc faire pendant un
+// temps mort : contenu dessiné, puis fenêtre mise en page une fois en restant invisible et
+// incliquable, et aussitôt remise en place.
+function prechaufferFenetre(overlayId) {
+  const ov = document.getElementById(overlayId);
+  if (!ov || isOverlayOpen(overlayId)) return;
+  _fenetrePrechauffee = overlayId;
+  try {
+    renderAll();
+    ov.classList.add('prechauffe');
+    void ov.offsetHeight; // force la mise en page maintenant, pendant que personne ne regarde
+  } finally {
+    ov.classList.remove('prechauffe');
+    _fenetrePrechauffee = null;
+  }
 }
-(window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(preparerMagasin, { timeout: 4000 });
+// Une fenêtre par temps mort : les quatre d'un coup feraient justement le à-coup qu'on évite.
+const _fenetresAPrechauffer = ['shopPageOverlay', 'settingsModalOverlay', 'questsModalOverlay', 'achievementsModalOverlay'];
+function prechaufferLaSuivante() {
+  const id = _fenetresAPrechauffer.shift();
+  if (!id) return;
+  prechaufferFenetre(id);
+  if (_fenetresAPrechauffer.length) planifierPrechauffage();
+}
+function planifierPrechauffage() {
+  (window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(prechaufferLaSuivante, { timeout: 4000 });
+}
+planifierPrechauffage();
 
 // ================= INIT =================
 applyOfflineProgress();
