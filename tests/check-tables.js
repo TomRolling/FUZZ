@@ -76,6 +76,12 @@ for (const s of tables.SYNERGIES) {
   if (!compIds.has(s.target)) fail('synergie target inconnue:', s.target);
 }
 
+// Version du jeu : la version web ne peut pas lire tauri.conf.json, elle porte donc la sienne en
+// dur (VERSION_JEU, utilisée par le signalement de bug). Les deux doivent rester d'accord.
+const versionJeu = (html.match(/const VERSION_JEU = '([^']+)'/) || [])[1];
+const versionTauri = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../src-tauri/tauri.conf.json'), 'utf8')).version;
+if (versionJeu !== versionTauri) fail(`VERSION_JEU (${versionJeu}) != tauri.conf.json (${versionTauri})`);
+
 // ITEM_SPRITES : fichier présent + item correspondant existant
 const allItems = new Map();
 for (const t of spriteTables) for (const it of tables[t]) allItems.set(it.id, t);

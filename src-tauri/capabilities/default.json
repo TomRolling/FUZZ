@@ -17,6 +17,10 @@
       "allow": [{ "path": "**" }]
     },
     "clipboard-manager:allow-write-text",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [{ "url": "https://github.com/*" }]
+    },
     "clipboard-manager:allow-read-text",
     "updater:default",
     "process:allow-restart"

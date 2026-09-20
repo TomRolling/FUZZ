@@ -513,10 +513,16 @@
     cursor: pointer;
     font-weight: 700;
   }
+  /* Rangée d'onglets : des cases TOUTES identiques, autant par ligne que la largeur en permet,
+     chacune d'au moins 125 px (le plus long libellé, « Automatisation », en demande 132 une fois
+     dessiné — la case en fait 134 au minimum). `auto-fit` absorbe les colonnes vides : les trois
+     onglets des Paramètres occupent toute la largeur au lieu de se serrer à gauche, et les neuf
+     du Magasin se répartissent sur deux lignes régulières. Une seule règle pour les trois
+     rangées : le nombre de colonnes se déduit de la place, pas du nombre d'onglets du jour. */
   .miniTabsRow {
     flex-shrink: 0;
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
     gap: 6px;
     padding: 10px 14px;
     border-bottom: 3px solid var(--ink);
@@ -540,13 +546,7 @@
     min-width: 58px;
   }
   .drawerBtn .icon { font-size: 18px; }
-  /* Onglets du magasin : une grille de cases TOUTES identiques. Sur une seule ligne, les neuf
-     cases égales feraient 72 px chacune, trop peu pour « Automatisation » (119 px de texte) :
-     on remplit donc autant de colonnes d'au moins 125 px que la largeur en permet (cinq à la
-     taille de référence, ~134 px chacune), et la rangée reste régulière quel que soit le nombre
-     d'onglets débloqués, au lieu de cases de tailles différentes. */
-  #shopTabsRow { display: grid; grid-template-columns: repeat(auto-fit, minmax(125px, 1fr)); }
-  #shopTabsRow .drawerBtn { min-width: 0; padding: 8px 6px; }
+  .miniTabsRow .drawerBtn { min-width: 0; padding: 8px 6px; }
   /* Le curseur natif du navigateur était bleu : seul élément de l'interface hors palette. */
   #volumeSlider { accent-color: var(--accent-texte); }
   .drawerBtn.active { background: var(--accent); color: white; }
@@ -690,8 +690,9 @@
   }
   .tabIntro b { color: var(--accent-texte); }
   /* Même carte, mais en tête d'une SECTION au milieu d'une liste (cosmétiques, recherches
-     infinies) : seul l'espacement au-dessus change. */
-  .upgrade + .tabIntro { margin-top: 18px; }
+     infinies) ou d'un bloc de réglages : seul l'espacement au-dessus change. Sans lui, la carte
+     se colle au bouton du dessus et les deux blocs n'en forment plus qu'un à l'œil. */
+  .upgrade + .tabIntro, .footerBtns + .tabIntro, .soundToggleBtn + .tabIntro { margin-top: 20px; }
   .tabPanel { display: none; animation: fadeIn 0.25s ease; }
   .tabPanel.active { display: block; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
@@ -915,6 +916,13 @@
 
   /* ===== Pop-up de révélation à la première acquisition d'un objet ===== */
   .itemPopupOverlay { position: fixed; inset: 0; z-index: 350; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
+  /* Fenêtre de signalement : plus large que les petites pop-up, et alignée à gauche — c'est du
+     texte technique qu'on lit, pas une annonce qu'on regarde. */
+  .bugReportBox { max-width: 620px; width: 92%; text-align: left; }
+  .bugReportText { width: 100%; box-sizing: border-box; min-height: 170px; margin-top: 10px; resize: vertical;
+    font-family: ui-monospace, Consolas, monospace; font-size: 11px; line-height: 1.5;
+    color: var(--panel-text); background: rgba(0,0,0,0.18); border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 10px; padding: 10px; }
   .itemPopupBox { background: var(--card-bg); border: 4px solid var(--ink); border-radius: 18px; padding: 26px; width: 320px; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.4); animation: itemPopupIn 0.3s ease-out; }
   @keyframes itemPopupIn { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
   .itemPopupTitle { font-weight: 800; font-size: 13px; line-height: 1.5; color: var(--accent-texte); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
@@ -1104,7 +1112,7 @@
   </div>
 </div>
 
-<div class="itemPopupOverlay" id="itemPopupOverlay" style="display:none;">
+<div class="itemPopupOverlay" id="itemPopupOverlay" style="display:none;" data-fermeture="itemPopupCloseBtn">
   <div class="itemPopupBox">
     <div class="itemPopupTitle" id="itemPopupTitle">Nouvel objet !</div>
     <img id="itemPopupIcon" class="itemPopupIcon" alt="">
@@ -1114,7 +1122,20 @@
   </div>
 </div>
 
-<div class="itemPopupOverlay" id="dailyPopupOverlay" style="display:none;">
+<div class="itemPopupOverlay" id="bugReportOverlay" style="display:none;" data-fermeture="bugReportCloseBtn">
+  <div class="itemPopupBox bugReportBox">
+    <div class="itemPopupTitle" data-i18n="bugReportTitle">🐞 Signaler un bug</div>
+    <div class="itemPopupDesc" data-i18n="bugReportExplain">Voici ce qui sera envoyé. Relis-le, tu pourras tout modifier avant de valider.</div>
+    <textarea id="bugReportText" class="bugReportText" spellcheck="false"></textarea>
+    <div class="footerBtns" style="margin-top:12px;">
+      <button class="smallBtn" id="bugReportOpenBtn" data-i18n="bugReportOpen">🌐 Ouvrir le formulaire</button>
+      <button class="smallBtn" id="bugReportCopyBtn" data-i18n="bugReportCopy">📋 Copier le rapport</button>
+    </div>
+    <button class="smallBtn" id="bugReportCloseBtn" data-i18n="close" style="width:100%; margin-top:10px;">Fermer ✕</button>
+  </div>
+</div>
+
+<div class="itemPopupOverlay" id="dailyPopupOverlay" style="display:none;" data-fermeture="dailyPopupCloseBtn">
   <div class="itemPopupBox">
     <div class="itemPopupTitle">🎁 <span id="dailyPopupDay">Jour 1</span></div>
     <div class="dailyPopupIcon">🎁</div>
@@ -1124,7 +1145,7 @@
   </div>
 </div>
 
-<div class="galleryLightboxOverlay" id="galleryLightboxOverlay" style="display:none;">
+<div class="galleryLightboxOverlay" id="galleryLightboxOverlay" style="display:none;" data-fermeture="galleryLightboxOverlay">
   <div class="galleryLightboxBox">
     <img id="galleryLightboxImg" alt="">
     <div class="galleryLightboxName" id="galleryLightboxName"></div>
@@ -1183,7 +1204,7 @@
   </div>
 </div>
 
-<div class="tutorialOverlay" id="offlineOverlay" style="display:none;">
+<div class="tutorialOverlay" id="offlineOverlay" style="display:none;" data-fermeture="offlineCloseBtn">
   <div class="offlineBox">
     <div class="offlineIcon">🌙</div>
     <h2 id="offlineTitle" data-i18n="offlineTitle">Pendant ton absence</h2>
@@ -1192,7 +1213,7 @@
   </div>
 </div>
 
-<div class="sideModalOverlay" id="updatePromptOverlay">
+<div class="sideModalOverlay" id="updatePromptOverlay" data-fermeture="updatePromptLaterBtn">
   <div class="sideModal" style="width:420px;">
     <div class="sideModalHeader"><span>🔄 Nouvelle version disponible !</span></div>
     <div class="sideModalContent" style="text-align:center;">
@@ -1226,7 +1247,7 @@
   </div>
 </div>
 
-<div class="sideModalOverlay" id="settingsModalOverlay">
+<div class="sideModalOverlay" id="settingsModalOverlay" data-fermeture="settingsModalCloseBtn">
   <div class="sideModal">
     <div class="sideModalHeader">
       <span data-i18n="settingsTitle">⚙️ Paramètres</span>
@@ -1285,6 +1306,7 @@
           <button class="smallBtn" id="importBtn" data-i18n="importBtn">📂 Importer (fichier)</button>
           <button class="smallBtn" id="importPasteBtn" data-i18n="importPasteBtn">📋 Importer (coller un code)</button>
           <button class="smallBtn" id="restoreBackupBtn" data-i18n="restoreBackupBtn">♻️ Restaurer une sauvegarde</button>
+          <input type="file" id="importFileInput" accept=".txt,.json" style="display:none;">
         </div>
         <div id="backupList" data-ouvert="0"></div>
         <div class="footerBtns">
@@ -1293,7 +1315,10 @@
           <button class="smallBtn" id="resetBtn" data-i18n="resetBtn">🗑️ Reset total</button>
           <button class="smallBtn" id="quitGameBtn" data-i18n="quitGameBtn" style="background:#5c4a3d; color:white;">🚪 Quitter le jeu</button>
         </div>
-        <input type="file" id="importFileInput" accept=".txt,.json" style="display:none;">
+        <p class="tabIntro" data-i18n="bugReportIntro">Un bug, un blocage ? Raconte-le, ça aide à réparer.</p>
+        <div class="footerBtns">
+          <button class="smallBtn" id="bugReportBtn" data-i18n="bugReportBtn">🐞 Signaler un bug</button>
+        </div>
 
         <div class="soundToggleBtn" id="creditsToggleBtn" style="margin-top:16px;">
           <span data-i18n="creditsLabel">🎬 Crédits</span>
@@ -1312,7 +1337,7 @@
   </div>
 </div>
 
-<div class="sideModalOverlay" id="achievementsModalOverlay">
+<div class="sideModalOverlay" id="achievementsModalOverlay" data-fermeture="achievementsModalCloseBtn">
   <div class="sideModal">
     <div class="sideModalHeader">
       <span data-i18n="achievementsTitle">🏆 Succès</span>
@@ -1327,7 +1352,7 @@
   </div>
 </div>
 
-<div class="sideModalOverlay" id="questsModalOverlay">
+<div class="sideModalOverlay" id="questsModalOverlay" data-fermeture="questsModalCloseBtn">
   <div class="sideModal">
     <div class="sideModalHeader">
       <span data-i18n="questsTitle">📓 Quêtes &amp; Défis</span>
@@ -1355,7 +1380,7 @@
   </div>
 </div>
 
-<div class="shopPageOverlay" id="shopPageOverlay">
+<div class="shopPageOverlay" id="shopPageOverlay" data-fermeture="shopPageCloseBtn">
   <div class="shopPage">
     <div class="shopPageHeader">
       <span data-i18n="shopTitle">🛒 Magasin de Papi Feuillage</span>
@@ -1436,6 +1461,19 @@
 <script>
 
 const SAVE_VERSION = 2;
+// Version affichée du jeu. L'app native connaît la sienne (tauri.conf.json) mais la version web
+// n'a aucun moyen de la lire : elle est donc écrite ici, et tests/check-tables.js vérifie que
+// les deux restent d'accord. Sert au signalement de bug (voir rapportDeBug).
+const VERSION_JEU = '0.6.5';
+// Trois dernières erreurs JavaScript, gardées en mémoire pour le rapport de bug : sans elles, un
+// signalement de joueur dit « ça a planté » et rien de plus. Jamais écrites sur le disque.
+const _erreursRecentes = [];
+function noterErreur(texte) {
+  _erreursRecentes.push(String(texte).slice(0, 300));
+  while (_erreursRecentes.length > 3) _erreursRecentes.shift();
+}
+window.addEventListener('error', (e) => noterErreur(`${e.message} (${String(e.filename || '').split('/').pop()}:${e.lineno})`));
+window.addEventListener('unhandledrejection', (e) => noterErreur('unhandled rejection: ' + ((e.reason && e.reason.message) || e.reason)));
 
 // ================= CONFIG: BUILDINGS =================
 // Registre des sprites pixel art disponibles pour les bâtiments/améliorations, par id.
@@ -1703,6 +1741,10 @@ const UI_STRINGS = {
     restoreBackupBtn: '♻️ Restaurer une sauvegarde', undoImportBtn: '↩️ Revenir à la partie d\'avant l\'import', shareBtn: '📣 Partager', resetBtn: '🗑️ Reset total', quitGameBtn: '🚪 Quitter le jeu',
     updatesLabel: '🔄 Mises à jour', checkBtn: 'Vérifier', installBtn: 'Installer', updateNow: 'Mettre à jour maintenant', laterBtn: 'Plus tard', checkingLabel: 'Vérification...',
     clickHere: 'Clique ici !',
+    bugReportIntro: 'Un bug, un blocage ? Raconte-le, ça aide à réparer.',
+    bugReportBtn: '🐞 Signaler un bug', bugReportTitle: '🐞 Signaler un bug',
+    bugReportExplain: 'Voici ce qui sera envoyé. Relis-le, tu pourras tout modifier avant de valider.',
+    bugReportOpen: '🌐 Ouvrir le formulaire', bugReportCopy: '📋 Copier le rapport',
     dailyCycleIntro: "Le calendrier tourne sur <b>7 jours</b> : reviens chaque jour pour avancer dedans, et le <b>jour 7</b> offre le plus gros lot. Un jour manqué et la série repart au jour 1.",
     dailyTapToClaim: 'Clique pour prendre', dailyToday: "Aujourd'hui",
     dailyClaimed: 'Récupéré',
@@ -1743,6 +1785,10 @@ const UI_STRINGS = {
     restoreBackupBtn: '♻️ Restore a save', undoImportBtn: '↩️ Go back to the game before the import', shareBtn: '📣 Share', resetBtn: '🗑️ Full reset', quitGameBtn: '🚪 Quit game',
     updatesLabel: '🔄 Updates', checkBtn: 'Check', installBtn: 'Install', updateNow: 'Update now', laterBtn: 'Later', checkingLabel: 'Checking...',
     clickHere: 'Click here!',
+    bugReportIntro: 'Hit a bug, or got stuck? Tell us about it, it helps fix things.',
+    bugReportBtn: '🐞 Report a bug', bugReportTitle: '🐞 Report a bug',
+    bugReportExplain: 'Here is what will be sent. Read it over, you can edit everything before submitting.',
+    bugReportOpen: '🌐 Open the form', bugReportCopy: '📋 Copy the report',
     dailyCycleIntro: 'The calendar runs on a <b>7-day</b> cycle: come back every day to move through it, and <b>day 7</b> has the biggest prize. Miss a day and the streak restarts at day 1.',
     dailyTapToClaim: 'Tap to claim', dailyToday: 'Today',
     dailyClaimed: 'Claimed',
@@ -2757,11 +2803,19 @@ function placerSousLeBandeau(box) {
   const haut = Math.max(150, Math.min(bas + 12, hauteurJeu - hauteurBulle - 16));
   box.style.top = Math.round(haut) + 'px';
 }
-// Fenêtre redimensionnée pendant qu'une bulle nommée est à l'écran : on la recale.
-window.addEventListener('gameviewportfit', () => {
+// Le bandeau ne grandit pas qu'au redimensionnement : un bonus qui démarre, « Papi débarque »,
+// l'objectif suivant apparaissent en pleine partie, pendant que la bulle est déjà à l'écran.
+// Calculer la position une fois à l'affichage ne suffit donc pas — la bulle se retrouvait
+// par-dessus la bannière. On observe la taille du bandeau et de la rangée de bonus : tant que
+// la bulle est visible et qu'aucun tutoriel ne la tient, elle suit.
+function recalerBulleSousBandeau() {
   const box = document.getElementById('dialogueBox');
   if (box && isDialogueVisible() && !_dialogueAnchorTimer && !_dialogueAnchorRecalage) placerSousLeBandeau(box);
-});
+}
+const _observateurBandeau = new ResizeObserver(recalerBulleSousBandeau);
+for (const el of [document.querySelector('.topBar'), document.getElementById('boostRow')]) {
+  if (el) _observateurBandeau.observe(el);
+}
 
 let _dialogueCurrentFullText = '';
 function advanceDialogue() {
@@ -3473,15 +3527,14 @@ const TAB_DEFS = [
   { id: 'clic', label: { fr: 'Clic', en: 'Click' }, icon: '👆', unlock: s => s.totalClicks >= CLICS_POUR_LE_MAGASIN, group: 'shop' },
   { id: 'batiments', label: { fr: 'Bâtiments', en: 'Buildings' }, icon: '🏗️', unlock: s => s.verdure >= seuilOnglet('batiments'), group: 'shop' },
   { id: 'special', label: { fr: 'Spécial', en: 'Special' }, icon: '✨', unlock: s => s.verdure >= seuilOnglet('special'), group: 'shop' },
-  // Recherche demande d'avoir DÉJÀ vu Bâtiments et 30 min de jeu : c'est l'onglet qui introduit
-  // les Connaissances, elles-mêmes invisibles jusque-là (voir knowledgeUnlocked).
-  // `tabsDescribed` et non `tabsSeen` : il faut que Papi ait FINI de présenter Bâtiments, pas
-  // seulement que l'onglet soit apparu. Sinon, un joueur qui laisse tourner le jeu débloque les
-  // deux à la suite immédiate et enchaîne deux présentations sur le même écran.
-  { id: 'recherche', label: { fr: 'Recherche', en: 'Research' }, icon: '🔬', unlock: s => !!(s.tabsDescribed || {}).batiments && (s.totalPlayTimeSec || 0) >= 1800, group: 'shop',
-    // Les Connaissances ne commencent à tomber qu'à l'apparition de l'onglet : sans ce coup de
-    // pouce, il arrivait vide, et rien n'y était possible pendant près de vingt minutes.
-    aLOuverture: s => { s.knowledge = Math.max(s.knowledge || 0, prixPremiereRecherche()); } },
+  // Recherche demande d'avoir DÉJÀ vu Bâtiments, 30 min de jeu, et de quoi acheter sa première
+  // ligne. `tabsDescribed` et non `tabsSeen` : il faut que Papi ait FINI de présenter Bâtiments,
+  // pas seulement que l'onglet soit apparu. Sinon, un joueur qui laisse tourner le jeu débloque
+  // les deux à la suite immédiate et enchaîne deux présentations sur le même écran. Les
+  // Connaissances s'accumulent depuis cette même présentation (voir knowledgeAccumule), donc
+  // l'onglet s'ouvre sur un achat possible sans qu'on ait à lui offrir quoi que ce soit.
+  { id: 'recherche', label: { fr: 'Recherche', en: 'Research' }, icon: '🔬', group: 'shop',
+    unlock: s => !!(s.tabsDescribed || {}).batiments && (s.totalPlayTimeSec || 0) >= 1800 && (s.knowledge || 0) >= prixPremiereRecherche() },
   { id: 'prestige', label: { fr: 'Prestige', en: 'Prestige' }, icon: '🌍', unlock: s => s.verdure >= seuilOnglet('prestige'), group: 'shop' },
   { id: 'familiers', label: { fr: 'Familiers', en: 'Pets' }, icon: '🐾', unlock: s => (s.prestigeCount || 0) >= 1, group: 'shop' },
   { id: 'ascension', label: { fr: 'Ascension', en: 'Ascension' }, icon: '🌟', unlock: s => (s.totalSeedsEarned || 0) >= ASCENSION_SEED_DIVISOR, group: 'shop' },
@@ -4006,6 +4059,14 @@ function clickGain() {
 // Les Connaissances n'existent pour le joueur qu'a partir du moment ou Papi lui presente
 // l'onglet Recherche : avant ca, ni compteur affiche, ni accumulation silencieuse. Sinon le
 // joueur arrivait dans Recherche avec un magot tombe du ciel, sans comprendre d'ou il venait.
+// Deux questions différentes, longtemps confondues en une seule : les Connaissances
+// S'ACCUMULENT dès que Papi a fini de présenter Bâtiments (le moment où le concept entre dans la
+// partie, et la condition qui ouvre Recherche), mais elles ne s'AFFICHENT qu'avec l'onglet
+// Recherche. Tout bloquer sur l'affichage faisait arriver l'onglet à zéro Connaissance, donc
+// vide : il fallait alors un cadeau d'ouverture, à répéter partout où un onglet se révèle.
+// Le second terme couvre les parties d'avant `tabsDescribed` : si l'onglet est déjà là, les
+// Connaissances tombent, évidemment.
+function knowledgeAccumule() { return !!(state.tabsDescribed || {}).batiments || !!state.tabsSeen.recherche; }
 function knowledgeUnlocked() { return !!state.tabsSeen.recherche; }
 const KNOWLEDGE_PER_MINUTE = 1;
 // Récompense en Connaissances équivalente à `minutes` de gain au rythme actuel du joueur (avec
@@ -4015,9 +4076,9 @@ function knowledgeMinutes(minutes, plancher) {
 }
 // Seul point d'entrée pour créditer des Connaissances : tant qu'elles ne sont pas présentées au
 // joueur, elles ne s'accumulent pas.
-function grantKnowledge(n) { if (knowledgeUnlocked()) state.knowledge += n; }
+function grantKnowledge(n) { if (knowledgeAccumule()) state.knowledge += n; }
 function knowledgeRate() {
-  if (!knowledgeUnlocked()) return 0;
+  if (!knowledgeAccumule()) return 0;
   // 1 Connaissance par MINUTE de base, sans aucun lien avec la production : seules les
   // améliorations de gain de Connaissances l'accélèrent. Les coûts de la Recherche sont calés
   // sur ce rythme pour que l'arbre s'étale sur toute la partie (voir RESEARCH).
@@ -5517,7 +5578,6 @@ function announceNewTabsSequentially(tabs) {
   const reveler = () => {
     if (!state.tabsSeen[t.id]) {
       state.tabsSeen[t.id] = true;
-      if (t.aLOuverture) t.aLOuverture(state); // cadeau d'ouverture éventuel (voir TAB_DEFS)
       _tabsPendingAppear.add(t.id);
       _tabsQueuedForAnnounce.delete(t.id);
       saveGame();
@@ -7388,12 +7448,7 @@ function toutDebloquerModeTest() {
   document.getElementById('tutorialOverlay').style.display = 'none';
   state.tutorialSeen = true;
   _suppressTabAnnouncements = false;
-  // Même cadeau d'ouverture que par le chemin normal (voir reveler) : sans lui, Recherche
-  // s'ouvrait à 0 Connaissance en mode test, c'est-à-dire vide.
-  for (const t of TAB_DEFS) {
-    state.tabsSeen[t.id] = true; state.tabsDescribed[t.id] = true;
-    if (t.aLOuverture) t.aLOuverture(state);
-  }
+  for (const t of TAB_DEFS) { state.tabsSeen[t.id] = true; state.tabsDescribed[t.id] = true; }
   syncRevealedButtonsOnLoad();
 }
 
@@ -7415,6 +7470,9 @@ function rejouerPresentationsModeTest() {
   state.totalAscensions = Math.max(state.totalAscensions || 0, 3);
   state.totalSeedsEarned = Math.max(state.totalSeedsEarned || 0, ASCENSION_SEED_DIVISOR);
   state.cosmicSeeds = Math.max(state.cosmicSeeds || 0, 20);
+  // Recherche demande aussi de quoi acheter sa premiere ligne (voir TAB_DEFS) : sans ça, l'onglet
+  // ne réapparaît jamais et la chaîne de présentations s'arrête avant la fin.
+  state.knowledge = Math.max(state.knowledge || 0, prixPremiereRecherche());
   // La Galerie demande 5 objets distincts possédés, les Succès au moins un succès.
   for (const b of BUILDINGS.slice(0, 3)) state.buildings[b.id] = Math.max(state.buildings[b.id] || 0, 10);
   for (const c of CLICK_UPGRADES.slice(0, 3)) state.clickUpgrades[c.id] = true;
@@ -7513,23 +7571,23 @@ document.addEventListener('keydown', (e) => {
 // Échap ferme ce qui est ouvert, de la fenêtre la plus au-dessus à la plus en dessous, en
 // passant par sa croix (donc avec exactement les mêmes effets qu'un clic). Jamais pendant une
 // présentation de Papi : c'est lui qui guide, et closeModal refuserait de toute façon.
-const FERMETURES_ECHAP = [
-  ['galleryLightboxOverlay', 'galleryLightboxOverlay'],
-  ['itemPopupOverlay', 'itemPopupCloseBtn'],
-  ['dailyPopupOverlay', 'dailyPopupCloseBtn'],
-  ['offlineOverlay', 'offlineCloseBtn'],
-  ['shopPageOverlay', 'shopPageCloseBtn'],
-  ['questsModalOverlay', 'questsModalCloseBtn'],
-  ['achievementsModalOverlay', 'achievementsModalCloseBtn'],
-  ['settingsModalOverlay', 'settingsModalCloseBtn'],
-];
+// Échap ferme la fenêtre du DESSUS. Chaque fenêtre déclare son propre bouton de fermeture dans
+// le HTML (`data-fermeture`) et l'ordre vient du vrai empilement CSS : une fenêtre ajoutée plus
+// tard est prise en compte du seul fait de porter l'attribut. La liste tenue à la main qui
+// précédait recopiait les z-index et avait déjà oublié la proposition de mise à jour.
+function fenetreDuDessus() {
+  return [...document.querySelectorAll('[data-fermeture]')]
+    .filter(el => isOverlayOpen(el.id) || el.style.display === 'flex')
+    .sort((a, b) => (parseInt(getComputedStyle(b).zIndex, 10) || 0) - (parseInt(getComputedStyle(a).zIndex, 10) || 0))[0];
+}
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape' || _pendingSpotlightGroup) return;
-  for (const [overlayId, boutonId] of FERMETURES_ECHAP) {
-    const el = document.getElementById(overlayId);
-    const ouvert = el && (isOverlayOpen(overlayId) || el.style.display === 'flex');
-    if (ouvert) { document.getElementById(boutonId).click(); e.preventDefault(); return; }
-  }
+  const fenetre = fenetreDuDessus();
+  if (!fenetre) return;
+  const bouton = document.getElementById(fenetre.dataset.fermeture);
+  if (!bouton) return;
+  bouton.click();
+  e.preventDefault();
 });
 
 // ================= IDLE TICK =================
@@ -7952,6 +8010,72 @@ document.getElementById('shareBtn').addEventListener('click', async () => {
   await writeClipboardText(text);
   prompt(selonLangue('Copie ce texte pour le partager :', 'Copy this text to share it:'), text);
 });
+
+// ================= SIGNALEMENT DE BUG =================
+// Un joueur qui tombe sur un bug n'a sous la main ni sa version, ni son environnement, ni l'état
+// de sa partie : le rapport est donc rempli d'avance. Il est montré tel quel, modifiable, avant
+// tout envoi — rien ne part sans que le joueur l'ait lu. Le bouton « Copier » sert à ceux qui
+// n'ont pas de compte GitHub : le rapport se colle aussi bien ailleurs.
+const DEPOT_GITHUB = 'https://github.com/TomRolling/FUZZ';
+function environnementJoueur() {
+  const systeme = navigator.platform || navigator.userAgent;
+  return isTauriApp()
+    ? selonLangue(`application installée, ${systeme}`, `installed app, ${systeme}`)
+    : selonLangue(`version web, ${navigator.userAgent}`, `web version, ${navigator.userAgent}`);
+}
+function rapportDeBug() {
+  const onglets = TAB_DEFS.filter(t => state.tabsSeen[t.id]).map(t => t.id).join(', ') || '-';
+  const compagnons = Object.values(state.buildings || {}).reduce((s, n) => s + (n || 0), 0);
+  const heures = Math.round((state.totalPlayTimeSec || 0) / 360) / 10;
+  const erreurs = _erreursRecentes.length ? _erreursRecentes.join(' | ') : selonLangue('aucune', 'none');
+  const technique = [
+    `FUZZ v${VERSION_JEU} (${environnementJoueur()})`,
+    `${selonLangue('Langue', 'Language')} : ${state.lang} | ${selonLangue('sauvegarde', 'save')} v${state.saveVersion || SAVE_VERSION} | ${selonLangue('temps de jeu', 'play time')} : ${heures} h`,
+    `${selonLangue('Verdure', 'Greenery')} : ${formatNum(state.verdure)} (${formatNum(totalCps())}/s) | ${selonLangue('Connaissances', 'Knowledge')} : ${formatNum(state.knowledge || 0)}`,
+    `${selonLangue('Prestiges', 'Prestiges')} : ${state.prestigeCount || 0} | ${selonLangue('Ascensions', 'Ascensions')} : ${state.totalAscensions || 0} | ${selonLangue('Graines', 'Seeds')} : ${state.cosmicSeeds || 0} | ${selonLangue('Éclats', 'Shards')} : ${state.stellarShards || 0}`,
+    `${selonLangue('Compagnons', 'Companions')} : ${compagnons} | ${selonLangue('Onglets ouverts', 'Tabs unlocked')} : ${onglets}`,
+    `${selonLangue('Erreurs récentes', 'Recent errors')} : ${erreurs}`,
+  ].join('\n');
+  return selonLangue(
+    `### Ce qui s'est passé\n(raconte ici ce que tu faisais et ce qui n'allait pas)\n\n### Informations techniques\n${technique}\n`,
+    `### What happened\n(describe here what you were doing and what went wrong)\n\n### Technical details\n${technique}\n`);
+}
+// L'app native n'ouvre pas les liens toute seule : elle passe par le plugin « opener ». S'il
+// manque (ancienne version installée), le joueur ne reste pas sans rien — l'adresse part dans le
+// presse-papiers.
+async function ouvrirLienExterne(url) {
+  if (isTauriApp()) {
+    const T = window.__TAURI__;
+    // Deux chemins vers le même plugin : l'API globale quand elle est injectée, sinon l'appel
+    // direct à sa commande. Si les deux échouent, c'est que l'application tourne sans le plugin
+    // « opener » (binaire construit avant son ajout) — le presse-papiers prend alors le relais.
+    try {
+      if (T.opener && T.opener.openUrl) { await T.opener.openUrl(url); return true; }
+      const invoke = (T.core && T.core.invoke) || (window.__TAURI_INTERNALS__ || {}).invoke;
+      if (invoke) { await invoke('plugin:opener|open_url', { url }); return true; }
+    } catch (e) { console.error('ouverture du lien impossible :', e); }
+    await writeClipboardText(url);
+    showToast(selonLangue('Adresse copiée : colle-la dans ton navigateur.', 'Link copied: paste it into your browser.'));
+    return false;
+  }
+  window.open(url, '_blank', 'noopener');
+  return true;
+}
+function lienSignalement(rapport) {
+  return `${DEPOT_GITHUB}/issues/new?title=${encodeURIComponent(selonLangue('Bug : ', 'Bug: '))}&body=${encodeURIComponent(rapport)}`;
+}
+document.getElementById('bugReportBtn').addEventListener('click', () => {
+  document.getElementById('bugReportText').value = rapportDeBug();
+  document.getElementById('bugReportOverlay').style.display = 'flex';
+});
+document.getElementById('bugReportOpenBtn').addEventListener('click', () => {
+  ouvrirLienExterne(lienSignalement(document.getElementById('bugReportText').value));
+});
+document.getElementById('bugReportCopyBtn').addEventListener('click', async () => {
+  const ok = await writeClipboardText(document.getElementById('bugReportText').value);
+  showToast(ok ? selonLangue('Rapport copié.', 'Report copied.') : selonLangue('Copie impossible : sélectionne le texte à la main.', 'Copy failed: select the text by hand.'));
+});
+document.getElementById('bugReportCloseBtn').addEventListener('click', () => fermerSurgissante('bugReportOverlay'));
 document.getElementById('resetBtn').addEventListener('click', () => {
   const confirmMsg = state.lang === 'en'
     ? 'Reset everything? All your progress is erased (Greenery, companions, Seeds, Shards, research, pets, achievements...). Only your settings (language, sound, theme, vacation mode) are kept. This cannot be undone.'

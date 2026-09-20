@@ -29,12 +29,18 @@ const verifie = (c, ...m) => { if (!c) fail(...m); };
       hideDialogue(false);
       _evenementForce = 'noel';
       state.evenementsVus = { [`noel-${new Date().getFullYear()}`]: true };
+      renderAll();
+      await new Promise(r => setTimeout(r, 300));
+      // La bulle s'affiche d'ABORD, bandeau reduit ; la banniere et les bonus arrivent ensuite,
+      // comme en vraie partie. Elle doit redescendre toute seule.
+      showDialogue('papi', ["Ce terrain a une histoire. Une longue histoire. Que tu ne connaîtras pas aujourd'hui."], { position: 'top-right' });
+      await new Promise(r => setTimeout(r, 600));
+      const hautInitial = document.getElementById('dialogueBox').getBoundingClientRect().top;
       state.invasiveWeed = { active: true, needed: 5, done: 1 };
       startTimedBoost('golden', 2, 60000); startTimedBoost('click', 2, 60000);
       renderAll();
-      await new Promise(r => setTimeout(r, 300));
-      showDialogue('papi', ["Ce terrain a une histoire. Une longue histoire. Que tu ne connaîtras pas aujourd'hui."], { position: 'top-right' });
-      await new Promise(r => setTimeout(r, 600));
+      await new Promise(r => setTimeout(r, 700));
+      const bulleSuit = document.getElementById('dialogueBox').getBoundingClientRect().top > hautInitial + 4;
       const bulle = document.getElementById('dialogueBox').getBoundingClientRect();
       const touches = [];
       for (const [sel, nom] of [['#weatherBadge', 'meteo'], ['#eventBadge', 'saison'], ['.statsRow', 'bulles chiffrees'],
@@ -48,22 +54,37 @@ const verifie = (c, ...m) => { if (!c) fail(...m); };
         if (ix > 4 && iy > 4) touches.push(nom);
       }
       const dansLEcran = bulle.top >= 0 && bulle.bottom <= innerHeight && bulle.left >= 0 && bulle.right <= innerWidth;
-      // Onglets du magasin.
+      // Rangees d'onglets : magasin, parametres, quetes.
       hideDialogue(false);
-      openModal('shopPageOverlay'); renderAll();
-      await new Promise(r => setTimeout(r, 500));
-      const onglets = [...document.querySelectorAll('#shopTabsRow .drawerBtn')].map(b => b.getBoundingClientRect());
-      const largeurs = [...new Set(onglets.map(o => Math.round(o.width)))];
-      const coupes = [...document.querySelectorAll('#shopTabsRow .drawerBtn')].filter(b => b.scrollWidth > b.clientWidth + 1).length;
       const echelle = window._gameScale || 1;
-      return { touches, dansLEcran, largeurs, coupes, largeurDessin: Math.round(onglets[0].width / echelle) };
+      const rangees = {};
+      for (const [nom, ov, sel] of [['magasin', 'shopPageOverlay', '#shopTabsRow'],
+        ['parametres', 'settingsModalOverlay', '#settingsTabsRow'], ['quetes', 'questsModalOverlay', '#questsTabsRow']]) {
+        openModal(ov); renderAll();
+        await new Promise(r => setTimeout(r, 450));
+        const bs = [...document.querySelectorAll(`${sel} .drawerBtn`)];
+        rangees[nom] = {
+          largeurs: [...new Set(bs.map(b => Math.round(b.getBoundingClientRect().width)))],
+          coupes: bs.filter(b => b.scrollWidth > b.clientWidth + 1).length,
+          largeurDessin: Math.round(bs[0].getBoundingClientRect().width / echelle),
+        };
+        closeModal(ov);
+        await new Promise(r => setTimeout(r, 300));
+      }
+      return { touches, dansLEcran, bulleSuit, rangees };
     });
-    console.log(`  ${w}x${h} : bulle sur ${r.touches.join(', ') || 'rien'} | onglets ${r.largeurs.join('/')} px (${r.largeurDessin} px de dessin), ${r.coupes} libelle(s) coupe(s)`);
+    console.log(`  ${w}x${h} : bulle sur ${r.touches.join(', ') || 'rien'}, suit le bandeau : ${r.bulleSuit ? 'oui' : 'NON'}`);
+    for (const [nom, d] of Object.entries(r.rangees)) {
+      console.log(`      onglets ${nom.padEnd(10)} : ${d.largeurs.join('/')} px (${d.largeurDessin} px de dessin), ${d.coupes} libelle(s) coupe(s)`);
+    }
     verifie(r.touches.length === 0, `${w}x${h} : la bulle de Papi recouvre ${r.touches.join(', ')}`);
     verifie(r.dansLEcran, `${w}x${h} : la bulle de Papi sort de l ecran`);
-    verifie(r.largeurs.length === 1, `${w}x${h} : les onglets du magasin n ont pas tous la meme taille (${r.largeurs.join(', ')})`);
-    verifie(r.largeurDessin >= 100, `${w}x${h} : onglets trop etroits (${r.largeurDessin} px)`);
-    verifie(r.coupes === 0, `${w}x${h} : ${r.coupes} libelle(s) d onglet coupe(s)`);
+    verifie(r.bulleSuit, `${w}x${h} : la bulle ne se replace pas quand le bandeau grandit pendant qu elle est affichee`);
+    for (const [nom, d] of Object.entries(r.rangees)) {
+      verifie(d.largeurs.length === 1, `${w}x${h} : les onglets ${nom} n ont pas tous la meme taille (${d.largeurs.join(', ')})`);
+      verifie(d.largeurDessin >= 125, `${w}x${h} : onglets ${nom} trop etroits (${d.largeurDessin} px)`);
+      verifie(d.coupes === 0, `${w}x${h} : ${d.coupes} libelle(s) coupe(s) dans les onglets ${nom}`);
+    }
     await p.close();
   }
   console.log(problems ? `\n${problems} PROBLEME(S)` : '\nTOUT EST OK');

@@ -14,7 +14,7 @@ const ETAPES = [
   { id: 'clic',       debloque: null }, // arrive a la suite de Production
   { id: 'batiments',  debloque: () => { state.verdure = seuilOnglet('batiments') * 1.05; } },
   { id: 'special',    debloque: () => { state.verdure = seuilOnglet('special') * 1.05; } },
-  { id: 'recherche',  debloque: () => { state.totalPlayTimeSec = 1900; } },
+  { id: 'recherche',  debloque: () => { state.totalPlayTimeSec = 1900; state.knowledge = prixPremiereRecherche(); } },
   { id: 'prestige',   debloque: () => { state.verdure = 6e8; } },
 ];
 

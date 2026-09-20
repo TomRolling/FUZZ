@@ -45,7 +45,9 @@ Releases are built by `.github/workflows/build.yml`, triggered by pushing a `vX.
 `workflow_dispatch`, which builds but doesn't publish). It builds Windows/macOS/Linux in parallel via
 `tauri-apps/tauri-action`, regenerates icons, and creates a **draft** GitHub Release with all installers plus
 a signed `latest.json` for the auto-updater. Before tagging a release:
-1. Bump `"version"` in [src-tauri/tauri.conf.json](src-tauri/tauri.conf.json) — the in-app updater compares this.
+1. Bump `"version"` in [src-tauri/tauri.conf.json](src-tauri/tauri.conf.json) — the in-app updater compares this —
+   **and `VERSION_JEU` in [dist/index.html](dist/index.html)** to the same value (the web build cannot read
+   `tauri.conf.json`, so it carries its own copy; `tests/check-tables.js` fails if the two drift apart).
 2. The updater requires `TAURI_SIGNING_PRIVATE_KEY` / `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` GitHub secrets to
    already be configured (one-time setup, documented in [README.md](README.md)); the public key lives in
    `tauri.conf.json` under `plugins.updater.pubkey`.
@@ -132,6 +134,13 @@ Key structural pieces, roughly in file order:
   being replaced is itself kept under `SAVE_KEY_AVANT_IMPORT`. In the native app only, one save per day is
   also written next to the app data (`sauvegardeFichierQuotidienne` → `fuzz-sauvegarde-auto.txt`, rewritten
   in place so nothing accumulates, silent on failure).
+- **Bug reports** — a button in Options opens `#bugReportOverlay`, showing an editable, pre-filled report
+  (`rapportDeBug()`: `VERSION_JEU`, native app vs web + user agent, language, save version, play time, economy,
+  unlocked tabs, and the last 3 JS errors captured by the global `error`/`unhandledrejection` listeners). It
+  opens a pre-filled GitHub issue via `ouvrirLienExterne()`, or copies the report for players without an
+  account. External links need the `opener` Tauri plugin (Cargo.toml + main.rs + `opener:allow-open-url` in
+  capabilities); if it is missing the URL falls back to the clipboard, so this path degrades instead of
+  breaking. Covered by `tests/test-signalement.js`.
 - **Updater UI (~L3915-4019)** — wraps `window.__TAURI__.updater`/`process`; entirely inert (hidden card) when
   not running inside Tauri, so this code path can't be tested in a browser.
 - **Boot sequence (~L4249-4345)** — strictly sequential via callbacks (never parallel, to avoid flashing raw

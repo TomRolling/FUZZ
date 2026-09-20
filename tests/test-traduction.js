@@ -99,13 +99,14 @@ function suspect(texte) {
     ['nouvel objet', () => { showItemPopup({ title: tr('newItemTitle') || 'New', name: L(BUILDINGS[3], 'name'), desc: L(BUILDINGS[3], 'desc'), iconSrc: (ITEM_SPRITES[BUILDINGS[3].id] || {}).src }); }],
     ['galerie (image en grand)', () => { const c = document.querySelector('#tab-galerie .galleryItem'); if (c) c.click(); }],
     ['bulle de Papi', () => { papiSaysFromCategory('shop'); }],
+    ['signalement de bug', () => { document.getElementById('bugReportBtn').click(); }],
   ];
   for (const [nom, action] of aPart) {
     const ok = await p.evaluate(src => { try { eval('(' + src + ')()'); return true; } catch (e) { return 'ERREUR ' + e.message; } }, action.toString());
     if (ok !== true) { console.log(`  (${nom} non testee : ${ok})`); continue; }
     await p.waitForTimeout(500);
     await noter(nom);
-    await p.evaluate(() => { for (const id of ['offlineOverlay', 'dailyPopupOverlay', 'itemPopupOverlay', 'galleryLightboxOverlay']) if (isOverlayOpen(id)) closeModal(id); hideDialogue(false); });
+    await p.evaluate(() => { for (const id of ['offlineOverlay', 'dailyPopupOverlay', 'itemPopupOverlay', 'galleryLightboxOverlay', 'bugReportOverlay']) if (isOverlayOpen(id)) closeModal(id); hideDialogue(false); });
   }
 
   const douteux = [...vus.entries()].filter(([t]) => suspect(t));

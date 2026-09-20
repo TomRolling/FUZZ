@@ -106,12 +106,22 @@ const bilanOnglets = (p) => p.evaluate(() => {
 
   const lot1 = await deroulerPresentations(p, 'lot1');
   console.log('  lot 1 :', lot1.join(' > '));
-  for (const attendu of ['batiments', 'quetes', 'dailyreward', 'recherche']) {
+  for (const attendu of ['batiments', 'quetes', 'dailyreward']) {
     verifie(lot1.includes(attendu), `« ${attendu} » n a jamais ete presente`);
   }
-  verifie(lot1.indexOf('recherche') > lot1.indexOf('batiments'), 'Recherche est presentee avant Batiments');
+  // Recherche ne PEUT plus tomber dans le meme lot que Batiments : ses Connaissances ne
+  // commencent a s accumuler qu une fois Batiments presente (voir knowledgeAccumule). C est
+  // exactement ce qu on veut : deux presentations qui se suivaient sur le meme ecran.
+  verifie(!lot1.includes('recherche'), 'Recherche est presentee dans le meme lot que Batiments');
   const bilan1 = await bilanOnglets(p);
   verifie(bilan1.nonExpliques.length === 0, 'lot 1 : onglet(s) apparus sans presentation :', bilan1.nonExpliques.join(','));
+
+  // Le temps passe : les Connaissances s accumulent et Recherche arrive a son tour, seule.
+  await p.evaluate(() => { state.knowledge = prixPremiereRecherche(); renderAll(); });
+  await p.waitForTimeout(1500);
+  const lotRecherche = await deroulerPresentations(p, 'lot-recherche');
+  console.log('  lot Recherche :', lotRecherche.join(' > '));
+  verifie(lotRecherche.includes('recherche'), '« recherche » n a jamais ete presente');
 
   // --- Lot 2 : premier Prestige. Familiers (Magasin) et Defi (Quetes) tombent ensemble,
   // dans deux fenetres differentes.

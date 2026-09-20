@@ -41,8 +41,9 @@ const fail = (...m) => { console.log('  X', ...m); problems++; };
       specialApres:       test('special',    { verdure: seuilOnglet('special') }),
       rechercheSansBat:   test('recherche',  { totalPlayTimeSec: 3600 }),
       rechercheBatVue:    test('recherche',  { tabsSeen: { batiments: true }, tabsDescribed: {}, totalPlayTimeSec: 3600 }),
-      rechercheSansTemps: test('recherche',  { tabsDescribed: { batiments: true }, totalPlayTimeSec: 1799 }),
-      rechercheOk:        test('recherche',  { tabsDescribed: { batiments: true }, totalPlayTimeSec: 1800 }),
+      rechercheSansTemps: test('recherche',  { tabsDescribed: { batiments: true }, totalPlayTimeSec: 1799, knowledge: 30 }),
+      rechercheSansSavoir: test('recherche', { tabsDescribed: { batiments: true }, totalPlayTimeSec: 1800, knowledge: 0 }),
+      rechercheOk:        test('recherche',  { tabsDescribed: { batiments: true }, totalPlayTimeSec: 1800, knowledge: 30 }),
       prestigeAvant:      test('prestige',   { verdure: 4.9e8 }),
       prestigeApres:      test('prestige',   { verdure: 5e8 }),
       prestigeCumul:      test('prestige',   { verdure: 0, totalEarned: 1e12 }),
@@ -94,7 +95,7 @@ const fail = (...m) => { console.log('  X', ...m); problems++; };
   if (debut.boutons.join() !== 'settingsBtn') fail('seul le bouton Options doit etre visible, trouve:', debut.boutons);
   if (debut.ongletsReglages.join() !== 'options,stats') fail('Reglages doit contenir options,stats — trouve:', debut.ongletsReglages);
   if (debut.connaissances) fail('les Connaissances ne doivent pas etre visibles au depart');
-  if (debut.knowledge > 0) fail('les Connaissances s accumulent avant leur deblocage:', debut.knowledge);
+  if (debut.knowledge > 0) fail('les Connaissances s accumulent avant la presentation de Batiments:', debut.knowledge);
   if (debut.bulle) fail('Papi ne doit rien annoncer au lancement (Options/Stats sont silencieux)');
 
   // ---------- 3. 200 clics : le Magasin arrive avec Production + Clic ----------

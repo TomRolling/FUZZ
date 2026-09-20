@@ -74,13 +74,21 @@ async function partie(b, etat) {
   // 2b. Recherche : de quoi faire la premiere recherche des l'ouverture.
   const p = await partie(b, {
     totalClicks: 500, totalPlayTimeSec: 1900, verdure: 1e5, knowledge: 0,
-    tabsSeen: { production: true, clic: true, batiments: true, options: true, stats: true },
-    tabsDescribed: { production: true, clic: true, batiments: true, options: true, stats: true },
+    // Quetes, Bonus du jour et Succes sont deja vus : ils se debloquent au meme moment et Papi
+    // ne presente qu un onglet a la fois, sinon Recherche attendrait derriere eux.
+    tabsSeen: { production: true, clic: true, batiments: true, options: true, stats: true, quetes: true, dailyreward: true, succes: true },
+    tabsDescribed: { production: true, clic: true, batiments: true, options: true, stats: true, quetes: true, dailyreward: true, succes: true },
   });
   const r = await p.evaluate(async () => {
     hideDialogue(false);
+    // Trente minutes de jeu, pour de vrai : les Connaissances tombent depuis la presentation de
+    // Batiments (voir knowledgeAccumule), et c'est ce qui doit rendre la premiere recherche
+    // abordable — pas un cadeau a l'ouverture de l'onglet.
+    avancerTemps(1900);
     verifierNouveauxOnglets();
-    await new Promise(r => setTimeout(r, 300));
+    // L'onglet devient visible au DEBUT de son annonce, pas a la detection : on laisse la
+    // chaine de presentation demarrer (voir announceNewTabsSequentially).
+    await new Promise(r => setTimeout(r, 1800));
     const prix = prixPremiereRecherche();
     return { vue: !!state.tabsSeen.recherche, connaissances: state.knowledge, prix,
              achetable: RESEARCH.filter(x => !x.requires && x.cost <= state.knowledge).length };

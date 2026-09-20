@@ -226,7 +226,6 @@ const HEURES_MAX = parseFloat(process.argv[5] || '150');
       // une partie sans Recherche.
       for (const t of TAB_DEFS) if (!state.tabsSeen[t.id] && t.unlock(state)) {
         state.tabsSeen[t.id] = true; state.tabsDescribed[t.id] = true;
-        if (t.aLOuverture) t.aLOuverture(state);
         B.jalons[t.id] = B.t; B.evenements.push({ t: B.t, quoi: 'onglet ' + t.id });
       }
       if (B.t % 5 === 0) checkAchievements();
