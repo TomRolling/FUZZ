@@ -36,9 +36,25 @@ const verifie = (c, ...m) => { if (!c) fail(...m); };
   console.log('=== 2. on suit Papi jusqu au bout (comme un joueur) ===');
   const aPresenter = await p.evaluate(() => TAB_DEFS.filter(t => !t.silent).map(t => t.id));
   let etapes = 0;
+  let achatPendantPapi = null; // resultat de la tentative d'achat pendant une presentation
   for (; etapes < 200; etapes++) {
     const fini = await p.evaluate((ids) => ids.every(id => state.tabsDescribed[id]), aPresenter);
     if (fini) break;
+    // Pendant que Papi parle, une ligne d'achat ne doit pas repondre : ni a la souris (regle
+    // .papiParle), ni a un clic simule ou au clavier (garde de clicLigneAchat).
+    if (achatPendantPapi === null) {
+      achatPendantPapi = await p.evaluate(() => {
+        if (!isOverlayOpen('shopPageOverlay') || !isDialogueVisible()) return null;
+        const ligne = document.querySelector('#shopPageOverlay .upgrade');
+        if (!ligne) return null;
+        state.verdure = 1e9;
+        const avant = JSON.stringify(state.buildings) + JSON.stringify(state.clickUpgrades);
+        ligne.click();
+        ligne.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        return { onglet: activeShopTab, souris: getComputedStyle(ligne).pointerEvents,
+                 achat: avant !== JSON.stringify(state.buildings) + JSON.stringify(state.clickUpgrades) };
+      });
+    }
     // Clique ce que Papi designe : bouton flottant, mini-onglet, puis la bulle elle-meme.
     const action = await p.evaluate(() => {
       const bouton = document.querySelector('.floatBtn.featureHighlight');
@@ -67,6 +83,24 @@ const verifie = (c, ...m) => { if (!c) fail(...m); };
     boutons: ['shopBtn', 'settingsBtn', 'achievementsBtn', 'questsBtn'].filter(id => getComputedStyle(document.getElementById(id)).display !== 'none').length,
   }), aPresenter);
   console.log('   etapes :', etapes, '|', JSON.stringify(bilan));
+  if (!achatPendantPapi) {
+    console.log('  (aucune liste d achat a l ecran pendant une replique : verification impossible)');
+  } else {
+    console.log(`  achat pendant la presentation de « ${achatPendantPapi.onglet} » : ${achatPendantPapi.achat ? 'PASSE' : 'bloque'} (souris : ${achatPendantPapi.souris})`);
+    verifie(!achatPendantPapi.achat, 'on peut acheter pendant que Papi presente un onglet');
+    verifie(achatPendantPapi.souris === 'none', 'les lignes d achat restent cliquables a la souris pendant une presentation');
+  }
+  const apresPapi = await p.evaluate(() => {
+    if (!isOverlayOpen('shopPageOverlay')) openModal('shopPageOverlay');
+    activeShopTab = 'production'; renderAll();
+    state.verdure = 1e9;
+    const avant = JSON.stringify(state.buildings);
+    const ligne = document.querySelector('#shopPageOverlay .upgrade');
+    if (ligne) ligne.click();
+    return { presentation: presentationEnCours(), achat: avant !== JSON.stringify(state.buildings) };
+  });
+  console.log(`  une fois tout presente : presentationEnCours=${apresPapi.presentation}, achat ${apresPapi.achat ? 'possible' : 'IMPOSSIBLE'}`);
+  verifie(apresPapi.achat, 'les achats restent bloques alors que Papi a fini de parler');
   verifie(bilan.manquants.length === 0, 'onglets jamais expliques :', bilan.manquants.join(', '));
   verifie(bilan.vus.length === 0, 'onglets jamais apparus :', bilan.vus.join(', '));
   verifie(!bilan.spotlight && !bilan.annonceEnCours, 'une annonce reste en cours a la fin');

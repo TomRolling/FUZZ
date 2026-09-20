@@ -694,6 +694,11 @@
      se colle au bouton du dessus et les deux blocs n'en forment plus qu'un à l'œil. */
   .upgrade + .tabIntro, .footerBtns + .tabIntro, .soundToggleBtn + .tabIntro { margin-top: 20px; }
   .tabPanel { display: none; animation: fadeIn 0.25s ease; }
+  /* Tant que Papi présente un onglet de cette fenêtre, son contenu ne réagit plus : le joueur
+     écoute, il achètera après. Sans ça, il pouvait acheter en plein milieu d'une présentation,
+     alors que les mini-onglets, eux, étaient déjà grisés. La rangée d'onglets reste cliquable :
+     c'est justement là que le doigt l'envoie. */
+  .papiParle .tabPanel { pointer-events: none; }
   .tabPanel.active { display: block; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -1464,7 +1469,7 @@ const SAVE_VERSION = 2;
 // Version affichée du jeu. L'app native connaît la sienne (tauri.conf.json) mais la version web
 // n'a aucun moyen de la lire : elle est donc écrite ici, et tests/check-tables.js vérifie que
 // les deux restent d'accord. Sert au signalement de bug (voir rapportDeBug).
-const VERSION_JEU = '0.6.6';
+const VERSION_JEU = '0.6.7';
 // Trois dernières erreurs JavaScript, gardées en mémoire pour le rapport de bug : sans elles, un
 // signalement de joueur dit « ça a planté » et rien de plus. Jamais écrites sur le disque.
 const _erreursRecentes = [];
@@ -6015,6 +6020,10 @@ function renderMiniTabsRow(containerId, group, activeId, onSelect, revealed) {
   // Dès qu'il a fini de parler, tout est dégrisé — rester coincé sans rien pouvoir ouvrir
   // jusqu'à la fermeture de la fenêtre n'avait aucune raison d'être.
   const isGroupLocked = isTutorialSpeakingFor(group);
+  // Même verrou pour le CONTENU de la fenêtre (voir .papiParle) : les mini-onglets grisés ne
+  // servaient à rien si le joueur pouvait acheter pendant que Papi parlait.
+  const fenetre = document.getElementById(GROUP_TO_OVERLAY[group]);
+  if (fenetre) fenetre.classList.toggle('papiParle', isGroupLocked);
   const ids = unlocked.map(t => t.id);
   // offsetParent est null tant qu'un ancêtre est en display:none — c'est ainsi qu'on sait si
   // cette rangée est réellement sous les yeux du joueur. Lu SEULEMENT quand la réponse sert :
@@ -6344,6 +6353,19 @@ function renderShopResourceBar() {
 function setHtmlIfChanged(el, html) {
   if (el && el._html !== html) { el.innerHTML = html; el._html = html; }
 }
+// Vrai tant que Papi présente un onglet, quel que soit le menu (voir isTutorialSpeakingFor).
+function presentationEnCours() {
+  return !!_pendingSpotlightGroup && isTutorialSpeakingFor(_pendingSpotlightGroup);
+}
+// Un seul gestionnaire pour toutes les lignes d'achat, plutôt qu'une fermeture par ligne et par
+// rendu. Il refuse le clic pendant une présentation : la règle CSS (.papiParle) arrête la souris,
+// celui-ci arrête aussi le clavier et tout clic simulé. L'achat automatique, lui, appelle
+// buyBuilding directement et n'est pas concerné.
+function clicLigneAchat(e) {
+  if (presentationEnCours()) return;
+  const acheter = e.currentTarget._acheter;
+  if (acheter) acheter(e);
+}
 function renderItemRows(container, rows) {
   if (!container) return;
   const sameSet = container.children.length === rows.length &&
@@ -6363,7 +6385,9 @@ function renderItemRows(container, rows) {
     // le navigateur renormalise — la comparaison serait alors toujours fausse et on
     // reconstruirait la ligne à chaque fois, ce qu'on cherche justement à éviter.
     if (div._rowHtml !== r.html) { div._rowHtml = r.html; div.innerHTML = r.html; }
-    div.onclick = r.onclick || null;
+    div._acheter = r.onclick || null;
+    const voulu = r.onclick ? clicLigneAchat : null;
+    if (div.onclick !== voulu) div.onclick = voulu;
   });
 }
 
