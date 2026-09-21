@@ -982,15 +982,11 @@ function renderVacationToggle() {
   label.className = 'state' + (state.vacationMode ? ' on' : '');
 }
 
-
 // Un panneau enfermé dans une fenêtre FERMÉE n'a aucune raison d'être redessiné : personne ne
 // le voit, et il sera de toute façon régénéré à l'ouverture (openModal appelle renderAll).
 // renderAll tourne à la cadence des clics : sans ce filtre, chaque clic reconstruisait les
 // chaînes de 28 compagnons + 16 bâtiments + 28 améliorations de clic + la galerie (82 objets),
 // pour un magasin fermé la quasi-totalité du temps.
-function isDialogueVisible() {
-  return document.getElementById('dialogueOverlay').classList.contains('visible');
-}
 function isOverlayOpen(id) {
   const el = document.getElementById(id);
   return !!el && el.classList.contains('open');
@@ -1100,4 +1096,3 @@ function updateDocumentTitle(cps) {
   const titre = `🌱 +${formatNum(cps === undefined ? totalCps() : cps)}/sec · FUZZ`;
   if (titre !== _titreApplique) { document.title = titre; _titreApplique = titre; }
 }
-

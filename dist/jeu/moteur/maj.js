@@ -1,4 +1,3 @@
-// ================= EXPORT / IMPORT / SHARE / RESET =================
 // ================= MISES À JOUR AUTOMATIQUES (app native uniquement) =================
 // Invisible et sans effet sur la version web/PWA — seule l'app Tauri a accès à
 // window.__TAURI__.updater. Le fichier latest.json consulté est généré et signé
@@ -107,69 +106,3 @@ document.getElementById('updateCheckBtn').addEventListener('click', () => {
   if (_pendingUpdate) installPendingUpdate();
   else refreshUpdateStatus(false);
 });
-
-document.getElementById('soundToggleBtn').addEventListener('click', () => {
-  state.soundEnabled = !state.soundEnabled;
-  if (state.soundEnabled) playTone(600, 0.06, 'sine', 0.04);
-  updateMusicVolume();
-  saveGame(); renderSoundToggle();
-});
-// Animations : on fait tourner les trois etats (systeme -> reduites -> completes).
-document.getElementById('animToggleBtn').addEventListener('click', () => {
-  const suite = { null: true, true: false, false: null };
-  state.reduireAnimations = suite[String(state.reduireAnimations)];
-  if (state.reduireAnimations === undefined) state.reduireAnimations = null;
-  appliquerConfort(); saveGame(); renderConfortToggles(); renderAll();
-});
-document.getElementById('zoomToggleBtn').addEventListener('click', () => {
-  const i = Math.max(0, ZOOMS_UI.indexOf(state.zoomUI));
-  state.zoomUI = ZOOMS_UI[(i + 1) % ZOOMS_UI.length];
-  appliquerConfort(); saveGame(); renderConfortToggles();
-});
-document.getElementById('volumeSlider').addEventListener('input', (e) => {
-  state.soundVolume = parseInt(e.target.value, 10);
-  document.getElementById('volumeValueLabel').textContent = state.soundVolume + '%';
-  updateMusicVolume();
-});
-document.getElementById('volumeSlider').addEventListener('change', () => {
-  saveGame();
-  playTone(600, 0.06, 'sine', 0.04);
-});
-document.getElementById('creditsToggleBtn').addEventListener('click', () => {
-  const panel = document.getElementById('creditsPanel');
-  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-});
-document.getElementById('langToggleBtn').addEventListener('click', () => {
-  state.lang = state.lang === 'fr' ? 'en' : 'fr';
-  applyStaticTranslations();
-  saveGame(); renderAll();
-});
-document.getElementById('darkModeToggleBtn').addEventListener('click', () => {
-  state.forceDarkMode = !state.forceDarkMode;
-  saveGame(); renderStats(); renderDarkModeToggle();
-});
-document.getElementById('vacationToggleBtn').addEventListener('click', () => {
-  state.vacationMode = !state.vacationMode;
-  if (state.vacationMode && state.invasiveWeed) state.invasiveWeed = null;
-  saveGame(); renderAll();
-});
-
-function encodeSave() { return btoa(unescape(encodeURIComponent(JSON.stringify(state)))); }
-// Import (fichier, code collé, sauvegarde de secours) : la partie importée est enregistrée, puis la
-// page est rechargée. Le démarrage normal reconstruit alors tout (boutons révélés, annonces de
-// Papi, bonus et minuteurs en mémoire), exactement comme au lancement : rien de l'ancienne partie
-// ne reste à l'écran. (La sauvegarde faite en quittant la page réécrit la même partie importée.)
-//
-// La partie remplacee est mise de cote dans SAVE_KEY_AVANT_IMPORT, un emplacement que le jeu ne
-// touche jamais tout seul : la sauvegarde de secours, elle, est rafraichie toutes les 5 minutes et
-// recevait aussitot la partie importee, si bien qu'un mauvais import faisait perdre la partie d'avant.
-// `revenir` : c'est justement cette partie mise de cote qu'on remet en place (bouton « Revenir... »).
-function applyImportedData(parsed, revenir) {
-  if (revenir) localStorage.removeItem(SAVE_KEY_AVANT_IMPORT);
-  else localStorage.setItem(SAVE_KEY_AVANT_IMPORT, JSON.stringify(state));
-  applyLoadedState(parsed);
-  saveGame();
-  try { sessionStorage.setItem(IMPORT_TOAST_FLAG, '1'); } catch (e) {}
-  location.reload();
-}
-

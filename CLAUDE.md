@@ -11,17 +11,21 @@ There is no build step, bundler, framework or module system: the files share one
 single file would, which is why the Playwright tests can drive the game by writing globals (`state`,
 `activeShopTab`, …) from inside the page. `src-tauri/` is a thin Rust shell (Tauri config + plugins) around it.
 
-**Two rules keep that arrangement working**, and `tests/check-tables.js` enforces the first two mechanically
-(load order, no name declared twice, no file missing from `index.html`):
+**Two rules keep that arrangement working**, and `tests/check-tables.js` enforces both mechanically, without a
+browser — along with two invariants the split made possible to break silently (no name declared in two files,
+where the last one loaded wins; no `.js` on disk that `index.html` never loads):
 
 1. **Load order is the dependency order** — a file may only *use* at load time what an earlier file declared,
    because function hoisting no longer spans files.
 2. **A callback that can fire before the last script is registered in
    [dist/jeu/demarrage.js](dist/jeu/demarrage.js)** — timers, `requestAnimationFrame`, `requestIdleCallback`,
-   any `Observer`. The browser can render *between* two `<script>` tags: a `ResizeObserver` registered in an
-   early file delivered its first callback before the render functions existed, and broke 13 tests.
-   `addEventListener` is exempt (it only fires on user action, long after load), and so are the error
-   listeners in `moteur/base.js`, which must be first. The viewport-scaling block inline in `index.html`'s
+   any `Observer`, and the page lifecycle events (`visibilitychange`, `beforeunload`, `pagehide`). The browser
+   can render *between* two `<script>` tags: a `ResizeObserver` registered in an early file delivered its
+   first callback before the render functions existed and broke 13 tests, and the tick saved *before*
+   `applyOfflineProgress`, silently wiping the offline gain. Each callback is **defined** in its own file under
+   a name (`tickJeu`, `peutEtreHerbeDoree`…); `demarrage.js` only **arms** it — one line per timer, so it reads
+   as the list of everything that runs on its own. `addEventListener` for user input is exempt (it fires on a
+   click, long after load), and so are the error listeners in `moteur/base.js`, which must be first. The viewport-scaling block inline in `index.html`'s
    `<head>` is the one deliberate exception: it must run before the first paint.
 
 The same `dist/index.html` also works standalone as a website/PWA (it detects `window.__TAURI__` at runtime
@@ -77,33 +81,37 @@ registers the service worker and reloads offline (the service worker only regist
 ## Architecture of dist/jeu/
 
 Everything is global functions/objects operating on one mutable `state` object. Files load in the order listed
-in `index.html`; within a file, find the relevant `// ================` section comment.
+in `index.html`; within a file, find the relevant `// ================` section comment. **This table is the
+reference, not the folder names**: `moteur/` and `ui/` are a rough split, and several `moteur/` files touch the DOM.
 
 | file | what lives there |
 |---|---|
-| `moteur/base.js` | `VERSION_JEU`, `SAVE_VERSION`, capture of the last JS errors |
-| `contenu/compagnons.js` | `BUILDINGS`, `ITEM_SPRITES` |
-| `contenu/textes.js` | `UI_STRINGS`, `tr`, `L`, `selonLangue`, comfort settings |
-| `contenu/dialogues.js` | characters, `PAPI_LINES` |
-| `moteur/dialogue.js` | `showDialogue`, `showScene`, typewriter |
+| `moteur/base.js` | `VERSION_JEU`, `SAVE_VERSION`, `isTauriApp`, capture of the last JS errors |
+| `contenu/compagnons.js` | `BUILDINGS`, `ITEM_SPRITES`, milestones, `GROWTH` — pure data |
+| `contenu/textes.js` | `UI_STRINGS`, `tr`, `L`, `selonLangue`, comfort settings (loaded early: `etat.js` applies them on load) |
+| `contenu/dialogues.js` | characters, `PAPI_LINES`, tab announcements (`PAPI_TAB_ANNOUNCEMENTS_BI`) — the file to edit when writing dialogue |
+| `moteur/dialogue.js` | `showDialogue`, `showScene`, typewriter, dialogue queue, `isDialogueVisible`, shop comments |
 | `contenu/ameliorations.js` | click, buildings, research, prestige, ascension tables |
 | `contenu/monde.js` | weather, `EVENEMENTS`, `ACHIEVEMENTS` |
 | `moteur/onglets.js` | `TAB_DEFS` and its `unlock` predicates |
 | `moteur/etat.js` | `defaultState`, save/load/migrations, backup rotation |
-| `moteur/economie.js` | `totalCps`, multipliers, every `buy*`, `finaliserAchat`, prestige/ascension resets |
+| `moteur/economie.js` | `totalCps`, multipliers, every `buy*` (click cosmetics included), `finaliserAchat`, prestige/ascension resets |
 | `moteur/audio.js` | procedural SFX, background music |
 | `ui/effets.js` | click particles, combo, `scheduleRenderAll` |
 | `moteur/evenements.js` | weather changes, invasive weeds, quests, daily reward |
-| `ui/navigation.js` | tabs, modals, `verifierNouveauxOnglets`, Papi announcements |
-| `ui/rendu.js` | every `render*` and `renderAll` |
-| `boucle.js` | click handler, golden weed, butterflies, auto-buy |
+| `ui/navigation.js` | theme, tabs, modals, `verifierNouveauxOnglets`, mini-tab rows, Papi queue (`queueOrShowPapi`) |
+| `ui/presentation.js` | tab announcements, finger, halo, dialogue anchoring, descriptions, `arreterPresentationsEnCours` |
+| `ui/popups.js` | item icons, "new item" window, `fermerSurgissante` (fade-out shared by the small windows) |
+| `ui/rendu.js` | `renderAll` and most `render*` (a few feature-specific ones live next to their feature) |
+| `boucle.js` | click handler, golden weed, butterflies, hourly cat, auto-buy, weather/visits/inactivity tick |
 | `moteur/modetest.js` | hidden test mode (Ctrl+Shift+D) |
-| `moteur/temps.js` | idle tick, `applyOfflineProgress` |
+| `moteur/temps.js` | `tickJeu` (one second of play), `accrue`, `applyOfflineProgress` |
 | `moteur/maj.js` | native updater UI |
-| `moteur/fichiers.js` | export/import, clipboard, reset |
+| `ui/options.js` | Options panel wiring: sound, animations, zoom, volume, language, dark mode, holiday mode, credits |
+| `moteur/fichiers.js` | `encodeSave`, `applyImportedData`, export/import, clipboard, full reset, quit |
 | `ui/signalement.js` | bug report |
 | `moteur/tutoriel.js` | first-run tutorial |
-| `demarrage.js` | boot sequence, and every load-time side effect |
+| `demarrage.js` | boot sequence, then arms every timer, observer and lifecycle listener (one line each) |
 
 Key behaviours, with the file from the table above:
 

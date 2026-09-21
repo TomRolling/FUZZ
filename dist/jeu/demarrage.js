@@ -7,17 +7,6 @@ syncRevealedButtonsOnLoad();
 // (elles ne dépendent de rien d'autre — les rejouer à chaque rendu balayait tout le document).
 applyStaticTranslations();
 renderAll();
-requestAnimationFrame(animerCompteurVerdure);
-
-// Observateur du bandeau : il DOIT etre branche ici, dans le dernier fichier charge.
-// Un ResizeObserver delivre son premier appel des le prochain rendu du navigateur, ce qui
-// peut arriver ENTRE deux balises <script> : branche plus haut, son callback s'executait
-// avant que les fonctions de rendu existent (isDialogueVisible introuvable).
-// Regle generale : tout effet de bord declenche au chargement vit dans ce fichier.
-const _observateurBandeau = new ResizeObserver(recalerBulleSousBandeau);
-for (const el of [document.querySelector('.topBar'), document.getElementById('boostRow')]) {
-  if (el) _observateurBandeau.observe(el);
-}
 
 // ---- Séquence de lancement : splash (studio → logo) → choix de langue (1re fois
 // seulement) → vérification de mise à jour → scène d'ouverture/tutoriel (1re fois seulement).
@@ -115,3 +104,28 @@ if (isTauriApp() && window.__TAURI__.window) {
   } catch (e) { console.error('Interception de fermeture indisponible :', e); }
 }
 
+// ================= RAPPELS ARMÉS AU CHARGEMENT =================
+// Tout ce qui peut se déclencher tout seul est armé ICI, dans le dernier fichier chargé et après
+// applyOfflineProgress : minuteurs, requestAnimationFrame, requestIdleCallback, observateurs, et
+// les événements de cycle de vie de la page. Armé plus tôt, un rappel pouvait partir entre deux
+// balises <script> — le navigateur peut rendre entre elles, et sur le web chaque fichier est une
+// requête. Un ResizeObserver a ainsi appelé des fonctions pas encore chargées, et le tick
+// sauvegardait avant le calcul du gain hors ligne, qui disparaissait sans la moindre erreur.
+// Ce que fait chaque rappel est défini dans son fichier ; seul le « quand » vit ici.
+// Règle vérifiée par tests/check-tables.js.
+requestAnimationFrame(animerCompteurVerdure);
+const _observateurBandeau = new ResizeObserver(recalerBulleSousBandeau);
+for (const el of [document.querySelector('.topBar'), document.getElementById('boostRow')]) {
+  if (el) _observateurBandeau.observe(el);
+}
+// Changer d'onglet ou fermer peut survenir pendant le chargement : sauvegarder à ce moment-là
+// réécrivait lastSave avant le calcul du gain hors ligne.
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveGame(); });
+window.addEventListener('beforeunload', () => { saveGame(); });
+setInterval(peutEtreHerbeDoree, 5000);   // herbe dorée, toutes les 3 à 6 minutes
+setInterval(peutEtrePapillons, 5000);    // papillons, toutes les 4 à 8 minutes
+setInterval(bonusHoraireChat, 3600000);  // chat du jardin, une fois par heure
+setInterval(runAutomations, 1000);       // achats et capacités automatiques
+setInterval(tickMeteoEtVisites, 10000);  // météo, visites de Papi, inactivité, remarques
+setInterval(tickJeu, 1000);              // une seconde de jeu
+planifierPrechauffage();                 // fenêtres mises en page pendant un temps mort

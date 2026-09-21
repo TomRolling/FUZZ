@@ -1,9 +1,8 @@
-// ================= IDLE TICK =================
+// ================= TICK DE JEU ET PROGRESSION =================
+// Une seconde de jeu, armée dans demarrage.js après applyOfflineProgress.
 let _idleTickCount = 0;
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveGame(); });
-window.addEventListener('beforeunload', () => { saveGame(); });
 let _appStartTime = Date.now();
-setInterval(() => {
+function tickJeu() {
   if (!challengeIs('mains')) {
     const gapSec = (Date.now() - (_lastClickTime || _appStartTime)) / 1000;
     if (gapSec > state.maxIdleGapSec) state.maxIdleGapSec = gapSec;
@@ -12,13 +11,23 @@ setInterval(() => {
   maybeShowDailyLoginReward();
   checkAchievements();
   verifierNouveauxOnglets(); // après checkAchievements : l'onglet Succès dépend d'un succès obtenu
-  _idleTickCount = (_idleTickCount || 0) + 1;
+  _idleTickCount++;
   if (_idleTickCount % 5 === 0) saveGame(); // écriture disque toutes les 5s seulement, pas à chaque tick
   // Passe par renderAll (groupé sur la frame) plutôt que d'appeler les rendus un par un :
   // ceux des fenêtres fermées étaient redessinés chaque seconde dans le vide.
   scheduleRenderAll();
   updateDocumentTitle(); // hors rAF : le titre doit aussi se mettre à jour onglet en arrière-plan
-}, 1000);
+}
+// `sec` secondes de jeu : production (x prodMult), Connaissances et temps de jeu. Utilisé par la
+// boucle du jeu (chaque seconde) et par le mode test pour avancer le temps.
+function accrue(sec, prodMult = 1) {
+  const gain = totalCps() * prodMult * sec;
+  state.verdure += gain;
+  state.totalEarned += gain;
+  state.dailyProgress.earn += gain;
+  grantKnowledge(knowledgeRate() * sec);
+  state.totalPlayTimeSec = (state.totalPlayTimeSec || 0) + sec;
+}
 
 // ================= OFFLINE PROGRESS =================
 // Au-delà, l'absence ne rapporte plus rien : le jeu récompense qu'on revienne, pas qu'on parte.

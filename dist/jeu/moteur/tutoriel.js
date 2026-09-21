@@ -83,5 +83,4 @@ function prechaufferLaSuivante() {
 function planifierPrechauffage() {
   (window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(prechaufferLaSuivante, { timeout: 4000 });
 }
-planifierPrechauffage();
 

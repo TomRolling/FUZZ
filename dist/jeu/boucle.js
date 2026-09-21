@@ -77,15 +77,16 @@ function spawnGoldenWeed() {
   document.getElementById('gameViewport').appendChild(el);
   setTimeout(() => { if (el.parentNode) el.remove(); }, 8000);
 }
-setInterval(() => {
+// Toutes les 3 à 6 minutes (armé dans demarrage.js) : l'herbe dorée est un petit plus pour le
+// joueur attentif, pas un moteur de progression (à 45-90 s, elle rapportait presque autant que
+// toute la production).
+function peutEtreHerbeDoree() {
   if (isMainScreenBlocked()) return; // pas pendant un menu ouvert ni un tutoriel en cours
-  // Toutes les 3 a 6 minutes : l'herbe doree est un petit plus pour le joueur attentif, pas un
-  // moteur de progression (a 45-90 s, elle rapportait presque autant que toute la production).
   if (Date.now() - state.lastGoldenSpawn > 180000 + Math.random() * 180000) {
     state.lastGoldenSpawn = Date.now();
     spawnGoldenWeed();
   }
-}, 5000);
+}
 
 // ================= ÉVÉNEMENT ALÉATOIRE : NUÉE DE PAPILLONS =================
 function spawnButterflies() {
@@ -108,28 +109,29 @@ function spawnButterflies() {
   document.getElementById('gameViewport').appendChild(el);
   setTimeout(() => { if (el.parentNode) el.remove(); }, 8000);
 }
-setInterval(() => {
+// Toutes les 4 à 8 minutes (armé dans demarrage.js).
+function peutEtrePapillons() {
   if (isMainScreenBlocked()) return; // pas pendant un menu ouvert ni un tutoriel en cours
-  if (Date.now() - (state.lastButterflySpawn||0) > 240000 + Math.random() * 240000) { // toutes les 4 a 8 minutes
+  if (Date.now() - (state.lastButterflySpawn||0) > 240000 + Math.random() * 240000) {
     state.lastButterflySpawn = Date.now();
     spawnButterflies();
   }
-}, 5000);
+}
 
 // ================= CHAT DU JARDIN (bonus horaire) =================
 // Trois minutes de production offertes, une fois par heure. Le banc d'équilibrage lit cette
 // fonction pour simuler le chat ET pour estimer ce qu'il vaut : une seule formule pour les deux.
 const CHAT_SECONDES_OFFERTES = 180;
 function bonusChatJardin(cps) { return Math.max(20, cps * CHAT_SECONDES_OFFERTES); }
-setInterval(() => {
-  if (uniqueActive('chatJardin')) {
-    const bonus = bonusChatJardin(totalCps());
-    state.verdure += bonus; state.totalEarned += bonus;
-    saveGame(); renderAll();
-    const chat = L(UNIQUE_BUILDINGS.find(u => u.id === 'chatJardin'), 'name');
-    showToast(selonLangue(`🐈 ${chat} ramène +${formatNum(bonus)} Verdure !`, `🐈 ${chat} brings back +${formatNum(bonus)} Greenery!`));
-  }
-}, 3600000);
+// Une fois par heure (armé dans demarrage.js).
+function bonusHoraireChat() {
+  if (!uniqueActive('chatJardin')) return;
+  const bonus = bonusChatJardin(totalCps());
+  state.verdure += bonus; state.totalEarned += bonus;
+  saveGame(); renderAll();
+  const chat = L(UNIQUE_BUILDINGS.find(u => u.id === 'chatJardin'), 'name');
+  showToast(selonLangue(`🐈 ${chat} ramène +${formatNum(bonus)} Verdure !`, `🐈 ${chat} brings back +${formatNum(bonus)} Greenery!`));
+}
 
 // ================= AUTOMATISATION =================
 // Offerte aux étapes de la progression (voir AUTOMATIONS) et pilotée depuis l'onglet
@@ -197,9 +199,8 @@ function runAutomations() {
     }
   }
 }
-setInterval(runAutomations, 1000);
 
-// ================= WEATHER & INVASIVE TICK =================
+// ================= MÉTÉO, VISITES, INACTIVITÉ ET REMARQUES SPONTANÉES =================
 function checkInactivity() {
   if (state.inactivityAnnounced) return;
   const idleSec = (Date.now() - (state.lastActionTime || Date.now())) / 1000;
@@ -218,16 +219,6 @@ function maybeShowRandomUnrelated() {
     papiSaysFromCategory(category, { position: 'top-right' });
   }
 }
-setInterval(() => { maybeChangeWeather(); maybeSpawnInvasive(); checkInactivity(); maybeShowRandomUnrelated(); }, 10000);
-
-// `sec` secondes de jeu : production (x prodMult), Connaissances et temps de jeu. Utilisé par la
-// boucle du jeu (chaque seconde) et par le mode test pour avancer le temps.
-function accrue(sec, prodMult = 1) {
-  const gain = totalCps() * prodMult * sec;
-  state.verdure += gain;
-  state.totalEarned += gain;
-  state.dailyProgress.earn += gain;
-  grantKnowledge(knowledgeRate() * sec);
-  state.totalPlayTimeSec = (state.totalPlayTimeSec || 0) + sec;
-}
+// Toutes les 10 secondes (armé dans demarrage.js).
+function tickMeteoEtVisites() { maybeChangeWeather(); maybeSpawnInvasive(); checkInactivity(); maybeShowRandomUnrelated(); }
 

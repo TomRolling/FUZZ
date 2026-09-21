@@ -795,53 +795,234 @@ function papiSaysFromCategory(category, options = {}) {
   return true;
 }
 
-// Commentaire de Papi spécifique au magasin (achats, déblocages liés au shop) : une bulle
-// flottante SANS portrait, qui n'apparaît que si on est effectivement dans le magasin —
-// sinon la réplique est simplement ignorée pour cette fois (pas de report vers plus tard,
-// contrairement aux autres répliques de Papi).
-let _shopCommentTimer = null;
-function hideShopComment() {
-  clearTimeout(_shopCommentTimer);
-  stopTypewriter(document.getElementById('shopCommentText'));
-  document.getElementById('shopComment').style.display = 'none';
-}
-function showShopComment(category) {
-  const overlay = document.getElementById('shopPageOverlay');
-  if (!overlay || !overlay.classList.contains('open')) return false;
-  const line = pickPapiLine(category);
-  if (!line) return false;
-  const box = document.getElementById('shopComment');
-  document.getElementById('shopCommentName').textContent = charName('papi');
-  box.style.display = 'block';
-  clearTimeout(_shopCommentTimer);
-  // S'efface tout seul après un temps de lecture, comme les autres remarques de Papi.
-  typewriterEffect(document.getElementById('shopCommentText'), line, 20, () => {
-    _shopCommentTimer = setTimeout(hideShopComment, papiReadingPauseMs(line));
-  });
-  _shopCommentCurrentFullText = line;
-  return true;
-}
-let _shopCommentCurrentFullText = '';
-document.getElementById('shopComment').addEventListener('click', () => {
-  const textEl = document.getElementById('shopCommentText');
-  if (skipTypewriterIfActive(textEl, _shopCommentCurrentFullText)) return;
-  hideShopComment();
-});
-
-let _dialogueQueue = [];
-let _dialogueOnComplete = null;
-// Vrai pendant une bulle "verrouillée" (voir showDialogue({blockAdvance:true})) : le joueur ne
-// peut PAS cliquer sur la bulle pour l'avancer/fermer, seul dismissDialogue() (appelé quand il
-// clique sur la vraie cible indiquée) le peut — sinon un joueur qui clique vite "zappe" la
-// bulle avant même de voir le spotlight, et enchaîne plusieurs annonces d'un coup.
-let _dialogueBlockAdvance = false;
-
-// showDialogue('leroy', "Une phrase.", { position: 'bottom-left' })
-// showDialogue('papi', ["Première phrase.", "Deuxième phrase."], { position: 'top-right', modal: true, onComplete: () => {...} })
-//
-// characterId : une clé de CHARACTERS ci-dessus ('leroy', 'papi'...)
-// lines       : une phrase (string) ou plusieurs (array de strings), affichées une par une avec le bouton "Suivant"
-// options.position : 'bottom-left' (défaut) | 'bottom-right' | 'top-left' | 'top-right' | 'center'
-// options.modal     : true = bloque le jeu derrière une vitre sombre (pour un moment d'histoire important) ;
-//                      false/absent = le joueur peut continuer à jouer pendant que ça s'affiche (défaut)
-// options.onComplete: fonction optionnelle appelée quand le joueur a fermé le dialogue
+// ================= ANNONCES DES ONGLETS =================
+// Ce que Papi dit en présentant chaque onglet (sauf Production, disponible dès le début).
+const PAPI_TAB_ANNOUNCEMENTS_BI = {
+  // Une explication = plusieurs bulles courtes : une réplique trop longue agrandirait la bulle.
+  // Mieux vaut une bulle de plus qu'une bulle plus grande (vérifié par tests/mesure-bulles.js).
+  // Un onglet ne parle que de ce que le joueur connaît déjà au moment où il apparaît.
+  production: {
+    fr: [
+      "Voici le cœur du jardin : les compagnons. Chacun te rapporte de la Verdure tout seul, chaque seconde, même quand tu ne cliques pas.",
+      "Chaque exemplaire acheté coûte 20 % de plus que le précédent. C'est normal, il faut bien que je paie mon loyer.",
+      "À 10, 20, 30, 40, 50 exemplaires d'un même compagnon, et ainsi de suite, tu passes un palier : sa production est multipliée par 1.25.",
+      "La petite barre sous son nom te montre où tu en es avant le prochain palier.",
+      "Les « ??? » sont des compagnons que tu n'as pas encore découverts. Ils se dévoilent dans l'ordre : achète celui d'avant pour voir le suivant.",
+      "Les boutons au-dessus de la liste choisissent combien d'exemplaires tu achètes d'un coup. MAX achète tout ce que tu peux payer.",
+      "Et l'étiquette « Meilleur rapport qualité/prix » indique le compagnon qui rapporte le plus pour son prix. Si tu hésites, suis-la.",
+    ],
+    en: [
+      "Here's the heart of the garden: companions. Each one brings you Greenery on its own, every second, even when you're not clicking.",
+      "Each copy you buy costs 20% more than the previous one. That's normal, I've got rent to pay.",
+      "At 10, 20, 30, 40, 50 copies of the same companion, and so on, you reach a milestone: its production is multiplied by 1.25.",
+      "The little bar under its name shows how close you are to the next milestone.",
+      "The \"???\" are companions you haven't discovered yet. They're revealed in order: buy the previous one to see the next.",
+      "The buttons above the list choose how many copies you buy at once. MAX buys as many as you can afford.",
+      "And the \"Best value for money\" tag points to the companion that earns the most for its price. If you're unsure, follow it.",
+    ],
+  },
+  clic: {
+    fr: [
+      "Tiens, j'avais des gants renforcés qui traînaient au fond du magasin, cachés derrière un stock dont je préfère ne pas parler.",
+      "Ici, tu améliores ton clic. Chaque amélioration ne s'achète qu'une seule fois, avec de la Verdure.",
+      "Certaines ajoutent de la Verdure à chaque clic, d'autres te donnent un pourcentage de ta production par clic, et d'autres multiplient le tout.",
+      "Plus ta production augmente, plus les pourcentages rapportent. C'est utile tant que tu cliques à la main.",
+    ],
+    en: [
+      "Here, I had some reinforced gloves lying around at the back of the shop, hidden behind stock I'd rather not talk about.",
+      "This is where you upgrade your click. Each upgrade can only be bought once, with Greenery.",
+      "Some add Greenery to every click, some give you a percentage of your production per click, and others multiply everything.",
+      "The more your production grows, the more those percentages are worth. It's useful as long as you click by hand.",
+    ],
+  },
+  batiments: {
+    fr: [
+      "Ça, c'est du solide : chaque bâtiment ne s'achète qu'une seule fois, et il améliore un seul compagnon, celui indiqué dans sa description.",
+      "Par exemple, un bâtiment « x2 » pour tes têtards double la production de tous tes têtards. Les autres compagnons, eux, ne changent pas.",
+      "Commence donc par les compagnons que tu as en grand nombre. Un bâtiment pour un compagnon que tu n'as pas ne rapporte rien du tout.",
+    ],
+    en: [
+      "Now this is solid stuff: each building can only be bought once, and it improves a single companion, the one named in its description.",
+      "For example, an \"x2\" building for your tadpoles doubles the production of all your tadpoles. The other companions don't change.",
+      "So start with the companions you own a lot of. A building for a companion you don't have earns nothing at all.",
+    ],
+  },
+  special: {
+    fr: [
+      "J'ai reçu du matériel… disons, particulier : des objets uniques, en un seul exemplaire chacun.",
+      "La plupart sont des capacités : tu les déclenches toi-même pour un gros coup de pouce, puis elles se rechargent pendant un moment.",
+      "Une fois achetée, une capacité apparaît sous forme de rond à gauche de l'écran. Clique dessus quand elle brille ; le cadran sombre montre la recharge.",
+      "Quelques objets fonctionnent tout seuls, sans que tu aies quoi que ce soit à faire, comme le chat qui te rapporte un petit cadeau toutes les heures.",
+      "Lis bien les descriptions avant d'acheter : certains objets sont plus malins qu'ils n'en ont l'air.",
+    ],
+    en: [
+      "I've received some… let's say, unusual gear: one-of-a-kind items, a single copy of each.",
+      "Most of them are abilities: you trigger them yourself for a big boost, then they recharge for a while.",
+      "Once bought, an ability shows up as a circle on the left of the screen. Click it when it glows; the dark dial shows the recharge.",
+      "A few items work on their own, without you having to do anything, like the cat that brings you a little gift every hour.",
+      "Read the descriptions carefully before buying: some items are cleverer than they look.",
+    ],
+  },
+  recherche: {
+    fr: [
+      "Un ami m'a offert des livres de recherche. Enfin, « offert »… disons qu'il me devait de l'argent.",
+      "La Recherche se paie en Connaissances 📚. Tu en gagnes 1 par minute de jeu, quoi que tu fasses : ta production n'y change rien.",
+      "Chaque recherche donne un bonus permanent : plus de production, des compagnons moins chers ou plus de Connaissances.",
+      "D'autres réduisent les effets du mauvais temps, ou te font gagner davantage pendant que le jeu est fermé.",
+      "Certaines demandent d'avoir terminé la précédente. En bas, les recherches infinies s'achètent encore et encore, un peu plus cher à chaque fois.",
+      "Une recherche achetée est acquise pour de bon : tu la garderas quoi qu'il arrive.",
+    ],
+    en: [
+      "A friend gave me some research books. Well, \"gave\"… let's say he owed me money.",
+      "Research is paid with Knowledge 📚. You earn 1 per minute of play, whatever you do: your production doesn't change that.",
+      "Each research gives a permanent bonus: more production, cheaper companions or more Knowledge.",
+      "Others reduce the effects of bad weather, or make you earn more while the game is closed.",
+      "Some require the previous one first. At the bottom, infinite research can be bought again and again, a little pricier each time.",
+      "Research you buy is yours for good: you'll keep it no matter what.",
+    ],
+  },
+  prestige: {
+    fr: [
+      "Tu as bien avancé. Il faut qu'on parle du Prestige, qu'on appelle aussi « Terraformer ». Écoute bien, c'est important.",
+      "Terraformer, c'est tout recommencer : ta Verdure, tes compagnons, ton Clic, tes Bâtiments et ton Spécial repartent à zéro.",
+      "Ce que tu gardes : ta Recherche, tes Connaissances, tes succès et tout ce que tu achètes avec des Graines.",
+      "En échange, tu gagnes des Graines Cosmiques 🌌. Leur nombre dépend de la Verdure que tu as en poche au moment de terraformer.",
+      "Il faut 40 milliards de Verdure en poche pour 1 Graine. Pour 2 Graines, il en faut 8 fois plus, et pour 3, 27 fois plus.",
+      "Tes Graines servent à deux choses. D'abord, chaque Graine gagnée augmente ta production pour toujours : +10 % pour 1, +20 % pour 4, +30 % pour 9.",
+      "Dépenser tes Graines ne fait pas baisser ce bonus, car il compte les Graines que tu as gagnées, pas celles qui te restent.",
+      "Ensuite, tu les dépenses ici, dans des améliorations que tu gardes d'un Prestige à l'autre.",
+      "Tu recommences donc, mais en plus fort : tout se rachète beaucoup plus vite. La barre au-dessus du bouton montre ce qu'il te manque pour la Graine suivante.",
+    ],
+    en: [
+      "You've come a long way. We need to talk about Prestige, also called \"Terraforming\". Listen carefully, this matters.",
+      "Terraforming means starting over: your Greenery, companions, Click, Buildings and Special all go back to zero.",
+      "What you keep: your Research, your Knowledge, your achievements and everything you buy with Seeds.",
+      "In exchange, you earn Cosmic Seeds 🌌. How many depends on the Greenery you have on hand when you terraform.",
+      "You need 40 billion Greenery on hand for 1 Seed. For 2 Seeds you need 8 times more, and for 3, 27 times more.",
+      "Your Seeds do two things. First, every Seed earned raises your production forever: +10% for 1, +20% for 4, +30% for 9.",
+      "Spending your Seeds doesn't lower that bonus, because it counts the Seeds you've earned, not the ones you have left.",
+      "Second, you spend them here, on upgrades you keep from one Prestige to the next.",
+      "So you start over, but stronger: everything gets bought back much faster. The bar above the button shows what you need for the next Seed.",
+    ],
+  },
+  ascension: {
+    fr: [
+      "Là, on passe dans la cour des grands : l'Ascension. C'est un cran au-dessus du Prestige, alors écoute bien.",
+      "Une Ascension fonctionne d'abord comme un Prestige : Verdure, compagnons, Clic, Bâtiments et Spécial repartent à zéro.",
+      "Mais en plus, tu perds tes Graines Cosmiques, le bonus de production qu'elles te donnaient et les améliorations de l'onglet Prestige.",
+      "Ce que tu gardes : ta Recherche, tes Connaissances, tes succès, tes familiers et leurs niveaux, les défis réussis et ce qui s'achète avec des Éclats.",
+      "En échange, tu gagnes des Éclats Stellaires ✨ selon les Graines gagnées depuis ta dernière Ascension : 15 pour ton premier Éclat, puis de plus en plus.",
+      "Chaque Éclat gagné augmente ta production de 50 % pour toujours (un peu moins au-delà de 20 Éclats), et te fait gagner plus de Graines à chaque Prestige.",
+      "Après chaque Ascension, tes Prestiges rapportent donc plus de Graines. Ils restent toujours utiles, puisque ce sont eux qui te font gagner des Éclats.",
+      "Tu dépenses tes Éclats ici, dans des améliorations permanentes. Chaque Ascension débloque aussi des nouveautés : familiers, automatisations et défis.",
+      "Le bon moment pour une Ascension ? Quand tes Graines ne te font plus assez avancer. Tu perds leur bonus, mais tes Éclats te feront repartir bien plus vite.",
+    ],
+    en: [
+      "Now we're in the big leagues: Ascension. It's a step above Prestige, so listen carefully.",
+      "An Ascension first works like a Prestige: Greenery, companions, Click, Buildings and Special go back to zero.",
+      "But on top of that, you lose your Cosmic Seeds, the production bonus they gave you and the upgrades from the Prestige tab.",
+      "What you keep: your Research, Knowledge, achievements, pets and their levels, completed challenges and what you buy with Shards.",
+      "In exchange, you earn Stellar Shards ✨ based on the Seeds earned since your last Ascension: 15 for your first Shard, then more and more.",
+      "Every Shard earned raises your production by 50% forever (a bit less past 20 Shards), and makes you earn more Seeds on every Prestige.",
+      "So after each Ascension, your Prestiges bring in more Seeds. They always stay useful, since they're what earns you Shards.",
+      "You spend your Shards here, on permanent upgrades. Each Ascension also unlocks new things: pets, automations and challenges.",
+      "The right time for an Ascension? When your Seeds no longer move you forward enough. You lose their bonus, but your Shards will get you going much faster.",
+    ],
+  },
+  automatisation: {
+    fr: [
+      "Bon. J'en ai assez de te voir cliquer sur les mêmes bestioles, ça me fatigue rien qu'à te regarder.",
+      "Ici, le jardin se débrouille tout seul. Chaque automatisation s'allume ou s'éteint avec son bouton, quand tu veux.",
+      "L'achat automatique achète tout seul le compagnon au meilleur rapport qualité/prix. Il n'achète que des compagnons.",
+      "L'activation automatique lance tes capacités dès qu'elles sont rechargées, sans remplacer un bonus plus fort déjà en cours.",
+      "Le Prestige automatique terraforme dès que tu peux gagner le nombre de Graines choisi avec les boutons − et +. Il est éteint au départ.",
+      "Les automatisations se débloquent une par une, au fil de ta progression.",
+    ],
+    en: [
+      "Right. I'm tired of watching you click the same critters, it wears me out just looking at you.",
+      "In here, the garden takes care of itself. Each automation switches on or off with its button, whenever you like.",
+      "Automatic buying buys the best-value companion on its own. It only buys companions.",
+      "Automatic abilities trigger your abilities as soon as they recharge, without replacing a stronger bonus already running.",
+      "Automatic Prestige terraforms as soon as you can earn the number of Seeds picked with the − and + buttons. It starts switched off.",
+      "Automations unlock one by one as you progress.",
+    ],
+  },
+  familiers: {
+    fr: [
+      "Tu as remarqué la bestiole qui traîne dans ton jardin ? C'est ton familier. D'autres viendront au fil de ta progression.",
+      "Un seul familier te suit à la fois. Clique sur « Choisir » pour en changer quand tu veux : c'est gratuit et l'effet est immédiat.",
+      "Chacun t'aide à sa façon : production, clics, Connaissances, capacités ou prix des compagnons.",
+      "Tu les fais monter de niveau avec des Graines Cosmiques, jusqu'au niveau 10. Chaque niveau augmente leur bonus.",
+      "Seul le familier choisi donne son bonus, mais les niveaux gagnés restent acquis pour toujours.",
+    ],
+    en: [
+      "Noticed the critter hanging around your garden? That's your pet. Others will come as you progress.",
+      "Only one pet follows you at a time. Click \"Choose\" to switch whenever you like: it's free and takes effect right away.",
+      "Each one helps in its own way: production, clicks, Knowledge, abilities or companion prices.",
+      "You level them up with Cosmic Seeds, up to level 10. Each level raises their bonus.",
+      "Only the chosen pet gives its bonus, but the levels you earn are kept forever.",
+    ],
+  },
+  galerie: {
+    fr: [
+      "Et voici ma petite fierté : tous les compagnons et les bâtiments que tu as rencontrés, bien rangés.",
+      "Ceux que tu n'as pas encore trouvés apparaissent en silhouette. Et non, je ne te dirai pas ce que c'est : il faut bien garder un peu de mystère.",
+    ],
+    en: [
+      "And here's my little pride: every companion and building you've come across, neatly filed.",
+      "The ones you haven't found yet appear as silhouettes. And no, I won't tell you what they are: we have to keep some mystery.",
+    ],
+  },
+  dailyreward: {
+    fr: [
+      "Et pense à repasser tous les jours : je te laisse un petit quelque chose devant la porte.",
+      "Le calendrier tourne sur 7 jours, avec une récompense chaque jour, et le septième jour est le plus généreux.",
+      "Si tu manques un jour, la série repart au premier jour. Alors passe au moins une fois par jour, même rapidement.",
+    ],
+    en: [
+      "And remember to come by every day: I leave a little something at your door.",
+      "The calendar runs over 7 days, with a reward each day, and the seventh day is the most generous.",
+      "If you miss a day, the streak goes back to day one. So drop by at least once a day, even briefly.",
+    ],
+  },
+  quetes: {
+    fr: [
+      "J'ai quelques petites missions pour toi, histoire de pimenter un peu les choses.",
+      "Chaque jour, tu reçois 3 quêtes : cliquer, produire de la Verdure, acheter des compagnons ou attraper des herbes dorées.",
+      "Quand une barre est pleine, réclame ta récompense.",
+      "Les quêtes changent chaque jour. Rien n'est obligatoire, mais c'est toujours bon à prendre.",
+    ],
+    en: [
+      "I've got a few small missions for you, just to spice things up.",
+      "Every day you get 3 quests: clicking, producing Greenery, buying companions or catching golden weeds.",
+      "When a bar is full, claim your reward.",
+      "Quests change every day. Nothing is mandatory, but it's always worth taking.",
+    ],
+  },
+  defi: {
+    fr: [
+      "Si tu te sens motivé, j'ai des défis pour les courageux : des règles tordues, comme l'interdiction de cliquer ou des prix dix fois plus élevés.",
+      "Lancer un défi fait tout repartir de zéro, comme un Prestige, mais tu gardes tes Graines. Ensuite, tu dois respecter une règle.",
+      "Pour le réussir, fais un Prestige qui rapporte au moins le nombre de Graines demandé, en respectant la règle jusqu'au bout.",
+      "Au Prestige, le défi s'arrête, qu'il soit réussi ou non. Tu peux aussi abandonner quand tu veux. Un seul défi à la fois.",
+      "Un défi réussi te donne une récompense permanente, indiquée sous le défi. Les suivants se débloquent au fil de ta progression.",
+    ],
+    en: [
+      "If you're feeling motivated, I've got challenges for the brave: twisted rules, like no clicking allowed or prices ten times higher.",
+      "Starting a challenge resets everything, like a Prestige, but you keep your Seeds. Then you have to follow a rule.",
+      "To complete it, do a Prestige worth at least the number of Seeds required, following the rule all the way.",
+      "On Prestige, the challenge ends, whether it's completed or not. You can also give up anytime. One challenge at a time.",
+      "A completed challenge gives you a permanent reward, shown under the challenge. The next ones unlock as you progress.",
+    ],
+  },
+  succes: {
+    fr: [
+      "Tiens, voici le registre de tes exploits. Pratique pour te vanter.",
+      "Chaque succès débloqué augmente ta production de Verdure pour toujours. Le bonus total est affiché en haut.",
+    ],
+    en: [
+      "Here's the record of your achievements. Handy for bragging.",
+      "Every achievement unlocked raises your Greenery production forever. The total bonus is shown at the top.",
+    ],
+  },
+};

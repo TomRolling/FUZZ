@@ -1,3 +1,46 @@
+// ================= BULLES DE DIALOGUE, COMMENTAIRES DU MAGASIN, SCÈNES =================
+// Commentaire de Papi spécifique au magasin (achats, déblocages liés au shop) : une bulle
+// flottante SANS portrait, qui n'apparaît que si on est effectivement dans le magasin —
+// sinon la réplique est simplement ignorée pour cette fois (pas de report vers plus tard,
+// contrairement aux autres répliques de Papi).
+let _shopCommentTimer = null;
+function hideShopComment() {
+  clearTimeout(_shopCommentTimer);
+  stopTypewriter(document.getElementById('shopCommentText'));
+  document.getElementById('shopComment').style.display = 'none';
+}
+function showShopComment(category) {
+  const overlay = document.getElementById('shopPageOverlay');
+  if (!overlay || !overlay.classList.contains('open')) return false;
+  const line = pickPapiLine(category);
+  if (!line) return false;
+  const box = document.getElementById('shopComment');
+  document.getElementById('shopCommentName').textContent = charName('papi');
+  box.style.display = 'block';
+  clearTimeout(_shopCommentTimer);
+  // S'efface tout seul après un temps de lecture, comme les autres remarques de Papi.
+  typewriterEffect(document.getElementById('shopCommentText'), line, 20, () => {
+    _shopCommentTimer = setTimeout(hideShopComment, papiReadingPauseMs(line));
+  });
+  _shopCommentCurrentFullText = line;
+  return true;
+}
+let _shopCommentCurrentFullText = '';
+document.getElementById('shopComment').addEventListener('click', () => {
+  const textEl = document.getElementById('shopCommentText');
+  if (skipTypewriterIfActive(textEl, _shopCommentCurrentFullText)) return;
+  hideShopComment();
+});
+
+let _dialogueQueue = [];
+let _dialogueOnComplete = null;
+// Vrai pendant une bulle "verrouillée" (voir showDialogue({blockAdvance:true})) : le joueur ne
+// peut PAS cliquer sur la bulle pour l'avancer/fermer, seul dismissDialogue() (appelé quand il
+// clique sur la vraie cible indiquée) le peut — sinon un joueur qui clique vite "zappe" la
+// bulle avant même de voir le spotlight, et enchaîne plusieurs annonces d'un coup.
+let _dialogueBlockAdvance = false;
+
+
 // ================= EFFET MACHINE À ÉCRIRE (texte qui défile lettre par lettre) =================
 // Un clic sur "Suivant" pendant que ça défile affiche le texte en entier d'un coup (comme
 // dans les vrais JRPG) ; un clic une fois le texte entièrement affiché passe à la réplique suivante.
@@ -52,6 +95,15 @@ let _autoAdvanceTimer = null;
 // Vitesse de la machine à écrire (ms par caractère) — voir showDialogue({typeSpeed: ...}).
 let _dialogueTypeSpeed = 20;
 
+// showDialogue('leroy', "Une phrase.", { position: 'bottom-left' })
+// showDialogue('papi', ["Première phrase.", "Deuxième phrase."], { position: 'top-right', modal: true, onComplete: () => {...} })
+//
+// characterId : une clé de CHARACTERS (contenu/dialogues.js) ('leroy', 'papi'...)
+// lines       : une phrase (string) ou plusieurs (array de strings), affichées une par une avec le bouton "Suivant"
+// options.position : 'bottom-left' (défaut) | 'bottom-right' | 'top-left' | 'top-right' | 'center'
+// options.modal     : true = bloque le jeu derrière une vitre sombre (pour un moment d'histoire important) ;
+//                      false/absent = le joueur peut continuer à jouer pendant que ça s'affiche (défaut)
+// options.onComplete: fonction optionnelle appelée quand le joueur a fermé le dialogue
 function showDialogue(characterId, lines, options = {}) {
   if (_dialogueBusy) {
     _dialogueCallQueue.push({ characterId, lines, options });
@@ -161,9 +213,9 @@ document.getElementById('dialogueBox').addEventListener('click', () => {
   const textEl = document.getElementById('dialogueText');
   if (!skipTypewriterIfActive(textEl, _dialogueCurrentFullText)) advanceDialogue();
 });
-// Ferme de force une bulle "verrouillée" (blockAdvance) — appelé quand le joueur clique sur la
-// cible réelle indiquée par le spotlight plutôt que sur la bulle elle-même. Sans effet sur une
-// bulle normale (celles-là se ferment via le clic dessus, voir ci-dessus).
+function isDialogueVisible() {
+  return document.getElementById('dialogueOverlay').classList.contains('visible');
+}
 // Démontage complet d'une bulle : minuteurs coupés, file vidée, overlay caché. Les trois
 // endroits qui faisaient ça à la main avaient fini par diverger (l'un d'eux laissait tourner la
 // machine à écrire et l'auto-avance, et abandonnait la file d'appels).
@@ -181,6 +233,9 @@ function hideDialogue(executerLaSuite) {
   if (executerLaSuite) { if (suite) suite(); }
   else { _dialogueBusy = false; _dialogueCallQueue = []; }
 }
+// Ferme de force une bulle "verrouillée" (blockAdvance) — appelé quand le joueur clique sur la
+// cible réelle indiquée par le spotlight plutôt que sur la bulle elle-même. Sans effet sur une
+// bulle normale (celles-là se ferment via le clic dessus, voir ci-dessus).
 function dismissDialogue() {
   if (!_dialogueBlockAdvance) return;
   hideDialogue(true);

@@ -741,3 +741,23 @@ function bump(id) {
   el.classList.add('bump');
 }
 
+// ================= COSMÉTIQUES DE CLIC =================
+function hasSkin(id) { return !!state.ownedSkins[id]; }
+function activeSkinEmojis() {
+  const sk = SKINS.find(x => x.id === state.activeSkin) || SKINS[0];
+  return sk.emojis;
+}
+function buySkin(id) {
+  const sk = SKINS.find(x => x.id === id);
+  if (!sk || hasSkin(id)) return;
+  if (state.cosmicSeeds < sk.cost) return;
+  state.cosmicSeeds -= sk.cost;
+  state.ownedSkins[id] = true;
+  finaliserAchat({ onglet: 'clic' }); // les cosmétiques vivent dans l'onglet Clic
+  showToast(state.lang === 'en' ? `🎨 Cosmetic unlocked: ${L(sk,'name')}` : `🎨 Cosmétique débloqué : ${L(sk,'name')}`);
+}
+function selectSkin(id) {
+  if (!hasSkin(id) || state.activeSkin === id) return;
+  state.activeSkin = id;
+  saveGame(); renderAll();
+}

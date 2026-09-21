@@ -100,8 +100,8 @@ for (const [id, entry] of Object.entries(ITEM_SPRITES)) {
 }
 for (const [id, t] of allItems) if (!ITEM_SPRITES[id]) fail('objet sans sprite:', id, '(' + t + ')');
 
-// ===== Decoupage en fichiers : trois invariants que rien d'autre ne verifie =====
-// Le jeu partage un seul espace global entre 23 fichiers charges a la suite. Trois pannes
+// ===== Decoupage en fichiers : quatre invariants que rien d'autre ne verifie =====
+// Le jeu partage un seul espace global entre des fichiers charges a la suite. Quatre pannes
 // deviennent possibles, toutes silencieuses, et aucune n'existait du temps du fichier unique.
 const declare = new Map();          // nom -> premier fichier qui le declare
 const doublons = [];
@@ -131,7 +131,27 @@ for (const { rel, code } of SOURCES) {
   }
 }
 
-// 3. Completude : un fichier present sur le disque mais absent d'index.html ne s'execute
+// 3. Rappels differes : un minuteur, un requestAnimationFrame/requestIdleCallback ou un
+//    observateur arme au premier niveau d'un fichier peut partir entre deux balises <script>,
+//    avant la fin du chargement. Seul demarrage.js, charge en dernier, a le droit d'en armer.
+//    (Colonne 0 : un appel dans un corps de fonction ne s'execute pas au chargement.)
+//    Les evenements de cycle de vie (visibilitychange, beforeunload, pagehide) comptent aussi :
+//    le joueur peut changer d'onglet pendant le chargement.
+const DERNIER = FICHIERS_JEU[FICHIERS_JEU.length - 1];
+if (DERNIER !== 'jeu/demarrage.js') fail('demarrage.js doit etre charge en dernier ; le dernier est ' + DERNIER);
+const ARME_UN_RAPPEL = new RegExp([
+  '^(?:(?:const|let|var)\\s+\\w+\\s*=\\s*)?(?:\\(?window\\.)?(?:setInterval|setTimeout|requestAnimationFrame|requestIdleCallback|queueMicrotask)\\b',
+  '^(?:(?:const|let|var)\\s+\\w+\\s*=\\s*)?new\\s+\\w*Observer\\b',
+  '^(?:document|window)\\.addEventListener\\(\\s*[\'"](?:visibilitychange|beforeunload|pagehide)[\'"]',
+].join('|'));
+for (const { rel, code } of SOURCES) {
+  if (rel === DERNIER) continue;
+  code.split(/\r?\n/).forEach((ligne, i) => {
+    if (ARME_UN_RAPPEL.test(ligne)) fail(`rappel differe arme au chargement hors de demarrage.js: ${rel}:${i + 1}`);
+  });
+}
+
+// 4. Completude : un fichier present sur le disque mais absent d'index.html ne s'execute
 //    jamais, et rien ne le signale.
 const surDisque = [];
 (function parcours(d, prefixe) {
