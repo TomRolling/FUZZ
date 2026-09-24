@@ -7,7 +7,7 @@ function tickJeu() {
     const gapSec = (Date.now() - (_lastClickTime || _appStartTime)) / 1000;
     if (gapSec > state.maxIdleGapSec) state.maxIdleGapSec = gapSec;
   }
-  accrue(_vitesseTest, boostMult('golden'));
+  accrue(_vitesseTest, boostMult('golden') * boostMult('papillon'));
   maybeShowDailyLoginReward();
   checkAchievements();
   verifierNouveauxOnglets(); // après checkAchievements : l'onglet Succès dépend d'un succès obtenu

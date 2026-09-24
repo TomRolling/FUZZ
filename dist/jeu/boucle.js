@@ -96,9 +96,12 @@ function spawnButterflies() {
   el.style.left = (10 + Math.random() * 80) + '%';
   el.style.top = (15 + Math.random() * 65) + '%';
   el.onclick = () => {
-    const duree = 25000;
-    startTimedBoost('click', 2, duree);
-    showToast(state.lang === 'en' ? `🦋 Swarm of butterflies! x2 click gain for ${formatDureeCourte(duree / 1000)}` : `🦋 Nuée de papillons ! x2 gain par clic pendant ${formatDureeCourte(duree / 1000)}`);
+    // Profil inverse de l'herbe dorée : celle-ci frappe fort et court (x2 sur 25 s), la nuée
+    // accompagne longtemps et doucement. Sur le clic, qui pèse quelques pour cent du revenu,
+    // le bonus était nul au banc : il fallait le mettre sur la production pour qu'il existe.
+    const duree = 60000;
+    startTimedBoost('papillon', 1.5, duree);
+    showToast(state.lang === 'en' ? `🦋 Swarm of butterflies! x1.5 production for ${formatDureeCourte(duree / 1000)}` : `🦋 Nuée de papillons ! x1.5 production pendant ${formatDureeCourte(duree / 1000)}`);
     playGoldenSound();
     saveGame(); renderAll();
     el.remove();

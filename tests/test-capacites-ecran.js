@@ -64,18 +64,30 @@ const verifie = (c, ...m) => { if (!c) fail(...m); };
   verifie(/^\d+ 🌌$/.test(fam.bouton), 'le bouton doit afficher seulement le prix');
   verifie(/7 Graines Cosmiques/.test(fam.ressource), 'la ressource affichee doit etre les Graines');
 
-  console.log('=== 5. cases du magasin toutes a la meme hauteur ===');
+  // Les cases avaient toutes la meme hauteur, partout : 136px, taillees pour l'onglet le plus
+  // charge. Les sept onglets sans sprite n'en remplissaient alors que 28%, et on ne voyait que
+  // 3,9 objets a l'ecran sur une liste de 39 recherches. La hauteur suit desormais le contenu.
+  // Ce qu'on verifie a la place : assez d'objets visibles d'un coup, et pas de dents de scie a
+  // l'interieur d'un meme onglet (les objets d'un onglet ont la meme forme, leurs cases aussi).
+  console.log('=== 5. cases du magasin : denses, et regulieres dans un onglet ===');
   const tailles = await p.evaluate(() => {
     state.buildings = { stagiaire: 30, voisin: 12, [BUILDINGS[2].id]: 3 };
-    const h = new Set();
+    const zone = document.querySelector('.shopPageContent').getBoundingClientRect().height;
+    const out = {};
     for (const t of TAB_DEFS.filter(t => t.group === 'shop')) {
       activeShopTab = t.id; renderAll();
-      for (const row of document.querySelectorAll('#tab-' + t.id + ' .upgrade')) h.add(Math.round(row.getBoundingClientRect().height));
+      const h = [...document.querySelectorAll('#tab-' + t.id + ' .upgrade')].map(r => Math.round(r.getBoundingClientRect().height));
+      if (!h.length) continue;
+      const moy = h.reduce((a, b) => a + b, 0) / h.length;
+      out[t.id] = { min: Math.min(...h), max: Math.max(...h), visibles: +(zone / moy).toFixed(1) };
     }
-    return [...h];
+    return out;
   });
-  console.log('   hauteurs :', JSON.stringify(tailles));
-  verifie(tailles.length === 1, 'toutes les cases du magasin doivent avoir la meme hauteur');
+  for (const [onglet, d] of Object.entries(tailles)) {
+    console.log(`   ${onglet.padEnd(15)} ${d.min}-${d.max}px, ${d.visibles} cases visibles`);
+    verifie(d.visibles >= 5, `onglet ${onglet} : seulement ${d.visibles} cases visibles a l ecran`);
+    verifie(d.max <= d.min * 2, `onglet ${onglet} : hauteurs en dents de scie (${d.min} a ${d.max}px)`);
+  }
 
   console.log('=== 6. mode test : Tout debloquer fait apparaitre les boutons ===');
   const p2 = await b.newPage({ viewport: { width: 1280, height: 820 } });

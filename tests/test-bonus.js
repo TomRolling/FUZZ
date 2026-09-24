@@ -51,18 +51,18 @@ const CHIPS = () => [...document.querySelectorAll('#boostRow .boostChip')].map(c
     if (!(golden[0].barre > 90)) fail('la jauge devrait etre quasi pleine au debut:', golden[0].barre);
   }
 
-  console.log('=== papillons par-dessus (x2 par clic, 25s) ===');
+  console.log('=== papillons par-dessus (x1.5 production, 60s) ===');
   const deux = await page.evaluate((f) => {
     document.querySelector('.golden') || spawnButterflies();
     const el = [...document.querySelectorAll('.golden')].find(e => e.textContent === '🦋');
     el.click();
     renderAll();
-    return { chips: eval('(' + f + ')')(), mult: _boosts.click && _boosts.click.mult, total: _boosts.click && _boosts.click.totalMs };
+    return { chips: eval('(' + f + ')')(), mult: _boosts.papillon && _boosts.papillon.mult, total: _boosts.papillon && _boosts.papillon.totalMs };
   }, CHIPS.toString());
   console.log(' ', JSON.stringify(deux));
   if (deux.chips.length !== 2) fail('deux jauges attendues, trouve', deux.chips.length);
-  if (deux.mult !== 2) fail('les papillons doivent poser explicitement un multiplicateur de 2, trouve:', deux.mult);
-  if (deux.total !== 25000) fail('duree totale des papillons attendue 25000, trouve:', deux.total);
+  if (deux.mult !== 1.5) fail('les papillons doivent poser explicitement un multiplicateur de 1.5, trouve:', deux.mult);
+  if (deux.total !== 60000) fail('duree totale des papillons attendue 60000, trouve:', deux.total);
 
   console.log('=== le compte a rebours descend ===');
   const t1 = await page.evaluate((f) => eval('(' + f + ')')()[0].texte, CHIPS.toString());

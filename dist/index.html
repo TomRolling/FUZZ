@@ -98,6 +98,17 @@
   * { box-sizing: border-box; }
   html, body { height: 100%; overscroll-behavior: none; }
   :root {
+    /* Echelle de mouvement. Quatre durees et trois courbes pour toute l'interface : ce qui entre
+       ralentit en arrivant, ce qui sort accelere en partant, et ce qui merite du caractere
+       depasse legerement sa cible. Les boucles infinies (respirations) ne sont pas ici : elles
+       gardent leur propre duree, plus longue, et la courbe ease-in-out. */
+    --t-instant: 0.12s;  /* retour tactile : survol, appui, fermeture d'une petite fenetre */
+    --t-rapide:  0.2s;   /* un petit element apparait ou change */
+    --t-normal:  0.32s;  /* une fenetre, un panneau, un changement d'onglet */
+    --t-lent:    0.6s;   /* une recompense, une annonce, une transition scenarisee */
+    --e-entree:  cubic-bezier(0.2, 0, 0, 1);
+    --e-sortie:  cubic-bezier(0.4, 0, 1, 1);
+    --e-rebond:  cubic-bezier(0.34, 1.4, 0.64, 1);
     --accent: #a8c69f;
     --accent-dark: #7fa377;
     --ink: #5c4a3d;
@@ -141,7 +152,7 @@
     width: 100%;
     height: 100dvh;
     height: var(--app-height, 100dvh);
-    transition: background 1.2s ease, color 0.6s ease;
+    transition: background var(--t-lent) ease-in-out, color var(--t-lent) ease-in-out;
     overflow: hidden;
     user-select: none;
     -webkit-user-select: none;
@@ -259,7 +270,7 @@
   @property --cd { syntax: '<number>'; inherits: true; initial-value: 0; }
   .abilityBar { position: absolute; left: 30px; top: 50%; transform: translateY(-50%); z-index: 40; display: flex; flex-direction: column; gap: 22px; }
   .abilityBar:empty { display: none; }
-  .abilityBtn { position: relative; width: 52px; height: 52px; border-radius: 50%; background: var(--panel-bg); border: 3px solid var(--accent-dark); box-shadow: 0 3px 8px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 26px; transition: --cd 1s linear, filter 0.15s; }
+  .abilityBtn { position: relative; width: 52px; height: 52px; border-radius: 50%; background: var(--panel-bg); border: 3px solid var(--accent-dark); box-shadow: 0 3px 8px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 26px; transition: --cd 1s linear, filter var(--t-instant); }
   /* Icône ronde qui remplit exactement l'intérieur du cercle (52 px - 2 x 3 px de bordure = 46 px).
      L'image est un peu plus grande que le cercle puis découpée en rond : le cadre carré du
      sprite tombe hors du disque visible. */
@@ -284,7 +295,7 @@
     font-size: 11px;
     font-weight: 800;
     box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    animation: boostChipIn 0.25s ease-out;
+    animation: boostChipIn var(--t-rapide) var(--e-entree);
   }
   @keyframes boostChipIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
   .boostChip .boostTime { color: var(--accent-texte); margin-left: 6px; padding-left: 6px; border-left: 1px solid rgba(0,0,0,0.15); }
@@ -294,16 +305,19 @@
   .boostChip .boostBar {
     position: absolute; left: 0; bottom: 0; height: 3px;
     background: var(--accent-dark);
-    transition: width 0.25s linear;
+    transition: width var(--t-rapide) linear;
   }
   .boostChip.gold { border-color: #f4b400; }
   .boostChip.gold .boostTime { color: #b37400; }
   .boostChip.gold .boostBar { background: #f4b400; }
+  .boostChip.papillon { border-color: var(--purple-texte); }
+  .boostChip.papillon .boostTime { color: #6b4fa8; }
+  .boostChip.papillon .boostBar { background: var(--purple-texte); }
   .boostChip.click { border-color: var(--purple-texte); }
   .boostChip.click .boostTime { color: #6b4fa8; }
   .boostChip.click .boostBar { background: var(--purple); }
 
-  .invasiveBox { background: #ffe0e0; color: #5a1a18; border: 2px solid #e53935; border-radius: 12px; padding: 8px 14px; margin-top: 8px; width: 100%; max-width: 760px; text-align: center; font-size: 12px; cursor: pointer; animation: pulse 1.2s infinite; }
+  .invasiveBox { background: #ffe0e0; color: #5a1a18; border: 2px solid #e53935; border-radius: 12px; padding: 8px 14px; margin-top: 8px; width: 100%; max-width: 760px; text-align: center; font-size: 12px; cursor: pointer; animation: pulse 1.2s ease-in-out infinite; }
   @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(229,57,53,0.35); } 50% { box-shadow: 0 0 0 8px rgba(229,57,53,0); } }
   .invasiveBox b { color: #b71c1c; }
 
@@ -325,20 +339,32 @@
     font-size: 58px;
     line-height: 1.15;
     font-weight: 900;
-    color: rgba(92, 74, 61, 0.3);
+    /* C'est la SEULE consigne visible pendant les 200 premiers clics : elle doit se lire.
+       A 0.3 d'alpha combine a l'animation, le contraste tombait a 2,5:1, sous le seuil de
+       lisibilite (3:1 pour du grand texte). L'alpha de la couleur reste haut, c'est
+       l'animation qui fait respirer le mot. */
+    color: rgba(92, 74, 61, 1);
     animation: pulseScale 1.8s ease-in-out infinite;
     pointer-events: none;
     text-align: center;
     max-width: 80%;
   }
-  body.theme-4 .clickText, body.theme-5 .clickText { color: rgba(255,255,255,0.25); }
-  .clickZone.disabled .clickText { font-size: 40px; color: rgba(229,57,53,0.5); animation: none; }
-  @keyframes pulseScale { 0%,100% { transform: scale(1); opacity: 0.35; } 50% { transform: scale(1.12); opacity: 0.65; } }
+  body.theme-4 .clickText, body.theme-5 .clickText { color: rgba(255,255,255,0.9); }
+  /* Thèmes sombres et mode sombre forcé : le texte posé DIRECTEMENT sur le fond garderait sinon
+     la couleur brune du thème clair — 1,2:1 pour le titre du jeu, illisible. Les panneaux, eux,
+     restent clairs dans ces thèmes : on ne touche donc pas au jeton --ink, seulement à ces
+     quelques éléments-là. Vérifié par tests/test-contraste.js, qui sait désormais mesurer un
+     texte posé sur le dégradé de fond. */
+  body.darkOverride .clickText { color: rgba(255,255,255,0.92); }
+  body.theme-4 .wordmark, body.theme-5 .wordmark { color: #f0f0ff; }
+  body.theme-4 .nextGoalBox, body.theme-5 .nextGoalBox { background: rgba(0,0,0,0.38); color: #f0f0ff; }
+  .clickZone.disabled .clickText { font-size: 40px; color: rgba(183,28,28,0.95); animation: none; }
+  @keyframes pulseScale { 0%,100% { transform: scale(1); opacity: 0.72; } 50% { transform: scale(1.12); opacity: 1; } }
 
-  .floatText { position: fixed; pointer-events: none; font-weight: bold; color: var(--accent-texte); animation: floatUp 0.8s ease-out forwards; z-index: 50; font-size: 18px; }
+  .floatText { position: fixed; pointer-events: none; font-weight: bold; color: var(--accent-texte); animation: floatUp var(--t-lent) var(--e-entree) forwards; z-index: 50; font-size: 18px; }
   @keyframes floatUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-40px); } }
 
-  .golden { position: fixed; font-size: 30px; cursor: pointer; z-index: 100; animation: floaty 2s ease-in-out infinite, popIn 0.3s ease-out; filter: drop-shadow(0 0 6px gold); }
+  .golden { position: fixed; font-size: 30px; cursor: pointer; z-index: 100; animation: floaty 2s ease-in-out infinite, popIn var(--t-normal) var(--e-rebond); filter: drop-shadow(0 0 6px gold); }
   @keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
   @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
 
@@ -362,7 +388,7 @@
     font-size: 20px;
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-    transition: transform 0.15s;
+    transition: transform var(--t-instant);
   }
   .floatBtn:hover { transform: translateY(-2px); }
   /* Une seule règle, qui ne dit que "caché tant que non révélé" — surtout pas COMMENT afficher
@@ -387,12 +413,12 @@
     65%  { opacity: 1; transform: scale(1.12) translateY(0); }
     100% { opacity: 1; transform: scale(1) translateY(0); }
   }
-  .drawerBtn.tabAppear { animation: tabAppear 0.5s cubic-bezier(0.34, 1.4, 0.64, 1); }
+  .drawerBtn.tabAppear { animation: tabAppear var(--t-lent) var(--e-rebond); }
   /* Les deux animations doivent tourner ENSEMBLE : une règle qui n'en déclarerait qu'une
      écraserait l'autre, et le halo doré s'éteindrait pendant l'apparition — pile au moment où
      il sert le plus. */
   .drawerBtn.tabAppear.featureHighlight {
-    animation: tabAppear 0.5s cubic-bezier(0.34, 1.4, 0.64, 1), featurePulse 0.8s ease-in-out infinite;
+    animation: tabAppear var(--t-lent) var(--e-rebond), featurePulse 0.8s ease-in-out infinite;
   }
   .tutorialZoneHighlight {
     position: relative;
@@ -448,7 +474,7 @@
     background: transparent;
     border: none;
     box-shadow: none;
-    transition: transform 0.15s, filter 0.15s;
+    transition: transform var(--t-instant), filter var(--t-instant);
   }
   .shopFloatBtn:hover { transform: translateY(-2px); filter: brightness(1.06); }
   /* PAS de `image-rendering: pixelated` ici : l'image source fait 926px de large et n'est
@@ -573,15 +599,15 @@
      l'ouverture et redescend à la fermeture. Pendant qu'il bouge, les repères des tutoriels le
      suivent (voir suivreFenetrePendantAnimation). `translate` et non `transform` : aucune position
      existante n'est écrasée. */
-  .sideModalOverlay.open { animation: fenetreEntree 0.18s ease-out; }
+  .sideModalOverlay.open { animation: fenetreEntree var(--t-rapide) var(--e-entree); }
   /* Une seule sortie pour les fenêtres latérales ET les petites fenêtres (Nouvel objet, Bonus
      du jour, Absence) : elles s'ouvraient en douceur mais disparaissaient d'un coup. */
-  .sideModalOverlay.fermeture, .fermetureSurgissante { pointer-events: none; animation: fenetreSortie 0.16s ease-in forwards; }
+  .sideModalOverlay.fermeture, .fermetureSurgissante { pointer-events: none; animation: fenetreSortie var(--t-instant) var(--e-sortie) forwards; }
   .sideModalOverlay.fermeture { display: flex; }
   @keyframes fenetreEntree { from { opacity: 0; } to { opacity: 1; } }
   @keyframes fenetreSortie { from { opacity: 1; } to { opacity: 0; } }
-  .shopPageOverlay.open { animation: magasinMonte 0.32s cubic-bezier(0.22, 1, 0.36, 1); }
-  .shopPageOverlay.fermeture { display: flex; pointer-events: none; animation: magasinDescend 0.26s cubic-bezier(0.55, 0, 0.9, 0.4) forwards; }
+  .shopPageOverlay.open { animation: magasinMonte var(--t-normal) var(--e-entree); }
+  .shopPageOverlay.fermeture { display: flex; pointer-events: none; animation: magasinDescend var(--t-rapide) var(--e-sortie) forwards; }
   /* Mise en page anticipée d'une fenêtre (voir prechaufferFenetre) : affichée pour le calcul,
      jamais vue. Après les règles ci-dessus, donc sans !important pour passer devant. */
   .shopPageOverlay.prechauffe, .sideModalOverlay.prechauffe { display: flex; visibility: hidden; animation: none; }
@@ -602,7 +628,7 @@
     box-shadow: 0 8px 28px rgba(0,0,0,0.35);
     cursor: pointer;
     user-select: none;
-    animation: dialogueIn 0.25s ease-out;
+    animation: dialogueIn var(--t-rapide) var(--e-entree);
   }
   .shopCommentName { font-weight: 700; font-size: 14px; color: var(--ink); margin-bottom: 10px; }
   .shopCommentText { font-size: 13px; line-height: 1.6; color: var(--panel-text); }
@@ -693,7 +719,7 @@
      infinies) ou d'un bloc de réglages : seul l'espacement au-dessus change. Sans lui, la carte
      se colle au bouton du dessus et les deux blocs n'en forment plus qu'un à l'œil. */
   .upgrade + .tabIntro, .footerBtns + .tabIntro, .soundToggleBtn + .tabIntro { margin-top: 20px; }
-  .tabPanel { display: none; animation: fadeIn 0.25s ease; }
+  .tabPanel { display: none; animation: fadeIn var(--t-rapide) var(--e-entree); }
   /* Tant que Papi présente un onglet de cette fenêtre, son contenu ne réagit plus : le joueur
      écoute, il achètera après. Sans ça, il pouvait acheter en plein milieu d'une présentation,
      alors que les mini-onglets, eux, étaient déjà grisés. La rangée d'onglets reste cliquable :
@@ -706,9 +732,12 @@
   .buyModeBtn { flex: 1; padding: 7px; border: none; border-radius: 10px; background: #f2f2f2; cursor: pointer; font-size: 12px; font-weight: 700; }
   .buyModeBtn.active { background: var(--purple); color: white; }
 
-  .upgrade { display: flex; justify-content: space-between; align-items: center; background: var(--panel-bg); border-radius: 12px; padding: 14px 18px; margin-bottom: 12px; min-height: 136px; box-sizing: border-box; box-shadow: 0 2px 6px rgba(0,0,0,0.08); cursor: pointer; border: 2px solid transparent; transition: border 0.15s, opacity 0.15s, transform 0.1s; color: var(--panel-text); gap: 12px; }
-  /* Simple rangée pour poser les badges côte à côte. Ce n'est pas elle qui égalise les lignes :
-     c'est le min-height de .upgrade ci-dessus, dimensionné pour le contenu le plus haut. */
+  .upgrade { display: flex; justify-content: space-between; align-items: center; background: var(--panel-bg); border-radius: 12px; padding: 14px 18px; margin-bottom: 12px; min-height: 72px; box-sizing: border-box; box-shadow: 0 2px 6px rgba(0,0,0,0.08); cursor: pointer; border: 2px solid transparent; transition: border var(--t-instant), opacity var(--t-instant), transform var(--t-instant); color: var(--panel-text); gap: 12px; }
+  /* Simple rangée pour poser les badges côte à côte. Le min-height de .upgrade ci-dessus ne sert
+     plus qu de plancher : les cartes prennent la hauteur de leur contenu, et comme les objets d un
+     même onglet ont la même forme, les lignes restent égales entre elles. A 136px pour tout le
+     monde, les onglets sans sprite (Recherche, Prestige, Ascension) ne remplissaient que 28% de
+     leur carte : 3,9 objets visibles à l écran au lieu du double. */
   .upgrade .tags { display: flex; align-items: center; gap: 12px; margin-top: 3px; }
   .itemIcon { width: 44px; height: 44px; object-fit: contain; image-rendering: pixelated; flex-shrink: 0; }
   .itemIcon-masked { filter: brightness(0) opacity(0.28); }
@@ -793,7 +822,7 @@
   .upgrade .palierLine { font-size: 10.5px; opacity: 0.85; margin-top: 5px; display: block; }
   .upgrade .palierBonus { color: var(--accent-texte); font-weight: 700; }
   .upgrade .palierBar { height: 4px; max-width: 220px; margin-top: 3px; background: rgba(0,0,0,0.1); border-radius: 3px; overflow: hidden; }
-  .upgrade .palierFill { width: 0; height: 100%; background: var(--accent-dark); border-radius: 3px; transition: width 0.4s ease; }
+  .upgrade .palierFill { width: 0; height: 100%; background: var(--accent-dark); border-radius: 3px; transition: width var(--t-normal) linear; }
   .upgrade .synergy { font-size: 10px; color: #ef6c00; }
   /* Vert en dur : il devenait illisible sur la carte sombre du mode sombre force. */
   .upgrade .roiBadge { font-size: 10px; color: var(--accent-texte); font-weight: 700; }
@@ -812,12 +841,12 @@
   .achv .name { font-weight: 700; line-height: 1.5; }
   .achv .desc { font-size: 11px; opacity: 0.65; margin-top: 4px; display: block; line-height: 1.6; }
   .achvBarWrap { background: #e4e4e4; border-radius: 6px; height: 6px; margin-top: 8px; overflow: hidden; }
-  .achvBarFill { background: var(--accent); height: 100%; border-radius: 6px; transition: width 0.3s ease; }
+  .achvBarFill { background: var(--accent); height: 100%; border-radius: 6px; transition: width var(--t-normal) linear; }
 
   .nextGoalBox { background: rgba(255,255,255,0.5); border-radius: 10px; padding: 8px 14px; margin-top: 8px; font-size: 11px; color: inherit; line-height: 1.6; }
   .nextGoalBox b { font-weight: 700; }
   .nextGoalBarWrap { background: rgba(0,0,0,0.12); border-radius: 6px; height: 5px; margin-top: 6px; overflow: hidden; }
-  .nextGoalBarFill { background: var(--accent); height: 100%; border-radius: 6px; transition: width 0.3s ease; }
+  .nextGoalBarFill { background: var(--accent); height: 100%; border-radius: 6px; transition: width var(--t-normal) linear; }
 
   .statLine { display: flex; justify-content: space-between; background: var(--panel-bg); border-radius: 10px; padding: 12px 16px; margin-bottom: 10px; font-size: 13px; color: var(--panel-text); line-height: 1.5; }
 
@@ -825,7 +854,7 @@
   .questCard .qName { font-weight: 700; font-size: 14px; line-height: 1.5; }
   .questCard .qDesc { font-size: 12px; opacity: 0.7; margin: 6px 0; line-height: 1.6; }
   .qBar { background: #eee; border-radius: 6px; height: 10px; overflow: hidden; margin: 8px 0; }
-  .qBarFill { background: var(--accent); height: 100%; transition: width 0.3s; }
+  .qBarFill { background: var(--accent); height: 100%; transition: width var(--t-normal); }
   .claimBtn { padding: 8px 16px; border: none; border-radius: 10px; background: var(--accent); color: white; cursor: pointer; font-size: 12px; font-weight: 700; margin-top: 4px; }
   .claimBtn:disabled { background: #ccc; cursor: not-allowed; }
 
@@ -835,22 +864,22 @@
   .smallBtn { padding: 10px 16px; border-radius: 10px; border: none; background: #f2f2f2; cursor: pointer; font-size: 13px; font-weight: 700; }
 
   .toastContainer { position: fixed; bottom: calc(16px + env(safe-area-inset-bottom)); right: calc(16px + env(safe-area-inset-right)); z-index: 200; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: none; }
-  .toast { background: var(--accent-texte); color: white; padding: 10px 18px; border-radius: 10px; font-size: 13px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); animation: toastIn 0.3s ease-out, toastOut 0.3s ease-in 2.7s forwards; white-space: nowrap; }
+  .toast { background: var(--accent-texte); color: white; padding: 10px 18px; border-radius: 10px; font-size: 13px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); animation: toastIn var(--t-normal) var(--e-entree), toastOut var(--t-normal) var(--e-sortie) 2.7s forwards; white-space: nowrap; }
   @keyframes toastIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: translateX(0); } }
   @keyframes toastOut { to { opacity: 0; } }
 
   /* ===== Click particles ===== */
-  .particle { position: fixed; pointer-events: none; font-size: 15px; z-index: 60; animation: particleMove 0.65s ease-out forwards; }
+  .particle { position: fixed; pointer-events: none; font-size: 15px; z-index: 60; animation: particleMove var(--t-lent) var(--e-entree) forwards; }
   @keyframes particleMove { 0% { transform: translate(0,0) scale(1) rotate(0deg); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(0.35) rotate(var(--rot)); opacity: 0; } }
 
   /* ===== Combo indicator ===== */
-  .comboBadge { position: absolute; bottom: 14%; left: 50%; transform: translateX(-50%) scale(0.9); font-size: 13px; font-weight: 800; color: #ef6c00; background: rgba(255,255,255,0.85); padding: 4px 12px; border-radius: 20px; opacity: 0; transition: opacity 0.15s, transform 0.15s; pointer-events: none; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+  .comboBadge { position: absolute; bottom: 14%; left: 50%; transform: translateX(-50%) scale(0.9); font-size: 13px; font-weight: 800; color: #ef6c00; background: rgba(255,255,255,0.85); padding: 4px 12px; border-radius: 20px; opacity: 0; transition: opacity var(--t-instant), transform var(--t-instant); pointer-events: none; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
   .companion { position: absolute; bottom: 8%; left: 8%; font-size: 40px; pointer-events: none; animation: companionSway 3.2s ease-in-out infinite; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2)); }
   @keyframes companionSway { 0%, 100% { transform: rotate(-6deg) translateY(0); } 50% { transform: rotate(6deg) translateY(-4px); } }
   .comboBadge.show { opacity: 1; transform: translateX(-50%) scale(1); }
 
   /* ===== Bump feedback on stat change ===== */
-  .bump { animation: bumpAnim 0.35s ease-out; }
+  .bump { animation: bumpAnim var(--t-normal) var(--e-entree); }
   @keyframes bumpAnim { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
 
   .soundToggleBtn { display:flex; align-items:center; justify-content:space-between; background: var(--panel-bg); border-radius:12px; padding:15px 18px; margin-bottom:12px; box-shadow:0 2px 6px rgba(0,0,0,0.08); cursor:pointer; color: var(--panel-text); font-weight:700; font-size:13px; gap: 10px; line-height: 1.5; }
@@ -868,8 +897,10 @@
 
   /* ===== Next-purchase progress bar ===== */
   .progressBarWrap { width: 100%; max-width: 760px; height: 8px; background: rgba(255,255,255,0.5); border-radius: 6px; margin-top: 7px; overflow: hidden; }
-  .progressBarFill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-dark)); border-radius: 6px; transition: width 0.4s ease; }
-  .progressBarLabel { font-size: 10px; opacity: 0.75; margin-top: 3px; text-align: center; }
+  .progressBarFill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-dark)); border-radius: 6px; transition: width var(--t-normal) linear; }
+  /* Elle porte le premier objectif du jeu (« le magasin de Papi, 13/200 clics ») : a 10px et
+     0.75 d opacite, elle etait la ligne la moins lisible de l ecran (2,5:1). */
+  .progressBarLabel { font-size: 11.5px; font-weight: 700; color: var(--ink); margin-top: 4px; text-align: center; }
 
 
   /* ===== Mode sombre forcé (indépendant du thème de progression) ===== */
@@ -900,10 +931,10 @@
     background: #17110b;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;
-    transition: opacity 0.4s ease;
+    transition: opacity var(--t-normal) var(--e-entree);
   }
   .splashOverlay.hidden { opacity: 0; pointer-events: none; }
-  .splashSlide { display: flex; flex-direction: column; align-items: center; justify-content: center; animation: splashFade 0.5s ease; }
+  .splashSlide { display: flex; flex-direction: column; align-items: center; justify-content: center; animation: splashFade var(--t-lent) var(--e-entree); }
   @keyframes splashFade { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
   .splashPlaceholder { text-align: center; color: #ede0d0; font-size: 64px; }
   .splashPlaceholderText { font-size: 20px; font-weight: 800; letter-spacing: 2px; margin-top: 10px; }
@@ -912,7 +943,7 @@
   .splashLogoText { font-size: 32px; font-weight: 900; color: #ede0d0; letter-spacing: 3px; margin-top: 14px; }
 
   /* ===== Popup de choix de langue (une seule fois, au tout premier lancement) ===== */
-  .langPopupOverlay { position: fixed; inset: 0; z-index: 490; background: #17110b; display: flex; align-items: center; justify-content: center; transition: opacity 0.5s ease; }
+  .langPopupOverlay { position: fixed; inset: 0; z-index: 490; background: #17110b; display: flex; align-items: center; justify-content: center; transition: opacity var(--t-lent) var(--e-entree); }
   .langPopupOverlay.hidden { opacity: 0; pointer-events: none; }
   .langPopupBox { background: var(--card-bg); border: 4px solid var(--ink); border-radius: 18px; padding: 28px; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
   .langPopupTitle { font-weight: 800; font-size: 18px; margin-bottom: 18px; color: var(--ink); }
@@ -928,7 +959,7 @@
     font-family: ui-monospace, Consolas, monospace; font-size: 11px; line-height: 1.5;
     color: var(--panel-text); background: rgba(0,0,0,0.18); border: 1px solid rgba(255,255,255,0.18);
     border-radius: 10px; padding: 10px; }
-  .itemPopupBox { background: var(--card-bg); border: 4px solid var(--ink); border-radius: 18px; padding: 26px; width: 320px; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.4); animation: itemPopupIn 0.3s ease-out; }
+  .itemPopupBox { background: var(--card-bg); border: 4px solid var(--ink); border-radius: 18px; padding: 26px; width: 320px; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.4); animation: itemPopupIn var(--t-normal) var(--e-entree); }
   @keyframes itemPopupIn { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
   .itemPopupTitle { font-weight: 800; font-size: 13px; line-height: 1.5; color: var(--accent-texte); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
   .itemPopupIcon { width: 96px; height: 96px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.25)); margin-bottom: 12px; }
@@ -937,7 +968,7 @@
   .itemPopupDesc { font-size: 12px; line-height: 1.6; opacity: 0.75; color: var(--panel-text); }
 
   .tutorialOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 300; display: flex; align-items: center; justify-content: center; padding: calc(20px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left)); }
-  .tutorialBox { background: var(--panel-bg); color: var(--panel-text); border-radius: 20px; padding: 26px; max-width: 560px; box-shadow: 0 10px 34px rgba(0,0,0,0.32); border: 3px solid var(--accent); text-align: left; animation: fadeIn 0.3s ease; }
+  .tutorialBox { background: var(--panel-bg); color: var(--panel-text); border-radius: 20px; padding: 26px; max-width: 560px; box-shadow: 0 10px 34px rgba(0,0,0,0.32); border: 3px solid var(--accent); text-align: left; animation: fadeIn var(--t-normal) var(--e-entree); }
   .tutorialBox h2 { margin: 0; font-size: 17px; line-height: 1.35; }
   .tutorialBox p { font-size: 12px; line-height: 1.65; }
   .tutorialBoxHeader { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
@@ -950,7 +981,7 @@
   .tutorialTips li div { font-size: 12.5px; line-height: 1.5; }
   /* Retour après une absence : même carte que les autres pop-ups du jeu (fond de panneau, bordure
      accentuée, titre en capitales), avec une ligne par information et le gain mis en avant. */
-  .offlineBox { background: var(--panel-bg); color: var(--panel-text); border-radius: 20px; padding: 24px 26px; width: 340px; text-align: center; border: 3px solid var(--accent); box-shadow: 0 12px 40px rgba(0,0,0,0.35); animation: itemPopupIn 0.3s ease-out; }
+  .offlineBox { background: var(--panel-bg); color: var(--panel-text); border-radius: 20px; padding: 24px 26px; width: 340px; text-align: center; border: 3px solid var(--accent); box-shadow: 0 12px 40px rgba(0,0,0,0.35); animation: itemPopupIn var(--t-normal) var(--e-entree); }
   .offlineIcon { font-size: 52px; line-height: 1; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.25)); }
   .offlineBox h2 { margin: 10px 0 16px; font-size: 13px; line-height: 1.5; color: var(--accent-texte); text-transform: uppercase; letter-spacing: 1px; }
   .offlineLigne { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 11.5px; padding: 9px 12px; border-radius: 10px; background: var(--card-bg); margin-bottom: 8px; text-align: left; }
@@ -1000,7 +1031,7 @@
     border-radius: 18px;
     padding: 18px;
     box-shadow: 0 8px 28px rgba(0,0,0,0.28);
-    animation: dialogueIn 0.25s ease-out;
+    animation: dialogueIn var(--t-rapide) var(--e-entree);
   }
   @keyframes dialogueIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   .dialogueBox.pos-bottom-left   { left: 16px;  bottom: calc(90px + env(safe-area-inset-bottom)); }
@@ -1044,7 +1075,7 @@
     position: fixed;
     bottom: 280px;
     width: 240px; height: 240px;
-    transition: filter 0.3s ease, transform 0.3s ease;
+    transition: filter var(--t-normal) var(--e-entree), transform var(--t-normal) var(--e-entree);
     filter: brightness(1) saturate(1);
   }
   .scenePortrait img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 12px 16px rgba(0,0,0,0.45)); }

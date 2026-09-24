@@ -55,6 +55,13 @@ async function verifyPostResetFlowWorks(page, label) {
   if (!tutorialOverlayShown) issues.push('le tutoriel ne s est jamais réaffiché apres reset (scene bloquee ?)');
   await page.evaluate(() => document.getElementById('tutorialCloseBtn').click());
 
+  // Le magasin (et donc le spotlight qui le presente) n'apparait qu'a CLICS_POUR_LE_MAGASIN
+  // clics : apres un reset complet le compteur repart de zero. Le test attendait ici un
+  // spotlight que le jeu n'avait aucune raison d'afficher, et signalait 4 problemes... en
+  // sortant malgre tout en code 0, donc sans jamais faire rougir tout.sh. On rejoue les clics
+  // comme le ferait un joueur.
+  await page.evaluate(() => { const z = document.getElementById('clickZone'); for (let i = 0; i < CLICS_POUR_LE_MAGASIN; i++) z.click(); });
+
   let spotlightAppeared = false;
   for (let s = 0; s < 20; s++) {
     await page.waitForTimeout(400);
@@ -191,4 +198,6 @@ async function verifyPostResetFlowWorks(page, label) {
   if (allIssues.length) console.log(allIssues);
 
   await browser.close();
+  // Sans ca, un test qui signale des problemes sortait quand meme en 0 et tout.sh le comptait OK.
+  process.exitCode = allIssues.length ? 1 : 0;
 })();

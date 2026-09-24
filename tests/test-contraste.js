@@ -33,13 +33,40 @@ const SEUIL_GRAND = 3;   // texte de 18 px et plus (ou 14 px gras)
       return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2];
     };
     const parse = (s) => (s.match(/[\d.]+/g) || []).map(Number);
+    // Le fond de la page est un DEGRADE : backgroundColor y vaut « transparent ». L'ignorer
+    // revenait a ne jamais mesurer les textes poses directement sur le jardin — c'est-a-dire la
+    // consigne « CLIC » et la barre d'objectif, qui etaient justement les moins lisibles du jeu.
+    // On repeint donc le meme degrade dans un canvas pour lire la vraie couleur sous chaque texte.
+    const toile = (() => {
+      const cv = document.createElement('canvas');
+      cv.width = innerWidth; cv.height = innerHeight;
+      const ctx = cv.getContext('2d');
+      const img = getComputedStyle(document.body).backgroundImage;
+      const stops = [...img.matchAll(/rgba?\(([^)]+)\)\s+([\d.]+)%/g)].map(m => ({ c: m[1].split(',').map(Number), p: +m[2] / 100 }));
+      if (!stops.length) return null;
+      const cx = innerWidth * 0.2, cy = 0;
+      const rayon = Math.max(Math.hypot(cx, cy), Math.hypot(innerWidth - cx, cy), Math.hypot(cx, innerHeight - cy), Math.hypot(innerWidth - cx, innerHeight - cy));
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rayon);
+      for (const st of stops) g.addColorStop(st.p, 'rgb(' + st.c.slice(0, 3).join(',') + ')');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, cv.width, cv.height);
+      const d = ctx.getImageData(0, 0, cv.width, cv.height).data;
+      return (x, y) => {
+        const px = Math.max(0, Math.min(cv.width - 1, Math.round(x)));
+        const py = Math.max(0, Math.min(cv.height - 1, Math.round(y)));
+        const i = (py * cv.width + px) * 4;
+        return [d[i], d[i + 1], d[i + 2]];
+      };
+    })();
     // Fond effectif : on remonte les parents jusqu'a un fond opaque (ou un degrade de <body>).
     const fondDe = (el) => {
       for (let e = el; e; e = e.parentElement) {
         const st = getComputedStyle(e);
         const c = parse(st.backgroundColor);
         if (c.length >= 3 && (c[3] === undefined || c[3] > 0.55)) return c.slice(0, 3);
-        if (st.backgroundImage && st.backgroundImage !== 'none' && e === document.body) return null; // degrade : ignore
+        if (st.backgroundImage && st.backgroundImage !== 'none' && e === document.body && toile) {
+          const r = el.getBoundingClientRect();
+          return toile(r.left + r.width / 2, r.top + r.height / 2);
+        }
       }
       return null;
     };
@@ -54,6 +81,9 @@ const SEUIL_GRAND = 3;   // texte de 18 px et plus (ou 14 px gras)
     for (let n = w.nextNode(); n; n = w.nextNode()) {
       const t = n.textContent.trim();
       if (t.length < 2) continue;
+      // Un emoji s'affiche avec ses propres couleurs, la couleur CSS ne le concerne pas :
+      // mesurer son contraste n'a pas de sens. On ne garde que ce qui contient des caracteres.
+      if (!/[\p{L}\p{N}]/u.test(t)) continue;
       const el = n.parentElement;
       if (!el) continue;
       let cache = false;
@@ -62,7 +92,17 @@ const SEUIL_GRAND = 3;   // texte de 18 px et plus (ou 14 px gras)
       const st = getComputedStyle(el);
       const fond = fondDe(el);
       if (!fond) continue; // pose sur le degrade du fond : non mesurable de facon fiable
-      const texte = parse(st.color).slice(0, 3);
+      // Transparence du texte : couleur semi-transparente ET opacite (animation comprise — on
+      // retient le creux, le moment ou le texte est le moins lisible).
+      const c = parse(st.color);
+      const alphaCouleur = c[3] === undefined ? 1 : c[3];
+      let alpha = alphaCouleur * (+st.opacity || 1);
+      for (const a of (el.getAnimations ? el.getAnimations() : [])) {
+        const vals = ((a.effect && a.effect.getKeyframes) ? a.effect.getKeyframes() : [])
+          .map(k => k.opacity !== undefined ? +k.opacity : null).filter(v => v !== null);
+        if (vals.length) alpha = alphaCouleur * Math.min(...vals);
+      }
+      const texte = [0, 1, 2].map(i => Math.round(alpha * c[i] + (1 - alpha) * fond[i]));
       const l1 = lum(texte), l2 = lum(fond);
       const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
       const taille = parseFloat(st.fontSize);

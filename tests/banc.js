@@ -76,8 +76,8 @@ const HEURES_MAX = parseFloat(process.argv[5] || '150');
     }
 
     const vu = id => !!state.tabsSeen[id];
-    const clicParSeconde = () => (typeof challengeIs !== 'undefined' && challengeIs('mains')) ? 0 : CPS_CLICS * E_PAP * clickGain() / boostMult('click'); // pas de revenu de clic pendant Mains dans les poches
-    const revenu = () => totalCps() / boostMult('ability') * E_OR + clicParSeconde();
+    const clicParSeconde = () => (typeof challengeIs !== 'undefined' && challengeIs('mains')) ? 0 : CPS_CLICS * clickGain() / boostMult('click'); // pas de revenu de clic pendant Mains dans les poches
+    const revenu = () => totalCps() / boostMult('ability') * E_OR * E_PAP + clicParSeconde();
     const essai = (appliquer, annuler) => { const avant = revenu(); appliquer(); const apres = revenu(); annuler(); return apres - avant; };
 
     function objectifVerdure() {
@@ -191,7 +191,7 @@ const HEURES_MAX = parseFloat(process.argv[5] || '150');
         else startTimedBoost('golden', G.boostMult, G.boostSec * 1000);
         B.prochainOr = B.t + G.min + 2.5 + Math.random() * (G.max - G.min);
       }
-      if (B.t >= B.prochainPap) { startTimedBoost('click', P.mult, P.sec * 1000); B.prochainPap = B.t + P.min + 2.5 + Math.random() * (P.max - P.min); }
+      if (B.t >= B.prochainPap) { startTimedBoost('papillon', P.mult, P.sec * 1000); B.prochainPap = B.t + P.min + 2.5 + Math.random() * (P.max - P.min); }
       return bonus;
     }
     function capacites() {
@@ -212,14 +212,15 @@ const HEURES_MAX = parseFloat(process.argv[5] || '150');
       B.parts.capacites += capacites();
       if (B.t >= B.prochainChat) { B.prochainChat += 3600; if (hasUnique('chatJardin')) { const v = bonusChatJardin(totalCps()); state.verdure += v; state.totalEarned += v; B.parts.capacites += v; } }
       if (cfg.chaqueSeconde) cfg.chaqueSeconde; // reserve
-      const cps = totalCps(), sansCapacite = cps / boostMult('ability'), or = boostMult('golden');
-      state.verdure += cps * or; state.totalEarned += cps * or;
-      B.parts.production += sansCapacite; B.parts.capacites += cps - sansCapacite; B.parts.herbes += cps * (or - 1);
+      const cps = totalCps(), sansCapacite = cps / boostMult('ability'), or = boostMult('golden'), pap = boostMult('papillon');
+      state.verdure += cps * or * pap; state.totalEarned += cps * or * pap;
+      B.parts.production += sansCapacite; B.parts.capacites += cps - sansCapacite;
+      B.parts.herbes += cps * (or - 1); B.parts.papillons += cps * or * (pap - 1);
       grantKnowledge(knowledgeRate());
       state.totalPlayTimeSec = (state.totalPlayTimeSec || 0) + 1;
-      const clic = (typeof challengeIs !== 'undefined' && challengeIs('mains')) ? 0 : clickGain() * CPS_CLICS, pap = boostMult('click');
+      const clic = (typeof challengeIs !== 'undefined' && challengeIs('mains')) ? 0 : clickGain() * CPS_CLICS;
       state.verdure += clic; state.totalEarned += clic; state.totalClicks += CPS_CLICS; state.clicksThisRun += CPS_CLICS;
-      B.parts.clics += clic / pap; B.parts.papillons += clic - clic / pap;
+      B.parts.clics += clic;
       // Le robot suit les presentations de Papi comme un vrai joueur : un onglet revele est aussi
       // considere comme explique. Sans ca, les deblocages qui attendent la FIN d'une presentation
       // (Recherche attend celle de Batiments) ne se produisaient jamais, et tout le banc mesurait

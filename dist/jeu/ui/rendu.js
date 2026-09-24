@@ -766,6 +766,11 @@ function renderDefi() {
 function renderNextGoal() {
   const box = document.getElementById('nextGoalBox');
   if (!box) return;
+  // Tant que le magasin n'existe pas, le seul objectif du joueur est d'y arriver, et la barre
+  // « Prochain » le dit déjà. Afficher en plus un succès (le mieux entamé se trouvait être
+  // « vivre les 6 types de météo ») donnait un deuxième but, non actionnable, à quelqu'un qui
+  // vient de cliquer quatorze fois.
+  if (!state.tabsSeen.production) { box.style.display = 'none'; return; }
   let best = null, bestPct = -1;
   for (const a of ACHIEVEMENTS) {
     if (state.achievements[a.id] || !a.progress) continue;
