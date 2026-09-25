@@ -89,6 +89,8 @@ function peutEtreHerbeDoree() {
 }
 
 // ================= ÉVÉNEMENT ALÉATOIRE : NUÉE DE PAPILLONS =================
+const PAPILLONS_MULT = 1.25;
+const PAPILLONS_DUREE_MS = 90000;
 function spawnButterflies() {
   const el = document.createElement('div');
   el.className = 'golden';
@@ -97,11 +99,13 @@ function spawnButterflies() {
   el.style.top = (15 + Math.random() * 65) + '%';
   el.onclick = () => {
     // Profil inverse de l'herbe dorée : celle-ci frappe fort et court (x2 sur 25 s), la nuée
-    // accompagne longtemps et doucement. Sur le clic, qui pèse quelques pour cent du revenu,
-    // le bonus était nul au banc : il fallait le mettre sur la production pour qu'il existe.
-    const duree = 60000;
-    startTimedBoost('papillon', 1.5, duree);
-    showToast(state.lang === 'en' ? `🦋 Swarm of butterflies! x1.5 production for ${formatDureeCourte(duree / 1000)}` : `🦋 Nuée de papillons ! x1.5 production pendant ${formatDureeCourte(duree / 1000)}`);
+    // accompagne longtemps et doucement. Sur le clic, qui pèse peu en début de partie, le bonus
+    // était nul au banc : il fallait le mettre sur la production pour qu'il existe. Valeur visée :
+    // environ 5 % du revenu, sous l'herbe dorée (les événements à ramasser doivent rester un
+    // appoint). Le texte lit les mêmes constantes que l'effet.
+    const mult = PAPILLONS_MULT, duree = PAPILLONS_DUREE_MS;
+    startTimedBoost('papillon', mult, duree);
+    showToast(state.lang === 'en' ? `🦋 Swarm of butterflies! x${mult} production for ${formatDureeCourte(duree / 1000)}` : `🦋 Nuée de papillons ! x${String(mult).replace('.', ',')} production pendant ${formatDureeCourte(duree / 1000)}`);
     playGoldenSound();
     saveGame(); renderAll();
     el.remove();

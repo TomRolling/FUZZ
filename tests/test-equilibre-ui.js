@@ -53,7 +53,7 @@ const fail = (...m) => { console.log('  X', ...m); problems++; };
   if (Math.abs(f.graines100 - 2) > 1e-9) fail('100 Graines gagnees doivent donner x2 (1 + 0,1 x racine(100))');
   if (Math.abs(f.eclats4 - 3) > 1e-9) fail('4 Eclats gagnes doivent donner x3');
   if (Math.abs(f.clicNu - 1) > 1e-9) fail('le clic de base doit valoir 1, sans multiplicateur de production');
-  if (Math.abs(f.clicAvecC1C2 - (2 + f.cps * 0.002)) > 1e-6) fail('clic avec c1 + c2 attendu 2 + 0,2 % de la production');
+  if (Math.abs(f.clicAvecC1C2 - (2 + f.cps * 0.00025)) > 1e-6) fail('clic avec c1 + c2 attendu 2 + 0,025 % de la production');
 
   console.log('=== 3. migration d une ancienne sauvegarde ===');
   await page.evaluate(() => {

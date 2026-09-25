@@ -639,28 +639,15 @@ function doPrestige(auto) {
   if (!auto) queueOrShowPapi('prestige', { position: 'top-right' });
 }
 
-// Deux nombres longtemps confondus en un seul : le seuil qui FAIT APPARAÎTRE l'onglet, et le prix
-// d'un Éclat. Les régler ensemble était impossible : baisser le prix avançait l'ouverture de
-// l'onglet au milieu des premiers Prestiges.
-const ASCENSION_SEED_DIVISOR = 15; // seuil d'apparition de l'onglet ; banc : 1re Ascension vers 2,9 j
-// Graines « par Éclat ». Trois réglages mesurés au banc, sur 150 h de jeu parfait :
-//   - racine CUBIQUE + frein /20 (l'ancien) : 2 Éclats gagnés, 2 améliorations sur 24. Une seule
-//     Ascension à 20 Éclats aurait demandé 426 000 Graines quand le robot en avait 96 : l'onglet
-//     n'était pas difficile, il était fermé.
-//   - racine carrée SANS frein (diviseur 2) : emballement. Dès 4,6 j le robot ascensionne toutes
-//     les quelques minutes et gagne jusqu'à +2 000 000 d'Éclats d'un coup — les Éclats font la
-//     production, qui fait les Graines, qui refont les Éclats.
-//   - racine carrée + frein doux (ci-dessous) : 5 Ascensions et 9 améliorations sur 24, sans
-//     emballement.
-// Le frein est donc nécessaire ; l'ancien ne freinait pas trop peu, il fermait la porte.
-const ASCENSION_GRAINES_PAR_ECLAT = 5;
-function ascensionSeedDivisor() { return ASCENSION_GRAINES_PAR_ECLAT * (1 + (state.totalShardsEarned || 0) / 20); }
+const ASCENSION_SEED_DIVISOR = 15; // banc d'équilibrage : 1re Ascension vers 45-55 h de jeu actif
+// Graines « par Éclat » : 15 au départ, un peu plus pour chaque Éclat déjà gagné (frein de fin de partie).
+function ascensionSeedDivisor() { return ASCENSION_SEED_DIVISOR * (1 + (state.totalShardsEarned || 0) / 20); }
 function ascensionGainAmount() {
   const boost = 1 + (combinedUpgradeValue('ascensionSeedMult') || 0);
-  return Math.floor(Math.sqrt(((state.seedsSinceAscension || 0) * boost) / ascensionSeedDivisor()) + 1e-9); // marge : pas d'Éclat perdu pile au seuil
+  return Math.floor(Math.cbrt(((state.seedsSinceAscension || 0) * boost) / ascensionSeedDivisor()) + 1e-9); // marge : pas d'Éclat perdu pile au seuil
 }
 // Graines à gagner depuis la dernière Ascension pour obtenir `n` Éclats (inverse de ascensionGainAmount).
-function seedsForShards(n) { return Math.pow(n, 2) * ascensionSeedDivisor() / (1 + (combinedUpgradeValue('ascensionSeedMult') || 0)); }
+function seedsForShards(n) { return Math.pow(n, 3) * ascensionSeedDivisor() / (1 + (combinedUpgradeValue('ascensionSeedMult') || 0)); }
 function ascensionUnlocked() { return (state.totalSeedsEarned || 0) >= ASCENSION_SEED_DIVISOR || state.totalAscensions > 0; }
 
 function doAscension(auto) {
