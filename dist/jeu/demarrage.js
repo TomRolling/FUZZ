@@ -128,4 +128,6 @@ setInterval(bonusHoraireChat, 3600000);  // chat du jardin, une fois par heure
 setInterval(runAutomations, 1000);       // achats et capacités automatiques
 setInterval(tickMeteoEtVisites, 10000);  // météo, visites de Papi, inactivité, remarques
 setInterval(tickJeu, 1000);              // une seconde de jeu
+setInterval(promenerHabitants, 1500);    // les habitants du jardin se promènent
+window.addEventListener('gameviewportfit', recalerHabitants); // fenêtre redimensionnée : ils se recalent
 planifierPrechauffage();                 // fenêtres mises en page pendant un temps mort

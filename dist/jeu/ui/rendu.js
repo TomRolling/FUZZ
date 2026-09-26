@@ -238,8 +238,52 @@ function presentationEnCours() {
 // buyBuilding directement et n'est pas concerné.
 function clicLigneAchat(e) {
   if (presentationEnCours()) return;
-  const acheter = e.currentTarget._acheter;
-  if (acheter) acheter(e);
+  const ligne = e.currentTarget, acheter = ligne._acheter;
+  if (!acheter) return;
+  const avant = _achatsDuJoueur, liste = ligne.parentNode, id = ligne.dataset.rowId;
+  acheter(e);
+  if (_achatsDuJoueur === avant) return;
+  // Le rendu qui suit l'achat garde la ligne en place, sauf si la liste change de forme : on la
+  // retrouve alors par son identifiant.
+  impulsionAchat(ligne.isConnected ? ligne : liste && liste.querySelector('[data-row-id="' + CSS.escape(id) + '"]'));
+}
+// Bref halo sur la ligne achetée. Posé avec element.animate() sur la ligne elle-même, et non par
+// une classe : le rendu réécrit la classe de chaque ligne et l'effacerait aussitôt. Seulement
+// box-shadow, dessiné dans la page : ni transform (la ligne en a déjà un au survol, qu'une animation
+// remplacerait au lieu de s'y ajouter) ni filter ou opacity, que le navigateur confie à la carte
+// graphique en sortant la ligne sur un calque le temps de l'animation. L'icône, très réduite, y
+// changeait d'aspect puis revenait (voir .shopFloatBtn).
+function impulsionAchat(el) {
+  if (!el || !el.animate || animationsReduites()) return;
+  const accent = getComputedStyle(el).getPropertyValue('--accent').trim() || '#a8c69f';
+  // Achats en rafale : la nouvelle impulsion remplace la précédente au lieu de s'empiler dessus.
+  if (el._impulsion) el._impulsion.cancel();
+  el._impulsion = el.animate([
+    { boxShadow: '0 0 0 0 ' + accent },
+    { boxShadow: '0 0 0 10px transparent' },
+  ], { duration: 360, easing: 'cubic-bezier(0.2, 0, 0, 1)' });
+}
+
+// ---------- Aide à l'achat : délai avant de pouvoir s'offrir un objet ----------
+// Sous le prix d'un compagnon déjà acheté au moins une fois, quand le suivant n'est pas encore
+// abordable (le texte est vide sinon, et la règle :empty masque le span : le HTML de la ligne ne
+// dépend donc pas de ce qu'on a en poche, et la ligne n'est pas reconstruite quand on franchit le prix). Seulement là : sur les autres onglets et sur les compagnons pas encore possédés, le
+// délai encombrait plus qu'il n'aidait. Le HTML de la ligne ne porte que le prix : il ne change pas
+// chaque seconde, donc les images de la ligne ne sont pas recréées ; le texte est posé après le
+// rendu par majDelaisAchat.
+function delaiAchatHtml(cout) {
+  return '<span class="delaiAchat" data-cout="' + cout + '"></span>';
+}
+// Production comptée hors bonus de capacité, pour que le délai ne saute pas à la fin d'un bonus
+// temporaire. Au-delà de 99 h le chiffre ne dit plus rien d'utile : on ne l'affiche pas.
+const DELAI_ACHAT_MAX_SEC = 99 * 3600;
+function majDelaisAchat(verdureParSec) {
+  for (const el of document.querySelectorAll('#shopPageOverlay .delaiAchat')) {
+    const manque = +el.dataset.cout - state.verdure;
+    const sec = manque > 0 && verdureParSec > 0 ? manque / verdureParSec : 0;
+    const texte = sec > 0 && sec <= DELAI_ACHAT_MAX_SEC ? tr('dansDelai') + ' ' + formatDureeCourte(sec) : '';
+    if (el.textContent !== texte) el.textContent = texte;
+  }
 }
 function renderItemRows(container, rows) {
   if (!container) return;
@@ -419,7 +463,7 @@ function renderShop() {
           ${b.id === bestRoiId ? `<span class="roiBadge">💡 ${tr('bestRoi')}</span>` : ''}
         </div>
       </div>
-      <div class="price">${state.buyMode === 'max' ? 'x' + n + ' : ' : ''}${formatNum(cost)} 🌿</div>
+      <div class="price">${state.buyMode === 'max' ? 'x' + n + ' : ' : ''}${formatNum(cost)} 🌿${owned ? delaiAchatHtml(cost) : ''}</div>
     `,
       onclick: () => buyBuilding(b.id),
     };
@@ -1076,7 +1120,7 @@ function renderAll() {
   // Un seul panneau est visible par fenêtre : les autres sont en display:none. On ne dessine
   // donc que celui de l'onglet actif — les autres étaient reconstruits en pure perte, soit
   // ~157 lignes de HTML par rendu pour en afficher une trentaine.
-  if (doitDessiner('shopPageOverlay')) renderPanneauxMagasin();
+  if (doitDessiner('shopPageOverlay')) { renderPanneauxMagasin(); majDelaisAchat(cpsHorsCapacite(cps)); }
   if (doitDessiner('questsModalOverlay')) (PANEL_RENDERERS[activeQuestsTab] || noop)();
   if (doitDessiner('achievementsModalOverlay')) renderAchievements();
   if (doitDessiner('settingsModalOverlay')) {
@@ -1091,6 +1135,7 @@ function renderAll() {
   }
   renderNextGoal();
   renderCompanion();
+  renderJardin();
   renderAbilityBar();
   updateDocumentTitle(cps);
 }

@@ -151,18 +151,23 @@ function achievementMultiplier() {
 // Croissance volontairement douce (racine carree des Graines, lineaire en Eclats, eux-memes en
 // racine cubique des Graines) : avec des bonus exponentiels, chaque Prestige financait le
 // suivant presque aussitot et la partie s'emballait (verifie au banc d'equilibrage).
-function seedMultiplier() { return 1 + 0.1 * Math.sqrt(state.seedsSinceAscension || 0); }
+// Les formules prennent leur quantité en paramètre (…Pour) : le panneau de décision du Prestige et
+// de l'Ascension annonce « ×A → ×B » avec exactement les formules du jeu, sans rien modifier.
+function seedMultiplierPour(graines) { return 1 + 0.1 * Math.sqrt(graines || 0); }
+function seedMultiplier() { return seedMultiplierPour(state.seedsSinceAscension); }
 // Bonus de production des Éclats : +50 % par Éclat jusqu'à 20 Éclats, puis en racine carrée. En
 // linéaire, la fin de partie s'emballait : plus d'Éclats, donc plus de Graines, donc encore plus d'Éclats.
-function shardMultiplier() {
-  const n = state.totalShardsEarned || 0, palier = 20;
+function shardMultiplierPour(eclats) {
+  const n = eclats || 0, palier = 20;
   return n <= palier ? 1 + 0.5 * n : 1 + 0.5 * palier * Math.sqrt(n / palier);
 }
+function shardMultiplier() { return shardMultiplierPour(state.totalShardsEarned); }
 // Les Éclats gagnés augmentent aussi les Graines de chaque Prestige : après une Ascension, un
 // Prestige rapporte vraiment plus, ce qui garde son intérêt à la couche des Graines. En racine
 // carrée (x1.25 avec 1 Éclat, x1.5 avec 4, x2 avec 16) : en linéaire, la boucle Éclats → Graines
 // → Éclats emballait la fin de partie (banc : 8e Ascension à 9.1 j au lieu de 16 j).
-function shardSeedMultiplier() { return 1 + 0.25 * Math.sqrt(state.totalShardsEarned || 0); }
+function shardSeedMultiplierPour(eclats) { return 1 + 0.25 * Math.sqrt(eclats || 0); }
+function shardSeedMultiplier() { return shardSeedMultiplierPour(state.totalShardsEarned); }
 
 function uniqueMultipliers() {
   let prod = 1, click = 1, offlineBonus = 0, knowledge = 1, invasiveRate = 1;
@@ -207,6 +212,10 @@ function boostMult(key) {
   const b = _boosts[key];
   return (b && Date.now() < b.until) ? b.mult : 1;
 }
+// Production sans le bonus temporaire d'une capacité : ce que rapportent vraiment les compagnons.
+// Sert au bonus de départ après un reset et au délai avant achat (qui ne doit pas sauter à la fin d'un
+// bonus). `cps` : la production déjà calculée par l'appelant, pour ne pas la recalculer.
+function cpsHorsCapacite(cps = totalCps()) { return cps / boostMult('ability'); }
 function activeTimedBoosts() {
   const now = Date.now();
   return Object.keys(BOOST_CHIPS)
@@ -362,8 +371,12 @@ const CATEGORIE_ACHAT = {
 // qu'à appeler ceci pour être complète — avant, chaque fonction recopiait ces cinq lignes et
 // deux d'entre elles avaient déjà oublié de prévenir Papi.
 // `coutVerdure` : le prix EN VERDURE, ou 0 quand l'achat se paie dans une autre monnaie.
+// Achats faits par le joueur (pas par l'automatisation) : la ligne du magasin cliquée compare ce
+// compteur avant et après pour savoir si l'achat a eu lieu, sans que chaque fonction d'achat ait
+// à renvoyer un résultat.
+let _achatsDuJoueur = 0;
 function finaliserAchat({ coutVerdure = 0, onglet, auto } = {}) {
-  if (!auto) playBuySound();
+  if (!auto) { _achatsDuJoueur++; playBuySound(); }
   checkAchievements();
   notifyPurchase(coutVerdure, onglet, auto);
   saveGame();
@@ -583,7 +596,7 @@ function startChallenge(id) {
   if (!confirm(en
     ? `Start "${L(c,'name')}"? Your current run restarts from zero (Greenery, companions, Click, Buildings and Special); your Seeds are kept. Goal: a Prestige worth at least ${c.goal} Seed(s) while following the rule.`
     : `Lancer « ${L(c,'name')} » ? Ta partie en cours repart de zéro (Verdure, compagnons, Clic, Bâtiments et Spécial) ; tes Graines sont conservées. Objectif : un Prestige d'au moins ${c.goal} Graine(s) en respectant la règle.`)) return;
-  const cpsAvantReset = totalCps() / boostMult('ability');
+  const cpsAvantReset = cpsHorsCapacite();
   state.challengeActive = id;
   state.challengeStartPlayTime = state.totalPlayTimeSec || 0;
   queueOrShowPapi('defi', { position: 'top-right' });
@@ -601,21 +614,30 @@ function abandonChallenge() {
   saveGame(); renderAll();
 }
 
-function doPrestige(auto) {
+// Le défi en cours serait-il réussi par un Prestige qui rapporte `gain` Graines ? Une seule formule
+// pour le Prestige réel et pour le panneau de décision, qui l'annonce avant.
+function defiReussiPour(gain) {
+  const defi = activeChallenge(), tempsRestant = challengeTimeLeftSec();
+  return !!defi && gain >= defi.goal && (tempsRestant === null || tempsRestant >= 0);
+}
+// Prestige SANS rien demander ni montrer : automatisation, mode test, banc d'équilibrage. Le joueur,
+// lui, passe par le panneau de décision et la cérémonie (boutons, voir boucle.js et ui/ceremonie.js).
+function doPrestige() {
+  const r = executerPrestige();
+  if (!r) return;
+  playPrestigeSound();
+  showToast(state.lang === 'en'
+    ? `🌍 Terraforming successful! +${r.gain} Cosmic Seed(s)` + (r.defi ? (r.defiReussi ? ` 🏅 Challenge completed: ${L(r.defi,'name')}` : '. Challenge failed') : '')
+    : `🌍 Terraformation réussie ! +${r.gain} Graine(s) Cosmique(s)` + (r.defi ? (r.defiReussi ? ` 🏅 Défi réussi : ${L(r.defi,'name')}` : '. Défi raté') : ''));
+}
+// Le Prestige lui-même, sans son ni message. Renvoie ce qui a changé (null s'il ne rapporte rien).
+function executerPrestige() {
   const gain = prestigeGainAmount();
-  if (gain < 1) return;
+  if (gain < 1) return null;
   const defi = activeChallenge();
-  const tempsRestant = challengeTimeLeftSec();
-  const defiReussi = !!defi && gain >= defi.goal && (tempsRestant === null || tempsRestant >= 0);
-  const avertissement = !defi ? '' : defiReussi
-    ? selonLangue(`\n\nDéfi « ${L(defi,'name')} » réussi avec ce Prestige !`,
-                  `\n\nChallenge "${L(defi,'name')}" completed with this Prestige!`)
-    : selonLangue(`\n\nAttention : le défi « ${L(defi,'name')} » n'est pas réussi (objectif ${defi.goal} Graine(s)${defi.timeLimitSec ? ' dans le temps imparti' : ''}) et prendra fin.`,
-                  `\n\nWarning: challenge "${L(defi,'name')}" is not completed (goal: ${defi.goal} Seed(s)${defi.timeLimitSec ? ' within the time limit' : ''}) and will end.`);
-  if (!auto && !confirm(selonLangue(
-    `Terraformer maintenant ? Tu vas gagner ${gain} Graine(s) Cosmique(s), mais tu repars de zéro : Verdure, compagnons, Clic, Bâtiments et Spécial (Recherche, Connaissances, succès, familiers et améliorations de Prestige sont conservés). Continuer ?${avertissement}`,
-    `Terraform now? You will earn ${gain} Cosmic Seed(s), but you start over: Greenery, companions, Click, Buildings and Special (Research, Knowledge, achievements, pets and Prestige upgrades are kept). Continue?${avertissement}`))) return;
-  const cpsAvantReset = totalCps() / boostMult('ability');
+  const defiReussi = defiReussiPour(gain);
+  const bonusAvant = seedMultiplier();
+  const cpsAvantReset = cpsHorsCapacite();
   const now = Date.now();
   if (state.lastPrestigeTime) {
     const runSec = (now - state.lastPrestigeTime) / 1000;
@@ -629,14 +651,10 @@ function doPrestige(auto) {
     state.challengeActive = null; // réussi ou non, le défi s'arrête avec ce Prestige
   }
   resetRun(cpsAvantReset);
-  playPrestigeSound();
   bump('verdureCount');
   checkAchievements();
   saveGame(); renderAll();
-  showToast(state.lang === 'en'
-    ? `🌍 Terraforming successful! +${gain} Cosmic Seed(s)` + (defi ? (defiReussi ? ` 🏅 Challenge completed: ${L(defi,'name')}` : '. Challenge failed') : '')
-    : `🌍 Terraformation réussie ! +${gain} Graine(s) Cosmique(s)` + (defi ? (defiReussi ? ` 🏅 Défi réussi : ${L(defi,'name')}` : '. Défi raté') : ''));
-  if (!auto) queueOrShowPapi('prestige', { position: 'top-right' });
+  return { gain, defi, defiReussi, bonusAvant, bonusApres: seedMultiplier() };
 }
 
 const ASCENSION_SEED_DIVISOR = 15; // banc d'équilibrage : 1re Ascension vers 45-55 h de jeu actif
@@ -650,13 +668,21 @@ function ascensionGainAmount() {
 function seedsForShards(n) { return Math.pow(n, 3) * ascensionSeedDivisor() / (1 + (combinedUpgradeValue('ascensionSeedMult') || 0)); }
 function ascensionUnlocked() { return (state.totalSeedsEarned || 0) >= ASCENSION_SEED_DIVISOR || state.totalAscensions > 0; }
 
-function doAscension(auto) {
+// Comme doPrestige : Ascension sans panneau ni cérémonie (mode test, banc d'équilibrage).
+function doAscension() {
+  const r = executerAscension();
+  if (!r) return;
+  playAscensionSound();
+  showToast(state.lang === 'en'
+    ? `🌟 Ascension successful! +${r.gain} Stellar Shard(s). Total production x${r.prodApres.toFixed(2)}`
+    : `🌟 Ascension réussie ! +${r.gain} Éclat(s) Stellaire(s). Production x${r.prodApres.toFixed(2)} au total`);
+}
+// L'Ascension elle-même, sans son ni message. Renvoie ce qui a changé (null si elle ne rapporte rien).
+function executerAscension() {
   const gain = ascensionGainAmount();
-  if (gain < 1) return;
-  if (!auto && !confirm(selonLangue(
-    `Ascensionner maintenant ? Tu vas gagner ${gain} Éclat(s) Stellaire(s) (plus de production et plus de Graines à chaque Prestige, jamais remis à zéro), mais tu repars de zéro comme avec un Prestige (Verdure, compagnons, Clic, Bâtiments et Spécial) ET tes Graines Cosmiques, leur bonus de production et tes améliorations de Prestige sont remis à zéro (Recherche, Connaissances, succès, familiers et améliorations d'Ascension sont conservés). Continuer ?`,
-    `Ascend now? You will earn ${gain} Stellar Shard(s) (more production and more Seeds on every Prestige, never reset), but you start over as with a Prestige (Greenery, companions, Click, Buildings and Special) AND your Cosmic Seeds, their production bonus and your Prestige upgrades are reset (Research, Knowledge, achievements, pets and Ascension upgrades are kept). Continue?`))) return;
-  const cpsAvantReset = totalCps() / boostMult('ability');
+  if (gain < 1) return null;
+  const prodAvant = shardMultiplier(), grainesAvant = shardSeedMultiplier();
+  const cpsAvantReset = cpsHorsCapacite();
   creditShards(gain);
   state.totalAscensions = (state.totalAscensions || 0) + 1;
   state.seedsSinceAscension = 0;
@@ -665,15 +691,10 @@ function doAscension(auto) {
   state.prestigeUpgrades = {};
   // Une Ascension implique aussi un Prestige complet (le jardin actuel repart à zéro)
   resetRun(cpsAvantReset);
-  playPrestigeSound();
-  setTimeout(() => playPrestigeSound(), 200);
   bump('verdureCount');
   checkAchievements();
   saveGame(); renderAll();
-  showToast(state.lang === 'en'
-    ? `🌟 Ascension successful! +${gain} Stellar Shard(s). Total production x${shardMultiplier().toFixed(2)}`
-    : `🌟 Ascension réussie ! +${gain} Éclat(s) Stellaire(s). Production x${shardMultiplier().toFixed(2)} au total`);
-  if (!auto) queueOrShowPapi('ascension', { position: 'top-right' });
+  return { gain, prodAvant, prodApres: shardMultiplier(), grainesAvant, grainesApres: shardSeedMultiplier() };
 }
 
 function buyAscensionUpgrade(id) {

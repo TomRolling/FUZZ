@@ -3,6 +3,10 @@ let _lastClickTime = null;
 let _recentClickTimes = [];
 document.getElementById('clickZone').addEventListener('click', (e) => {
   if (challengeIs('mains')) return;
+  // En premier : il mesure la position des créatures, ce qui est gratuit tant que rien n'a encore
+  // changé dans la page, et forçait un calcul de mise en page complet une fois le combo, le texte
+  // flottant et les particules posés.
+  faireSursauterHabitants(e.clientX, e.clientY);
   state.lastActionTime = Date.now();
   state.inactivityAnnounced = false;
   registerCombo();
@@ -40,8 +44,9 @@ document.getElementById('clickZone').addEventListener('click', (e) => {
 });
 
 // Enveloppés : passer la fonction directement lui donnerait l'événement de clic comme `auto`.
-document.getElementById('prestigeBtn').addEventListener('click', () => doPrestige());
-document.getElementById('ascensionBtn').addEventListener('click', () => doAscension());
+// Le joueur décide dans le panneau de décision, puis vit la cérémonie (ui/ceremonie.js).
+document.getElementById('prestigeBtn').addEventListener('click', () => ouvrirDecision('prestige'));
+document.getElementById('ascensionBtn').addEventListener('click', () => ouvrirDecision('ascension'));
 
 // ================= GOLDEN WEED EVENT =================
 function spawnGoldenWeed() {
@@ -71,6 +76,7 @@ function spawnGoldenWeed() {
     saveGame(); renderAll();
     el.remove();
   };
+  playGoldenAppearSound();
   // DANS #gameViewport, pas dans <body> : hors du wrapper, leur position:fixed se résolvait
   // contre la vraie fenêtre (et non contre la zone de dessin mise à l'échelle), et ils
   // passaient par-dessus les menus, qui sont eux à l'intérieur.
@@ -198,7 +204,9 @@ function runAutomations() {
 
   // Prestige automatique : dès que le gain atteint le nombre de Graines choisi. Jamais pendant
   // qu'un tutoriel est à l'écran.
-  if (automationOn('prestige') && state.tabsSeen.prestige && !_pendingSpotlightGroup && !state.challengeActive) {
+  // Ni pendant que le joueur lit le panneau de décision (les chiffres affichés deviendraient faux
+  // sous ses yeux), ni pendant une cérémonie.
+  if (automationOn('prestige') && state.tabsSeen.prestige && !_pendingSpotlightGroup && !state.challengeActive && !decisionOuverte() && !ceremonieEnCours()) {
     const cible = Math.max(1, state.automation.prestigeSeeds || 1);
     if (prestigeGainAmount() >= cible) {
       showToast(state.lang === 'en' ? '🤖 Automatic Prestige' : '🤖 Prestige automatique');

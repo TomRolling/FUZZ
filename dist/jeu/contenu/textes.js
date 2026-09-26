@@ -6,6 +6,7 @@ const UI_STRINGS = {
   fr: {
     next: 'Suivant ▸', close: 'Fermer ✕', exitShop: 'Quitter le magasin ✕',
     each: 'chacun', synergyActive: 'Synergie active', bestRoi: 'Meilleur rapport qualité/prix',
+    decisionPrestigeTitre: '🌍 Terraformer le jardin ?', decisionAscensionTitre: '🌟 Ascensionner ?', decisionGagne: 'Tu gagnes', decisionGarde: 'Tu gardes', decisionPerd: 'Repart de zéro', decisionPasEncore: 'Pas encore', decisionTerraformer: 'Terraformer', decisionAscensionner: 'Ascensionner', decisionConnaissances: 'Connaissances', ceremoniePrestigeTitre: 'Terraformation réussie', ceremonieAscensionTitre: 'Ascension réussie', ceremonieContinuer: 'Clique pour continuer', dansDelai: 'dans',
     max: 'MAX', acquired: '✔ Acquis', active: '✔ Actif', owned: 'Possédé', free: 'Gratuit', use: 'Utiliser',
     activate: 'Activer', locked: '(nécessite d\'abord une autre amélioration)',
     settingsTitle: '⚙️ Paramètres', achievementsTitle: '🏆 Succès', questsTitle: '📓 Quêtes & Défis',
@@ -50,6 +51,7 @@ const UI_STRINGS = {
   en: {
     next: 'Next ▸', close: 'Close ✕', exitShop: 'Exit shop ✕',
     each: 'each', synergyActive: 'Synergy active', bestRoi: 'Best value for money',
+    decisionPrestigeTitre: '🌍 Terraform the garden?', decisionAscensionTitre: '🌟 Ascend?', decisionGagne: 'You gain', decisionGarde: 'You keep', decisionPerd: 'Starts over', decisionPasEncore: 'Not yet', decisionTerraformer: 'Terraform', decisionAscensionner: 'Ascend', decisionConnaissances: 'Knowledge', ceremoniePrestigeTitre: 'Terraforming complete', ceremonieAscensionTitre: 'Ascension complete', ceremonieContinuer: 'Click to continue', dansDelai: 'in',
     max: 'MAX', acquired: '✔ Owned', active: '✔ Active', owned: 'Owned', free: 'Free', use: 'Use',
     activate: 'Activate', locked: '(requires another upgrade first)',
     settingsTitle: '⚙️ Settings', achievementsTitle: '🏆 Achievements', questsTitle: '📓 Quests & Challenges',
@@ -96,9 +98,12 @@ function tr(key) { return (UI_STRINGS[state.lang] || UI_STRINGS.fr)[key] || key;
 
 // --- Confort d'affichage ---
 // Animations : tant que le joueur n'a rien choisi (null), on suit son systeme.
+// Requête créée une seule fois : elle reste à jour d'elle-même (.matches suit le réglage du système),
+// et la fonction est appelée à chaque clic et à chaque pas des habitants du jardin.
+const _requeteMoinsAnimations = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
 function animationsReduites() {
   if (state.reduireAnimations !== null && state.reduireAnimations !== undefined) return !!state.reduireAnimations;
-  return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  return !!(_requeteMoinsAnimations && _requeteMoinsAnimations.matches);
 }
 const ZOOMS_UI = [1, 1.15, 1.3];
 function appliquerConfort() {

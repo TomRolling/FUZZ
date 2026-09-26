@@ -154,7 +154,17 @@ function playTone(freq, duration = 0.08, type = 'sine', vol = 0.04) {
   } catch(e) {}
 }
 function playClickSound() { playTone(560 + Math.random() * 90, 0.05, 'sine', 0.025); }
-function playBuySound() { playTone(320, 0.1, 'triangle', 0.045); }
+// Achats enchaînés : chaque achat fait à moins d'une seconde du précédent monte d'un demi-ton,
+// jusqu'à une octave, comme des pièces ramassées en série ; après une pause, on repart du bas.
+// Le même bip répété à l'identique fatiguait l'oreille dès la cinquième carte achetée.
+const ACHAT_SERIE_MS = 1000, ACHAT_SERIE_MAX = 12;
+let _achatSerie = 0, _dernierSonAchat = 0;
+function playBuySound() {
+  const t = performance.now();
+  _achatSerie = t - _dernierSonAchat < ACHAT_SERIE_MS ? Math.min(_achatSerie + 1, ACHAT_SERIE_MAX) : 0;
+  _dernierSonAchat = t;
+  playTone(320 * Math.pow(2, _achatSerie / 12), 0.1, 'triangle', 0.045);
+}
 // Première fois qu'un compagnon / une amélioration de clic est révélé(e) : petit motif à deux
 // notes, franc et court. Distinct du jingle des objets rares (playRareItemSound, plus long).
 // Volume nettement au-dessus des autres effets : c'est un événement rare (la toute première
@@ -164,8 +174,17 @@ function playFirstPurchaseSound() {
   setTimeout(() => playTone(784, 0.18, 'triangle', 0.15), 95);
 }
 function playAchievementSound() { playTone(520, 0.09, 'sine', 0.05); setTimeout(() => playTone(760, 0.14, 'sine', 0.05), 90); }
+// Ascension : plus grave et plus lente que le Prestige (qui était simplement joué deux fois), un
+// accord qui monte comme on s'élève vers les étoiles.
+function playAscensionSound() {
+  playTone(165, 0.4, 'sine', 0.05);
+  [247, 330, 494, 659, 988].forEach((f, i) => setTimeout(() => playTone(f, 0.35 + i * 0.05, 'sine', 0.035), 180 + i * 150));
+}
 function playPrestigeSound() { playTone(220, 0.15, 'sawtooth', 0.04); setTimeout(() => playTone(440, 0.2, 'sine', 0.05), 120); setTimeout(() => playTone(660, 0.25, 'sine', 0.04), 260); }
 function playGoldenSound() { playTone(700, 0.06, 'sine', 0.05); setTimeout(() => playTone(900, 0.1, 'sine', 0.05), 70); }
+// Apparition de l'herbe dorée : un scintillement bref, aigu et discret, pour la remarquer sans la
+// confondre avec le son du ramassage juste au-dessus (plus grave et plus fort).
+function playGoldenAppearSound() { playTone(1320, 0.07, 'sine', 0.03); setTimeout(() => playTone(1760, 0.12, 'sine', 0.025), 80); }
 // Première acquisition d'un objet à achat unique (Spécial / Bâtiments) : petit arpège
 // ascendant qui se termine sur une note tenue — volontairement plus long et plus "posé" que
 // le son de succès (2 notes) pour que l'oreille distingue tout de suite les deux événements.

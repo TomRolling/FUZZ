@@ -79,7 +79,26 @@ async function ouvrir(b, options = {}) {
     await p.waitForTimeout(150);
   }
   verifie(tailles[1].echelle > tailles[0].echelle, 'la taille « Grande » n agrandit rien');
-  verifie(tailles[2].echelle > tailles[1].echelle, 'la taille « Tres grande » n agrandit rien');
+  // Le zoom est plafonné tant que tout ne tient pas (voir MIN_W_ZOOM / MIN_H_ZOOM) : dans cette
+  // fenêtre de 1280x820, « Grande » et « Très grande » peuvent atteindre le même plafond. Jamais moins.
+  verifie(tailles[2].echelle >= tailles[1].echelle, 'la taille « Tres grande » est plus petite que « Grande »');
+  // Dans une grande fenêtre, la place ne manque pas : chaque cran doit vraiment agrandir.
+  await p.setViewportSize({ width: 1920, height: 1080 }); await p.waitForTimeout(200);
+  const grand = [];
+  for (let i = 0; i < 3; i++) {
+    grand.push(await p.evaluate(() => window._gameScale));
+    await p.evaluate(() => { openModal('settingsModalOverlay'); activeSettingsTab = 'options'; renderAll(); });
+    await p.click('#zoomToggleBtn');
+    await p.waitForTimeout(150);
+  }
+  verifie(grand[1] > grand[0] && grand[2] > grand[1], 'dans une grande fenetre, les tailles n agrandissent pas a chaque cran : ' + grand.map(x => x.toFixed(3)).join(' / '));
+  // Fenêtre basse et large (portable 1366x768 dans un navigateur) : les planchers du zoom faisaient
+  // RÉTRÉCIR l'interface quand on demandait une taille plus grande.
+  await p.setViewportSize({ width: 1366, height: 657 }); await p.waitForTimeout(200);
+  const bas = await p.evaluate(() => [1, 1.15, 1.3].map(z => { window._zoomUI = z; fitGameViewport(); return window._gameScale; }));
+  await p.evaluate(() => { window._zoomUI = state.zoomUI || 1; fitGameViewport(); });
+  verifie(bas[1] >= bas[0] && bas[2] >= bas[0], 'fenetre basse : une taille plus grande retrecit l interface : ' + bas.map(x => x.toFixed(3)).join(' / '));
+  await p.setViewportSize({ width: 1280, height: 820 }); await p.waitForTimeout(200);
   verifie(tailles.every(t => t.shopDansEcran), 'le bouton du magasin sort de l ecran a un des zooms');
   // getBoundingClientRect rend deja la hauteur APRES mise a l'echelle : elle doit couvrir la fenetre.
   verifie(tailles.every(t => Math.abs(t.hauteurReelle - 820) < 3), 'la zone de dessin ne remplit plus la fenetre');

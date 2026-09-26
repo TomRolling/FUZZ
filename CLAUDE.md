@@ -102,6 +102,8 @@ reference, not the folder names**: `moteur/` and `ui/` are a rough split, and se
 | `ui/navigation.js` | theme, tabs, modals, `verifierNouveauxOnglets`, mini-tab rows, Papi queue (`queueOrShowPapi`) |
 | `ui/presentation.js` | tab announcements, finger, halo, dialogue anchoring, descriptions, `arreterPresentationsEnCours` |
 | `ui/popups.js` | item icons, "new item" window, `fermerSurgissante` (fade-out shared by the small windows) |
+| `ui/ceremonie.js` | Prestige and Ascension: decision panel (`ouvrirDecision`), ceremony (`lancerCeremonie`) and recap |
+| `ui/jardin.js` | the garden's inhabitants: owned companions walking in the click zone (`renderJardin`, `promenerHabitants`, `faireSursauterHabitants`) |
 | `ui/rendu.js` | `renderAll` and most `render*` (a few feature-specific ones live next to their feature) |
 | `boucle.js` | click handler, golden weed, butterflies, hourly cat, auto-buy, weather/visits/inactivity tick |
 | `moteur/modetest.js` | hidden test mode (Ctrl+Shift+D) |
@@ -133,6 +135,23 @@ Key behaviours, with the file from the table above:
 - **Comfort settings** — `animationsReduites()` follows `prefers-reduced-motion` until the player picks a
   value (`state.reduireAnimations`: `null` = system, then true/false); `state.zoomUI` (1 / 1.15 / 1.3) scales
   the whole drawing area in `fitGameViewport()`. `appliquerConfort()` applies both.
+- **Prestige and Ascension (`ui/ceremonie.js`)** — the Terraform / Ascend buttons call
+  `ouvrirDecision(type)`: a decision panel (what you gain with the before/after multipliers, what you
+  keep, what starts over, challenge status) instead of `confirm()`. Confirming starts a ceremony (green
+  wave for Prestige, starry sky for Ascension); the actual reset (`executerPrestige()` /
+  `executerAscension()` in `economie.js`, no sound, no message, return what changed) happens once the
+  screen is covered, the shop closes unseen so the player lands back on the garden, then a recap shows
+  what changed. One click skips the sequence; Prestige gets a shorter version after the 3rd one.
+  `doPrestige()` / `doAscension()` are the silent entry points (automation, test mode, balance bench):
+  reset plus the old sound and toast, no panel, no ceremony. Auto-Prestige pauses while the panel or
+  ceremony is up. Multiplier formulas take their quantity as a parameter (`seedMultiplierPour`, ...) and
+  the challenge verdict is `defiReussiPour(gain)`, so the panel announces exactly what the game will do.
+  Covered by `tests/test-ceremonie.js`.
+- **Garden inhabitants (`ui/jardin.js`)** — one creature per owned companion kind walks along the bottom of the click zone, hops when
+  the player clicks near it, grows a little per milestone, and leaves at Prestige. Only real drawings appear: every generated
+  placeholder sprite carries `provisoire: true` in `ITEM_SPRITES`, and removing that flag once the art is drawn is all it takes
+  for the creature to enter the garden (`regardeAGauche: true` if the drawing faces left). Creatures never stop behind the SHOP
+  sign, let clicks through, and stay still in reduced-motion mode.
 - **Dialogue & scenes** — the Papi Feuillage / Leroy narrative system: `showDialogue` (single
   speaker popup), `showScene` (two-character JRPG-style face-off, used for the opening scene), a typewriter
   text effect, and `PAPI_LINES` pools of contextual one-liners (`pickPapiLine`/`papiSaysFromCategory`) shown

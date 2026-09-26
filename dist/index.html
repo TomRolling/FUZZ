@@ -35,9 +35,13 @@
   //    écran très large mais peu haut, mieux vaut élargir la zone de dessin que comprimer le
   //    contenu.
   const GAME_W = 1280, GAME_W_MAX = 1600, MIN_H = 700, GROW_DAMP = 0.35;
-  // Hauteur de dessin minimale une fois le zoom applique : en dessous, la colonne centrale
-  // (zone de clic) devient trop courte pour qu'on joue confortablement.
-  const MIN_H_ZOOM = 560;
+  // Zone de dessin minimale une fois le zoom appliqué : le réglage agrandit l'interface TANT QUE TOUT
+  // TIENT. Mesuré par tests/audit-chevauchements.js dans l'état le plus chargé : à 1113x696 et 1231x692
+  // chaque élément garde sa place ; à 985x631 (zoom x1,3 dans une fenêtre de 1280x820), la bulle de Papi
+  // rencontrait le bandeau du haut et les notifications ; à 1100x705, bandeau au plus chargé et trois
+  // notifications empilées, la bulle en haut à droite touchait encore la dernière (720 de haut suffit). Dans une petite fenêtre, le zoom grossit donc un
+  // peu moins que demandé, et jamais moins que le réglage normal (garanti par la formule, voir plus bas).
+  const MIN_W_ZOOM = 1100, MIN_H_ZOOM = 720;
   let _viewportEl = null;
   function fitGameViewport() {
     _viewportEl = _viewportEl || document.getElementById('gameViewport');
@@ -55,7 +59,9 @@
     // zone dessinee, donc tout grossit sans que rien ne sorte de l'ecran (la colonne centrale
     // absorbe la difference). Plancher de hauteur pour que le jeu reste utilisable au maximum.
     const zoom = window._zoomUI || 1;
-    if (zoom !== 1) scale = Math.min(scale * zoom, vh / MIN_H_ZOOM);
+    // Jamais sous l'échelle normale : dans une fenêtre basse et large (1366x657), les planchers seuls
+    // faisaient RÉTRÉCIR l'interface quand on choisissait « Grande ».
+    if (zoom !== 1) scale = Math.max(scale, Math.min(scale * zoom, vh / MIN_H_ZOOM, vw / MIN_W_ZOOM));
     const w = vw / scale, h = vh / scale;
     _viewportEl.style.width = w + 'px';
     _viewportEl.style.height = h + 'px';
@@ -98,6 +104,9 @@
   * { box-sizing: border-box; }
   html, body { height: 100%; overscroll-behavior: none; }
   :root {
+    /* Demi-largeur de la colonne centrale (CLIC, combo, enseigne SHOP de 110px de chaque côté) : rien de ce
+       qui arrive sur les côtés (bulle de Papi, notifications) ne la franchit. Une seule valeur pour tous. */
+    --demi-centre: 120px;
     /* Echelle de mouvement. Quatre durees et trois courbes pour toute l'interface : ce qui entre
        ralentit en arrivant, ce qui sort accelere en partant, et ce qui merite du caractere
        depasse legerement sa cible. Les boucles infinies (respirations) ne sont pas ici : elles
@@ -278,8 +287,11 @@
   .abilityNum { display: inline-block; width: 2ch; text-align: right; }
   .abilityBtn::after { content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none; background: conic-gradient(rgba(0,0,0,0.6) calc(var(--cd) * 360deg), transparent 0); }
   .abilityBtn:not(.ready) { cursor: default; }
-  /* Halo « prête » sur un anneau à part, animé en transform/opacity : pas de repeinture à chaque image. */
-  .abilityBtn::before { content: ''; position: absolute; inset: -5px; border-radius: 50%; border: 3px solid rgba(255,193,7,0.85); opacity: 0; pointer-events: none; will-change: transform, opacity; }
+  /* Halo « prête » sur un anneau à part, animé en transform/opacity : pas de repeinture à chaque image.
+     Dessiné AU-DESSUS de l'icône (z-index) : sous elle, il obligeait le navigateur à sortir l'icône sur
+     un calque tant qu'il pulsait, puis à la réintégrer, et l'image réduite changeait d'aspect. L'anneau
+     est tracé hors du bouton, l'icône découpée en disque dedans : ils ne se touchent jamais. */
+  .abilityBtn::before { content: ''; position: absolute; inset: -5px; z-index: 1; border-radius: 50%; border: 3px solid rgba(255,193,7,0.85); opacity: 0; pointer-events: none; will-change: transform, opacity; }
   .abilityBtn.ready::before { animation: abilityReady 1.8s ease-in-out infinite; }
   .abilityBtn.ready:hover { filter: brightness(1.12); }
   .abilityTime { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 2px; font-size: 9px; font-weight: 700; white-space: nowrap; color: var(--panel-text); text-shadow: 0 0 3px var(--panel-bg); pointer-events: none; }
@@ -485,6 +497,16 @@
      (`pixelated` reste le bon choix pour les sprites affichés à leur taille native ou agrandis,
      voir .itemIcon.) */
   .shopFloatBtnImg { display: block; width: 220px; height: auto; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); }
+  /* Calques permanents. Toute animation confiée à la carte graphique (combo, herbe dorée, papillons,
+     halo d'une capacité prête...) oblige le navigateur à sortir sur un calque ce qui est dessiné
+     par-dessus, quelle que soit la distance : il ne peut pas prévoir jusqu'où l'animation ira. Ces
+     éléments immobiles passaient donc sans cesse de la page à un calque et retour, et leurs images
+     réduites n'ont pas le même rendu dans les deux cas à une échelle non entière : ils « se
+     pixellisaient puis redevenaient nets ». Toujours sur leur calque, ils ne basculent plus
+     (tests/audit-chevauchements.js, et redessinés correctement après un redimensionnement). Règle
+     pour la suite : un élément immobile qui passe au-dessus d'effets animés se range ici, à moins que
+     l'effet puisse simplement passer au-dessus de lui (voir .abilityBtn::before). */
+  .shopFloatBtn, .floatingButtonsTopRight { will-change: transform; }
   body.sceneActive .floatingButtonsTopRight, body.sceneActive .shopFloatBtn { display: none; }
 
   /* ===== Modales latérales (Paramètres / Succès / Quêtes) ===== */
@@ -796,6 +818,8 @@
   .upgrade .name { font-weight: 700; font-size: 12.5px; line-height: 1.5; }
   .upgrade .desc { font-size: 10px; opacity: 0.65; line-height: 1.6; margin-top: 4px; display: block; }
   .upgrade .price { font-size: 12px; color: var(--accent-texte); font-weight: 700; white-space: nowrap; margin-left: 10px; }
+  .upgrade .price .delaiAchat { display: block; margin-top: 3px; font-size: 10.5px; font-weight: 600; text-align: right; }
+  .upgrade .price .delaiAchat:empty { display: none; }
   .upgrade .owned { background: #e0f2e0; color: #23331a; border-radius: 8px; padding: 2px 8px; font-size: 11px; margin-left: 6px; }
   /* Ce que rapporte le compagnon : l'information la plus décisive de la ligne, elle était
      noyée en fin de description à 10px et 65% d'opacité. */
@@ -863,8 +887,10 @@
   .footerBtns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
   .smallBtn { padding: 10px 16px; border-radius: 10px; border: none; background: #f2f2f2; cursor: pointer; font-size: 13px; font-weight: 700; }
 
-  .toastContainer { position: fixed; bottom: calc(16px + env(safe-area-inset-bottom)); right: calc(16px + env(safe-area-inset-right)); z-index: 200; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: none; }
-  .toast { background: var(--accent-texte); color: white; padding: 10px 18px; border-radius: 10px; font-size: 13px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); animation: toastIn var(--t-normal) var(--e-entree), toastOut var(--t-normal) var(--e-sortie) 2.7s forwards; white-space: nowrap; }
+  /* La colonne centrale (CLIC, combo, SHOP, ~280px) appartient au jeu : une notification ne s'étire
+     jamais jusque-là, elle passe à la ligne (voir .toast). */
+  .toastContainer { position: fixed; bottom: calc(16px + env(safe-area-inset-bottom)); right: calc(16px + env(safe-area-inset-right)); max-width: calc(50% - var(--demi-centre) - 16px); z-index: 200; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: none; }
+  .toast { background: var(--accent-texte); color: white; padding: 10px 18px; border-radius: 10px; font-size: 13px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); animation: toastIn var(--t-normal) var(--e-entree), toastOut var(--t-normal) var(--e-sortie) 2.7s forwards; white-space: normal; overflow-wrap: anywhere; }
   @keyframes toastIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: translateX(0); } }
   @keyframes toastOut { to { opacity: 0; } }
 
@@ -873,9 +899,22 @@
   @keyframes particleMove { 0% { transform: translate(0,0) scale(1) rotate(0deg); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(0.35) rotate(var(--rot)); opacity: 0; } }
 
   /* ===== Combo indicator ===== */
-  .comboBadge { position: absolute; bottom: 14%; left: 50%; transform: translateX(-50%) scale(0.9); font-size: 13px; font-weight: 800; color: #ef6c00; background: rgba(255,255,255,0.85); padding: 4px 12px; border-radius: 20px; opacity: 0; transition: opacity var(--t-instant), transform var(--t-instant); pointer-events: none; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+  /* Toujours au-dessus de l'enseigne du magasin (10px + ~75px de haut) : à 14 % seulement, selon la
+     taille de la fenêtre, le badge descendait de 5 à 21px dans le bouton SHOP (audit-chevauchements). */
+  .comboBadge { position: absolute; bottom: max(14%, 96px); left: 50%; transform: translateX(-50%) scale(0.9); font-size: 13px; font-weight: 800; color: #ef6c00; background: rgba(255,255,255,0.85); padding: 4px 12px; border-radius: 20px; opacity: 0; transition: opacity var(--t-instant), transform var(--t-instant); pointer-events: none; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
   .companion { position: absolute; bottom: 8%; left: 8%; font-size: 40px; pointer-events: none; animation: companionSway 3.2s ease-in-out infinite; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2)); }
   @keyframes companionSway { 0%, 100% { transform: rotate(-6deg) translateY(0); } 50% { transform: rotate(6deg) translateY(-4px); } }
+  /* Les habitants du jardin (voir jeu/ui/jardin.js) : les clics les traversent, on désherbe à travers eux. */
+  .jardinHabitants { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  /* Un calque permanent par créature (will-change), et tous les mouvements par la carte graphique :
+     fluides au sous-pixel près, sans jamais basculer entre la page et un calque (voir jeu/ui/jardin.js). */
+  .habitant { position: absolute; left: 0; will-change: transform; transition-property: translate; transition-timing-function: linear; transform-origin: 50% 100%; }
+  .habitant.enMarche { animation: habitantDandine 0.5s ease-in-out infinite; }
+  @keyframes habitantDandine { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-3px) rotate(3deg); } }
+  .habitantSens { display: flex; align-items: flex-end; }
+  /* Pas de image-rendering: pixelated : le dessin est réduit (738 px -> ~50), et en plus-proche-voisin
+     sa texture se réorganiserait au moindre décalage (voir .shopFloatBtnImg). */
+  .habitantImg { display: block; object-fit: contain; filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.3)); user-select: none; }
   .comboBadge.show { opacity: 1; transform: translateX(-50%) scale(1); }
 
   /* ===== Bump feedback on stat change ===== */
@@ -961,6 +1000,87 @@
     border-radius: 10px; padding: 10px; }
   .itemPopupBox { background: var(--card-bg); border: 4px solid var(--ink); border-radius: 18px; padding: 26px; width: 320px; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.4); animation: itemPopupIn var(--t-normal) var(--e-entree); }
   @keyframes itemPopupIn { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
+  /* ===== Prestige et Ascension : panneau de décision ===== */
+  .decisionBox { width: min(640px, calc(100% - 48px)); text-align: left; }
+  .decisionBox .itemPopupTitle { text-align: center; }
+  .decisionColonnes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .decisionCol { background: var(--panel-bg); border-radius: 12px; padding: 12px 14px; border: 2px solid transparent; }
+  .decisionCol.gagne { border-color: var(--accent); }
+  .decisionColTitre { font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-texte); margin-bottom: 8px; }
+  .decisionCol ul { margin: 0; padding-left: 16px; font-size: 12px; line-height: 1.6; color: var(--panel-text); }
+  .decisionCol.perd ul { opacity: 0.85; }
+  .decisionDefi { font-size: 12px; line-height: 1.5; margin-top: 12px; text-align: center; color: var(--panel-text); }
+  .decisionDefi:empty { display: none; }
+  .decisionDefi.rate { color: #b3261e; font-weight: 700; }
+  .decisionDefi.reussi { color: var(--accent-texte); font-weight: 700; }
+  .decisionBoutons { margin-top: 16px; }
+  /* L'action principale doit se lire comme telle : l'accent clair des autres boutons, avec un texte blanc,
+     manquait de contraste et ressemblait à un bouton désactivé. Couleurs fixes : --accent-texte devient
+     clair en mode sombre. */
+  .decisionBoutons .decisionConfirmer { font-size: 13px; padding: 10px 22px; margin-top: 0; background: #3d6b45; color: #fff; }
+  .decisionOverlay.ascension .decisionConfirmer { background: #8a6200; }
+  .decisionOverlay.ascension .decisionCol.gagne { border-color: #f4b400; }
+  /* ===== Prestige et Ascension : cérémonie =====
+     Au-dessus de tout (le magasin 210, les bulles de Papi 250, les petites fenêtres 350). Tout ce qui
+     bouge ici est tout en haut de la pile : rien n'est dessiné par-dessus, donc aucune de ces
+     animations ne fait basculer un voisin sur un calque (voir tests/audit-chevauchements.js). */
+  .ceremonieOverlay { position: fixed; inset: 0; z-index: 420; display: none; overflow: hidden; cursor: pointer; transition: background var(--t-normal) var(--e-entree); }
+  .ceremonieOverlay.prestige.fini { background: rgba(0, 0, 0, 0.4); } /* le bilan se détache du magasin ou du jardin */
+  .ceremonieVague, .ceremonieCiel { position: absolute; pointer-events: none; }
+  .ceremonieVague { display: none; left: 0; right: 0; top: 0; height: 160%;
+    background: linear-gradient(180deg, rgba(127,163,119,0) 0%, #7fa377 14%, #a8c69f 45%, #5d8a55 86%, rgba(93,138,85,0) 100%);
+    transform: translateY(100%); }
+  .ceremonieOverlay.prestige .ceremonieVague { display: block; animation: vagueMonte var(--ceremonie-couvre) var(--e-entree) forwards; }
+  .ceremonieOverlay.prestige.decouvre .ceremonieVague { animation: vagueSort var(--ceremonie-decouvre) var(--e-sortie) forwards; }
+  @keyframes vagueMonte { from { transform: translateY(100%); } to { transform: translateY(-20%); } }
+  @keyframes vagueSort { from { transform: translateY(-20%); } to { transform: translateY(-110%); } }
+  .ceremonieCiel { display: none; inset: 0; opacity: 0;
+    background: radial-gradient(ellipse at 50% 35%, #2b2a5c 0%, #15142e 55%, #07061a 100%); }
+  .ceremonieCiel::before { content: ''; position: absolute; inset: 0;
+    background-image: radial-gradient(1.4px 1.4px at 94.8% 3.6%, #fff 50%, transparent 51%),
+      radial-gradient(1.2px 1.2px at 76.6% 58.5%, #ffe9a8 50%, transparent 51%),
+      radial-gradient(3.2px 3.2px at 33.3% 19.5%, #fff 50%, transparent 51%),
+      radial-gradient(1.8px 1.8px at 98.4% 14.9%, #fff 50%, transparent 51%),
+      radial-gradient(1.9px 1.9px at 26.6% 16.7%, #ffe9a8 50%, transparent 51%),
+      radial-gradient(3.1px 3.1px at 91.7% 23.9%, #ffe9a8 50%, transparent 51%),
+      radial-gradient(3.2px 3.2px at 30.7% 63.0%, #fff 50%, transparent 51%),
+      radial-gradient(2.3px 2.3px at 91.1% 33.5%, #ffe9a8 50%, transparent 51%),
+      radial-gradient(3.4px 3.4px at 93.1% 5.2%, #fff 50%, transparent 51%),
+      radial-gradient(3.2px 3.2px at 35.7% 10.6%, #fff 50%, transparent 51%),
+      radial-gradient(2.7px 2.7px at 24.3% 17.8%, #fff 50%, transparent 51%),
+      radial-gradient(3.4px 3.4px at 53.1% 71.0%, #fff 50%, transparent 51%),
+      radial-gradient(2.5px 2.5px at 37.8% 59.9%, #fff 50%, transparent 51%),
+      radial-gradient(1.9px 1.9px at 12.6% 53.1%, #fff 50%, transparent 51%),
+      radial-gradient(1.3px 1.3px at 17.4% 66.7%, #fff 50%, transparent 51%),
+      radial-gradient(3.3px 3.3px at 62.4% 46.2%, #fff 50%, transparent 51%),
+      radial-gradient(1.4px 1.4px at 55.4% 9.8%, #ffe9a8 50%, transparent 51%),
+      radial-gradient(1.5px 1.5px at 22.9% 23.5%, #fff 50%, transparent 51%),
+      radial-gradient(2.5px 2.5px at 73.2% 58.4%, #ffe9a8 50%, transparent 51%),
+      radial-gradient(2.1px 2.1px at 89.4% 17.5%, #fff 50%, transparent 51%),
+      radial-gradient(2.1px 2.1px at 88.7% 98.1%, #fff 50%, transparent 51%),
+      radial-gradient(2.3px 2.3px at 69.2% 21.1%, #fff 50%, transparent 51%),
+      radial-gradient(1.9px 1.9px at 79.1% 54.3%, #fff 50%, transparent 51%),
+      radial-gradient(1.8px 1.8px at 29.7% 64.2%, #fff 50%, transparent 51%),
+      radial-gradient(1.5px 1.5px at 72.2% 4.7%, #fff 50%, transparent 51%),
+      radial-gradient(1.2px 1.2px at 63.7% 45.6%, #fff 50%, transparent 51%),
+      radial-gradient(2.7px 2.7px at 69.9% 4.9%, #ffe9a8 50%, transparent 51%),
+      radial-gradient(2.9px 2.9px at 92.9% 67.3%, #fff 50%, transparent 51%);
+    animation: cielScintille 2.4s ease-in-out infinite; }
+  @keyframes cielScintille { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+  .ceremonieOverlay.ascension .ceremonieCiel { display: block; animation: cielVient var(--ceremonie-couvre) var(--e-entree) forwards; }
+  .ceremonieOverlay.ascension.decouvre .ceremonieCiel { animation: cielPart var(--ceremonie-decouvre) ease-in-out forwards; }
+  .ceremonieOverlay.ascension.fini .ceremonieCiel { animation: none; opacity: 0.55; }
+  @keyframes cielVient { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes cielPart { from { opacity: 1; } to { opacity: 0.55; } }
+  .ceremonieParticules { position: absolute; inset: 0; pointer-events: none; }
+  .ceremonieParticule { position: absolute; font-size: 22px; line-height: 1; margin: -11px 0 0 -11px; opacity: 0; }
+  .ceremonieOverlay.ascension .ceremonieParticule { color: #fff4c2; font-size: 34px; text-shadow: 0 0 8px #ffd54f, 0 0 22px #ffb300; }
+  .ceremonieBilan { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); width: auto; min-width: 300px; max-width: calc(100% - 48px); padding: 22px 28px; display: none; }
+  .ceremonieBilan.visible { display: block; animation: itemPopupIn var(--t-normal) var(--e-rebond); }
+  .ceremonieOverlay.ascension .ceremonieBilan { border-color: #f4b400; }
+  .ceremonieBilan .ceremonieTitre { font-size: 15px; margin-bottom: 12px; } /* plus précis que .itemPopupTitle, déclaré plus bas */
+  .ceremonieLignes { font-size: 13px; line-height: 1.8; color: var(--panel-text); }
+  .ceremonieSuite { font-size: 10.5px; margin-top: 14px; color: var(--panel-text); opacity: 0.7; }
   .itemPopupTitle { font-weight: 800; font-size: 13px; line-height: 1.5; color: var(--accent-texte); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
   .itemPopupIcon { width: 96px; height: 96px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.25)); margin-bottom: 12px; }
   .dailyPopupIcon { font-size: 64px; margin-bottom: 8px; }
@@ -1034,7 +1154,17 @@
     animation: dialogueIn var(--t-rapide) var(--e-entree);
   }
   @keyframes dialogueIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-  .dialogueBox.pos-bottom-left   { left: 16px;  bottom: calc(90px + env(safe-area-inset-bottom)); }
+  /* Bulle sur un côté : 520px au plus, mais jamais jusqu'à la colonne centrale (CLIC, combo, SHOP).
+     Avec l'interface agrandie, la zone de dessin rétrécit et la bulle, de largeur fixe, recouvrait
+     le « CLIC », le combo et l'enseigne. Elle s'amincit et grandit en hauteur à la place. */
+  .dialogueBox.pos-bottom-left, .dialogueBox.pos-bottom-right,
+  .dialogueBox.pos-top-left, .dialogueBox.pos-top-right { --bord-bulle: 16px; width: min(520px, calc(50% - var(--demi-centre) - var(--bord-bulle))); }
+  /* Au-dessus du familier (en bas à gauche, à 8 % de la zone de jeu, ~48px de haut) : à 90px seulement,
+     la bulle le recouvrait de 1 à 16px selon la taille de la fenêtre (audit-chevauchements). */
+  .dialogueBox.pos-bottom-left   { left: 16px;  bottom: calc(max(90px, 8% + 60px) + env(safe-area-inset-bottom)); }
+  /* Des capacités occupent la colonne de gauche (left 30px + 52px) : la bulle commence à droite de
+     cette colonne, sans entrer dans la colonne centrale. Avant les capacités (tutoriel), rien ne change. */
+  body:has(#abilityBar .abilityBtn) .dialogueBox.pos-bottom-left { --bord-bulle: 98px; left: var(--bord-bulle); }
   .dialogueBox.pos-bottom-right  { right: 16px; bottom: calc(90px + env(safe-area-inset-bottom)); }
   .dialogueBox.pos-top-left      { left: 16px;  top: calc(150px + env(safe-area-inset-top)); }
   .dialogueBox.pos-top-right     { right: 16px; top: calc(150px + env(safe-area-inset-top)); }
@@ -1158,6 +1288,34 @@
   </div>
 </div>
 
+<!-- Prestige et Ascension : panneau de décision (voir jeu/ui/ceremonie.js). Échap = « Pas encore ». -->
+<div class="itemPopupOverlay decisionOverlay" id="decisionOverlay" style="display:none;" data-fermeture="decisionAnnulerBtn">
+  <div class="itemPopupBox decisionBox" role="dialog" aria-labelledby="decisionTitre">
+    <div class="itemPopupTitle" id="decisionTitre"></div>
+    <div class="decisionColonnes">
+      <div class="decisionCol gagne"><div class="decisionColTitre" data-i18n="decisionGagne">Tu gagnes</div><ul id="decisionGagne"></ul></div>
+      <div class="decisionCol garde"><div class="decisionColTitre" data-i18n="decisionGarde">Tu gardes</div><ul id="decisionGarde"></ul></div>
+      <div class="decisionCol perd"><div class="decisionColTitre" data-i18n="decisionPerd">Repart de zéro</div><ul id="decisionPerd"></ul></div>
+    </div>
+    <div class="decisionDefi" id="decisionDefi"></div>
+    <div class="footerBtns decisionBoutons">
+      <button class="smallBtn" id="decisionAnnulerBtn" data-i18n="decisionPasEncore">Pas encore</button>
+      <button class="claimBtn decisionConfirmer" id="decisionConfirmerBtn">Terraformer</button>
+    </div>
+  </div>
+</div>
+<!-- Cérémonie du Prestige (vague verte) et de l'Ascension (ciel étoilé), puis le bilan. Un clic passe
+     la séquence, un autre referme le bilan ; Échap fait de même. -->
+<div class="ceremonieOverlay" id="ceremonieOverlay" data-fermeture="ceremonieOverlay">
+  <div class="ceremonieVague"></div>
+  <div class="ceremonieCiel"></div>
+  <div class="ceremonieParticules" id="ceremonieParticules"></div>
+  <div class="itemPopupBox ceremonieBilan" id="ceremonieBilan">
+    <div class="itemPopupTitle ceremonieTitre" id="ceremonieTitre"></div>
+    <div class="ceremonieLignes" id="ceremonieLignes"></div>
+    <div class="ceremonieSuite" data-i18n="ceremonieContinuer">Clique pour continuer</div>
+  </div>
+</div>
 <div class="itemPopupOverlay" id="bugReportOverlay" style="display:none;" data-fermeture="bugReportCloseBtn">
   <div class="itemPopupBox bugReportBox">
     <div class="itemPopupTitle" data-i18n="bugReportTitle">🐞 Signaler un bug</div>
@@ -1206,6 +1364,7 @@
 </div>
 
 <div class="clickZone" id="clickZone">
+  <div class="jardinHabitants" id="jardinHabitants"></div>
   <div class="boostRow" id="boostRow"></div>
   <div class="clickText" id="clickText">Clique ici pour désherber</div>
   <div class="comboBadge" id="comboBadge"></div>
@@ -1510,6 +1669,8 @@
 <script src="jeu/ui/navigation.js"></script>
 <script src="jeu/ui/presentation.js"></script>
 <script src="jeu/ui/popups.js"></script>
+<script src="jeu/ui/jardin.js"></script>
+<script src="jeu/ui/ceremonie.js"></script>
 <script src="jeu/ui/rendu.js"></script>
 <script src="jeu/boucle.js"></script>
 <script src="jeu/moteur/modetest.js"></script>

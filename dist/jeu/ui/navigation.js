@@ -137,6 +137,9 @@ function isMainScreenBlocked() {
   if (scene && scene.classList.contains('visible')) return true;
   const tutorial = document.getElementById('tutorialOverlay');
   if (tutorial && tutorial.style.display === 'flex') return true;
+  // Panneau de décision et cérémonie du Prestige ou de l'Ascension : ni herbe dorée, ni papillons,
+  // ni réplique de Papi par-dessus (il parle une fois la cérémonie refermée).
+  if (decisionOuverte() || ceremonieEnCours()) return true;
   return false;
 }
 
@@ -172,10 +175,13 @@ document.getElementById('questsModalCloseBtn').addEventListener('click', () => c
 // Pas de menu du clic droit (Inspecter, Recharger...) : c'est un jeu, pas une page web.
 document.addEventListener('contextmenu', e => e.preventDefault());
 document.getElementById('shopBtn').addEventListener('click', () => { document.getElementById('shopBtn').classList.remove('featureHighlight'); openModal('shopPageOverlay'); });
-document.getElementById('shopPageCloseBtn').addEventListener('click', () => {
+// Fermer le magasin, c'est aussi effacer le commentaire de Papi sur les achats : bouton de fermeture
+// et cérémonie du Prestige passent tous deux par ici.
+function fermerMagasin() {
   closeModal('shopPageOverlay');
   hideShopComment();
-});
+}
+document.getElementById('shopPageCloseBtn').addEventListener('click', fermerMagasin);
 // Cliquer sur le fond sombre des modales (pas la page Magasin, en plein écran) les ferme aussi
 document.getElementById('settingsModalOverlay').addEventListener('click', (e) => { if (e.target.id === 'settingsModalOverlay') closeModal('settingsModalOverlay'); });
 document.getElementById('achievementsModalOverlay').addEventListener('click', (e) => { if (e.target.id === 'achievementsModalOverlay') closeModal('achievementsModalOverlay'); });

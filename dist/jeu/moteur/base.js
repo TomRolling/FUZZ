@@ -5,7 +5,7 @@ function isTauriApp() { return typeof window !== 'undefined' && !!window.__TAURI
 // Version affichée du jeu. L'app native connaît la sienne (tauri.conf.json) mais la version web
 // n'a aucun moyen de la lire : elle est donc écrite ici, et tests/check-tables.js vérifie que
 // les deux restent d'accord. Sert au signalement de bug (voir rapportDeBug).
-const VERSION_JEU = '0.7.1';
+const VERSION_JEU = '0.8.0';
 // Trois dernières erreurs JavaScript, gardées en mémoire pour le rapport de bug : sans elles, un
 // signalement de joueur dit « ça a planté » et rien de plus. Jamais écrites sur le disque.
 const _erreursRecentes = [];

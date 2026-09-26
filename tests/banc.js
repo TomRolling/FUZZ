@@ -77,7 +77,7 @@ const HEURES_MAX = parseFloat(process.argv[5] || '150');
 
     const vu = id => !!state.tabsSeen[id];
     const clicParSeconde = () => (typeof challengeIs !== 'undefined' && challengeIs('mains')) ? 0 : CPS_CLICS * clickGain() / boostMult('click'); // pas de revenu de clic pendant Mains dans les poches
-    const revenu = () => totalCps() / boostMult('ability') * E_OR * E_PAP + clicParSeconde();
+    const revenu = () => cpsHorsCapacite() * E_OR * E_PAP + clicParSeconde();
     const essai = (appliquer, annuler) => { const avant = revenu(); appliquer(); const apres = revenu(); annuler(); return apres - avant; };
 
     function objectifVerdure() {
@@ -95,13 +95,13 @@ const HEURES_MAX = parseFloat(process.argv[5] || '150');
     }
 
     function candidats() {
-      const c = totalCps() / boostMult('ability'), I = revenu();
+      const c = cpsHorsCapacite(), I = revenu();
       const liste = [];
       if (vu('production')) {
         const caches = productionHidden();
         // Valeur d'1 /s de production en plus : herbes dorees + part des clics indexee sur la production.
         const clic0 = clicParSeconde(); const s0 = state.buildings.stagiaire || 0;
-        state.buildings.stagiaire = s0 + 1; const dc = totalCps() / boostMult('ability') - c; const dClic = clicParSeconde() - clic0; state.buildings.stagiaire = s0;
+        state.buildings.stagiaire = s0 + 1; const dc = cpsHorsCapacite() - c; const dClic = clicParSeconde() - clic0; state.buildings.stagiaire = s0;
         const valeurCps = E_OR + (dc > 0 ? dClic / dc : 0);
         const pm = totalProdMultiplier() / boostMult('ability');
         for (const b of BUILDINGS) if (!caches.has(b.id) && (typeof challengeAllowsBuilding === 'undefined' || challengeAllowsBuilding(b.id)))
@@ -187,7 +187,7 @@ const HEURES_MAX = parseFloat(process.argv[5] || '150');
       let bonus = 0;
       if (B.t >= B.prochainOr) {
         state.goldenClicked += 1;
-        if (Math.random() < 0.5) { const v = Math.max(50, totalCps() / boostMult('ability') * G.instantSec); state.verdure += v; state.totalEarned += v; bonus += v; }
+        if (Math.random() < 0.5) { const v = Math.max(50, cpsHorsCapacite() * G.instantSec); state.verdure += v; state.totalEarned += v; bonus += v; }
         else startTimedBoost('golden', G.boostMult, G.boostSec * 1000);
         B.prochainOr = B.t + G.min + 2.5 + Math.random() * (G.max - G.min);
       }
@@ -212,7 +212,7 @@ const HEURES_MAX = parseFloat(process.argv[5] || '150');
       B.parts.capacites += capacites();
       if (B.t >= B.prochainChat) { B.prochainChat += 3600; if (hasUnique('chatJardin')) { const v = bonusChatJardin(totalCps()); state.verdure += v; state.totalEarned += v; B.parts.capacites += v; } }
       if (cfg.chaqueSeconde) cfg.chaqueSeconde; // reserve
-      const cps = totalCps(), sansCapacite = cps / boostMult('ability'), or = boostMult('golden'), pap = boostMult('papillon');
+      const cps = totalCps(), sansCapacite = cpsHorsCapacite(cps), or = boostMult('golden'), pap = boostMult('papillon');
       state.verdure += cps * or * pap; state.totalEarned += cps * or * pap;
       B.parts.production += sansCapacite; B.parts.capacites += cps - sansCapacite;
       B.parts.herbes += cps * (or - 1); B.parts.papillons += cps * or * (pap - 1);
