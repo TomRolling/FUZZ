@@ -31,6 +31,9 @@ function resetScrollPanes(root) {
   root.querySelectorAll('.sideModalContent, .shopPageContent').forEach(el => { el.scrollTop = 0; });
 }
 function openModal(overlayId) {
+  // Le bouton qui a ouvert la fenêtre rend le focus : il le gardait, et un appui sur Échap (touche
+  // clavier) faisait alors apparaître autour de lui l'anneau de focus du navigateur.
+  rendreLeFocus();
   const overlay = document.getElementById(overlayId);
   // Le dernier onglet consulté est conservé, y compris pendant le tutoriel : quand Papi présente
   // un nouvel onglet, la fenêtre s'ouvre là où le joueur en était et c'est le doigt « Clique
@@ -114,6 +117,12 @@ function closeModal(overlayId) {
 }
 // Vrai si une modale (Paramètres/Succès/Quêtes) ou la page Magasin est actuellement ouverte —
 // sert à n'afficher les répliques ambiantes de Papi que sur l'écran principal, jamais par-dessus un menu.
+// Personne ne garde le focus : le jeu se joue à la souris, et l'anneau de focus du navigateur (qui
+// apparaît dès qu'une touche est pressée) n'a rien à faire autour d'un bouton déjà utilisé.
+function rendreLeFocus() {
+  const el = document.activeElement;
+  if (el && el !== document.body && el.blur) el.blur();
+}
 function isAnyModalOpen() {
   return Object.values(GROUP_TO_OVERLAY).some(isOverlayOpen);
 }
@@ -133,8 +142,7 @@ function isMainScreenBlocked() {
   if (splash && splash.style.display !== 'none') return true;
   const lang = document.getElementById('langPopupOverlay');
   if (lang && lang.style.display === 'flex') return true;
-  const scene = document.getElementById('sceneOverlay');
-  if (scene && scene.classList.contains('visible')) return true;
+  if (sceneAffichee()) return true;
   const tutorial = document.getElementById('tutorialOverlay');
   if (tutorial && tutorial.style.display === 'flex') return true;
   // Panneau de décision et cérémonie du Prestige ou de l'Ascension : ni herbe dorée, ni papillons,
@@ -203,6 +211,7 @@ function miniTabClick(t, onSelect) {
   const quitte = ongletActifDu(t.group);
   if (zone && quitte) _defilementOnglets[quitte] = zone.scrollTop;
   _highlightedTabIds.delete(t.id);
+  _ongletsAVoir.delete(t.id);
   // Le doigt ne s'efface que si le joueur a cliqué l'onglet DÉSIGNÉ. S'il en explore un autre
   // entre-temps, l'indication doit rester à l'écran, sinon plus rien ne lui dit où aller.
   if (!_pointedTabId || _pointedTabId === t.id) clearMiniTabArrow();
@@ -225,8 +234,18 @@ function miniTabClick(t, onSelect) {
   });
   renderAll();
 }
+// Onglets à voir : ceux dont Papi vient de parler (voir faireLePoint) et ceux où un Prestige
+// automatique a débloqué quelque chose (voir annoncerNouveautes). Une pastille les signale, sur le
+// mini-onglet et sur le bouton de sa fenêtre, jusqu'à ce que le joueur les ouvre.
+let _ongletsAVoir = new Set();
+// Pastille aussi tant qu'une récompense attend dans l'onglet : elle part quand on la réclame, pas
+// quand on regarde.
+function ongletAReclamer(id) { return id === 'quetes' ? queteAReclamer() : id === 'dailyreward' ? dailyLoginRewardClaimable() : false; }
+// Onglets à pastille, calculés une fois par rendu (renderTabsRow) pour les mini-onglets et les boutons.
+let _pastilles = new Set();
 function tabButtonClass(t, activeId, locked) {
   return 'drawerBtn'
+    + (_pastilles.has(t.id) ? ' aNouveau' : '')
     + (activeId === t.id ? ' active' : '')
     + (_highlightedTabIds.has(t.id) ? ' featureHighlight' : '')
     + (_appearingTabIds.has(t.id) ? ' tabAppear' : '')
@@ -309,9 +328,12 @@ function renderTabsRow() {
   if (!revealed.find(t => t.id === activeSettingsTab && t.group === 'settings')) activeSettingsTab = 'options';
   if (!revealed.find(t => t.id === activeQuestsTab && t.group === 'quests')) activeQuestsTab = 'quetes';
 
+  _pastilles = new Set(revealed.filter(t => _ongletsAVoir.has(t.id) || ongletAReclamer(t.id)).map(t => t.id));
   renderMiniTabsRow('shopTabsRow', 'shop', activeShopTab, (id) => { activeShopTab = id; }, revealed);
   renderMiniTabsRow('settingsTabsRow', 'settings', activeSettingsTab, (id) => { activeSettingsTab = id; }, revealed);
   renderMiniTabsRow('questsTabsRow', 'quests', activeQuestsTab, (id) => { activeQuestsTab = id; }, revealed);
+  for (const [groupe, btnId] of Object.entries(GROUP_TO_FLOAT_BTN))
+    document.getElementById(btnId).classList.toggle('aNouveau', revealed.some(t => t.group === groupe && _pastilles.has(t.id)));
 }
 
 // Pour un joueur qui recharge une partie déjà avancée : les boutons dont au moins un onglet

@@ -380,7 +380,6 @@
   @keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
   @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
 
-  .newBadge { display:inline-block; background:#ff7043; color:white; font-size:9px; padding:1px 5px; border-radius:8px; margin-left:4px; vertical-align:middle; }
 
   /* ===== Boutons flottants (remplacent l'ancien tiroir) ===== */
   .floatingButtonsTopRight {
@@ -401,6 +400,7 @@
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(0,0,0,0.25);
     transition: transform var(--t-instant);
+    position: relative; /* repère de la pastille .aNouveau ; le bouton SHOP, lui, reste fixed */
   }
   .floatBtn:hover { transform: translateY(-2px); }
   /* Une seule règle, qui ne dit que "caché tant que non révélé" — surtout pas COMMENT afficher
@@ -487,8 +487,12 @@
     border: none;
     box-shadow: none;
     transition: transform var(--t-instant), filter var(--t-instant);
+    /* L'ombre est portée par le BOUTON (qui a son calque permanent), pas par l'image : posée sur une
+       image à l'intérieur d'un calque, elle est calculée sur une image intermédiaire qui ignore
+       l'agrandissement de la zone de jeu, et le bouton était flou jusqu'à ce qu'on le survole. */
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
   }
-  .shopFloatBtn:hover { transform: translateY(-2px); filter: brightness(1.06); }
+  .shopFloatBtn:hover { transform: translateY(-2px); filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)) brightness(1.06); }
   /* PAS de `image-rendering: pixelated` ici : l'image source fait 926px de large et n'est
      affichée qu'à 220px, soit une RÉDUCTION de ~4x. En plus-proche-voisin, le navigateur ne
      garde qu'un pixel source sur quatre — et le moindre décalage sous-pixel (survol, ou simple
@@ -496,7 +500,7 @@
      Le filtrage par défaut échantillonne les quatre, ce qui est à la fois plus net et stable.
      (`pixelated` reste le bon choix pour les sprites affichés à leur taille native ou agrandis,
      voir .itemIcon.) */
-  .shopFloatBtnImg { display: block; width: 220px; height: auto; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); }
+  .shopFloatBtnImg { display: block; width: 220px; height: auto; }
   /* Calques permanents. Toute animation confiée à la carte graphique (combo, herbe dorée, papillons,
      halo d'une capacité prête...) oblige le navigateur à sortir sur un calque ce qui est dessiné
      par-dessus, quelle que soit la distance : il ne peut pas prévoir jusqu'où l'animation ira. Ces
@@ -599,7 +603,14 @@
   #volumeSlider { accent-color: var(--accent-texte); }
   .drawerBtn.active { background: var(--accent); color: white; }
   .drawerBtn.locked { opacity: 0.4; cursor: not-allowed; }
-  .drawerBtn .newBadge { position: absolute; top: -4px; right: -2px; }
+  /* Pastille « à voir » : un onglet dont Papi vient de parler après un Prestige ou une Ascension,
+     une nouveauté d'un Prestige automatique, une récompense à réclamer ; et le bouton de sa fenêtre. Immobile : c'est un rappel, pas un « clique ici » (ça, c'est le
+     halo .featureHighlight du tutoriel). */
+  .drawerBtn.aNouveau::after, .floatBtn.aNouveau::after {
+    /* Dans le coin, sans déborder : un débordement compte comme du contenu qui dépasse du bouton. */
+    content: ''; position: absolute; top: 3px; right: 3px; width: 10px; height: 10px;
+    border-radius: 50%; background: #ff7043; border: 2px solid var(--card-bg); pointer-events: none;
+  }
 
   .sideModalContent {
     flex: 1;
@@ -909,12 +920,16 @@
   /* Un calque permanent par créature (will-change), et tous les mouvements par la carte graphique :
      fluides au sous-pixel près, sans jamais basculer entre la page et un calque (voir jeu/ui/jardin.js). */
   .habitant { position: absolute; left: 0; will-change: transform; transition-property: translate; transition-timing-function: linear; transform-origin: 50% 100%; }
+  /* Ombre au sol : une ellipse dégradée, sans filtre. Un drop-shadow sur un calque animé se recalcule à
+     chaque image : avec les 34 créatures dessinées, il doublait le travail du rendu (mesuré). Sans
+     filtre, le dessin reste net (le flou venait d'un filtre sur l'image d'un calque). */
+  .habitant::after { content: ''; position: absolute; left: 12%; right: 12%; bottom: -3px; height: 7px; z-index: -1; border-radius: 50%; background: radial-gradient(ellipse at center, rgba(0,0,0,0.32), rgba(0,0,0,0) 70%); }
   .habitant.enMarche { animation: habitantDandine 0.5s ease-in-out infinite; }
   @keyframes habitantDandine { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-3px) rotate(3deg); } }
   .habitantSens { display: flex; align-items: flex-end; }
   /* Pas de image-rendering: pixelated : le dessin est réduit (738 px -> ~50), et en plus-proche-voisin
      sa texture se réorganiserait au moindre décalage (voir .shopFloatBtnImg). */
-  .habitantImg { display: block; object-fit: contain; filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.3)); user-select: none; }
+  .habitantImg { display: block; object-fit: contain; user-select: none; }
   .comboBadge.show { opacity: 1; transform: translateX(-50%) scale(1); }
 
   /* ===== Bump feedback on stat change ===== */
@@ -1024,7 +1039,7 @@
      Au-dessus de tout (le magasin 210, les bulles de Papi 250, les petites fenêtres 350). Tout ce qui
      bouge ici est tout en haut de la pile : rien n'est dessiné par-dessus, donc aucune de ces
      animations ne fait basculer un voisin sur un calque (voir tests/audit-chevauchements.js). */
-  .ceremonieOverlay { position: fixed; inset: 0; z-index: 420; display: none; overflow: hidden; cursor: pointer; transition: background var(--t-normal) var(--e-entree); }
+  .ceremonieOverlay { position: fixed; inset: 0; z-index: 420; display: none; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; transition: background var(--t-normal) var(--e-entree); }
   .ceremonieOverlay.prestige.fini { background: rgba(0, 0, 0, 0.4); } /* le bilan se détache du magasin ou du jardin */
   .ceremonieVague, .ceremonieCiel { position: absolute; pointer-events: none; }
   .ceremonieVague { display: none; left: 0; right: 0; top: 0; height: 160%;
@@ -1075,7 +1090,9 @@
   .ceremonieParticules { position: absolute; inset: 0; pointer-events: none; }
   .ceremonieParticule { position: absolute; font-size: 22px; line-height: 1; margin: -11px 0 0 -11px; opacity: 0; }
   .ceremonieOverlay.ascension .ceremonieParticule { color: #fff4c2; font-size: 34px; text-shadow: 0 0 8px #ffd54f, 0 0 22px #ffb300; }
-  .ceremonieBilan { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); width: auto; min-width: 300px; max-width: calc(100% - 48px); padding: 22px 28px; display: none; }
+  /* Centré par la fenêtre (flex), pas par un transform : son animation d'apparition anime transform et
+     remplaçait le centrage, si bien que le bilan apparaissait décalé puis sautait au centre. */
+  .ceremonieBilan { position: relative; margin-bottom: 12%; width: auto; min-width: 300px; max-width: calc(100% - 48px); padding: 22px 28px; display: none; }
   .ceremonieBilan.visible { display: block; animation: itemPopupIn var(--t-normal) var(--e-rebond); }
   .ceremonieOverlay.ascension .ceremonieBilan { border-color: #f4b400; }
   .ceremonieBilan .ceremonieTitre { font-size: 15px; margin-bottom: 12px; } /* plus précis que .itemPopupTitle, déclaré plus bas */
@@ -1212,6 +1229,8 @@
   .scenePortraitLeft { left: 40px; }
   .scenePortraitRight { right: 40px; }
   .scenePortrait.dimmed { filter: brightness(0.4) saturate(0.5); transform: scale(0.94); }
+  /* Un seul personnage (point de Papi après un Prestige) ; pas de « Passer » pour un texte à lire. */
+  .sceneOverlay.solo .scenePortraitRight, .sceneOverlay.sansPasser .sceneSkipBtn { display: none; }
   .sceneSkipBtn {
     position: absolute; top: calc(16px + env(safe-area-inset-top)); right: calc(16px + env(safe-area-inset-right));
     z-index: 10;

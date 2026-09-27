@@ -377,7 +377,7 @@ function actionRow({ id, icon, className, info, actions, onAction }) {
 function renderFamiliers() {
   const en = state.lang === 'en';
   const actif = (state.familiers || {}).actif;
-  renderItemRows(document.getElementById('familiersList'), FAMILIERS.map(f => {
+  renderItemRows(document.getElementById('familiersList'), FAMILIERS.filter(visibleAvantAscension).map(f => {
     const ok = f.unlock(state), niv = familierNiveau(f.id), estActif = ok && actif === f.id;
     const pct = v => `${f.reduction ? '-' : '+'}${Math.round(v * 100)} %`;
     let actions;
@@ -408,7 +408,7 @@ function renderFamiliers() {
 function renderAutomation() {
   const en = state.lang === 'en';
   const a0 = state.automation;
-  renderItemRows(document.getElementById('automationList'), AUTOMATIONS.map(a => {
+  renderItemRows(document.getElementById('automationList'), AUTOMATIONS.filter(visibleAvantAscension).map(a => {
     const ok = a.unlock(state), on = ok && !!a0[a.id];
     const controle = ok
       ? `<button class="claimBtn autoToggle${on ? '' : ' off'}" data-action="toggle">${on ? (en ? 'ON' : 'ACTIVÉ') : (en ? 'OFF' : 'ÉTEINT')}</button>`
@@ -600,6 +600,13 @@ function renderSpecial() {
   }));
 }
 
+// Nomme l'amélioration à acheter avant : « nécessite une autre amélioration » laissait le joueur chercher
+// laquelle dans une liste de vingt lignes.
+function mentionPrerequis(table, id) {
+  const nom = L(table.find(x => x.id === id), 'name');
+  return ' ' + selonLangue(`(nécessite d'abord : <b>${nom}</b>)`, `(requires <b>${nom}</b> first)`);
+}
+
 function renderResearch() {
   renderItemRows(document.getElementById('researchShop'), RESEARCH.map(r => {
     const owned = hasResearch(r.id);
@@ -611,7 +618,7 @@ function renderResearch() {
       html: `
       <div class="info">
         <div class="name">${L(r,'name')} ${owned ? `<span class="owned">${tr('acquired')}</span>` : ''}</div>
-        <div class="desc">${L(r,'desc')}${locked ? ' ' + tr('locked') : ''}</div>
+        <div class="desc">${L(r,'desc')}${locked ? mentionPrerequis(RESEARCH, r.requires) : ''}</div>
       </div>
       <div class="price">${owned ? '' : formatNum(r.cost) + ' 📚'}</div>
     `,
@@ -679,7 +686,7 @@ function renderPrestige() {
       html: `
       <div class="info">
         <div class="name">${L(pu,'name')} ${owned ? `<span class="owned">${tr('acquired')}</span>` : ''}</div>
-        <div class="desc">${L(pu,'desc')}${locked ? ' ' + tr('locked') : ''}</div>
+        <div class="desc">${L(pu,'desc')}${locked ? mentionPrerequis(PRESTIGE_UPGRADES, pu.requires) : ''}</div>
       </div>
       <div class="price">${owned ? '' : formatNum(pu.cost) + ' 🌌'}</div>
     `,
@@ -722,7 +729,7 @@ function renderAscension() {
       html: `
       <div class="info">
         <div class="name">${L(au,'name')} ${owned ? `<span class="owned">${tr('acquired')}</span>` : ''}</div>
-        <div class="desc">${L(au,'desc')}${locked ? ' ' + tr('locked') : ''}</div>
+        <div class="desc">${L(au,'desc')}${locked ? mentionPrerequis(ASCENSION_UPGRADES, au.requires) : ''}</div>
       </div>
       <div class="price">${owned ? '' : formatNum(au.cost) + ' 🌟'}</div>
     `,
@@ -761,7 +768,7 @@ function renderQuests() {
     if (fill.style.width !== largeur) fill.style.width = largeur;
     const compte = `${formatNum(progress)} / ${formatNum(q.target)}`;
     if (texte.textContent !== compte) texte.textContent = compte;
-    const pret = progress >= q.target && !q.claimed;
+    const pret = queteTerminee(q);
     if (bouton.disabled === pret) bouton.disabled = !pret;
     const libelle = q.claimed ? (en ? '✔ Claimed' : '✔ Réclamée') : (en ? 'Claim' : 'Réclamer');
     if (bouton.textContent !== libelle) bouton.textContent = libelle;
@@ -777,7 +784,8 @@ function renderDefi() {
     liste = panel.querySelector('#defiListe');
   }
   const actif = state.challengeActive;
-  renderItemRows(liste, CHALLENGES.map(c => {
+  const defis = CHALLENGES.filter(visibleAvantAscension);
+  renderItemRows(liste, defis.map(c => {
     const ok = c.unlock(state), fait = challengeDone(c.id), enCours = actif === c.id;
     let etat;
     if (fait) etat = `<span class="owned">✅ ${en ? 'Completed' : 'Réussi'}</span>`;
@@ -800,7 +808,7 @@ function renderDefi() {
   }));
   const infos = panel.querySelector('#defiInfos');
   const html = `
-    <div class="defiRow"><div style="font-size:13px;">🏅 ${en ? 'Challenges completed' : 'Défis réussis'} : <b>${challengesDoneCount(state)} / ${CHALLENGES.length}</b></div></div>
+    <div class="defiRow"><div style="font-size:13px;">🏅 ${en ? 'Challenges completed' : 'Défis réussis'} : <b>${challengesDoneCount(state)} / ${defis.length}</b></div></div>
     <div class="defiRow"><div style="font-size:13px;">👴 ${en ? "Gramps' visits cut short" : 'Visites de Papi écourtées'} : <b>${state.invasiveDefeated || 0}</b></div></div>
     <div class="defiRow"><div style="font-size:13px;">🌤️ ${en ? 'Weather types observed' : 'Types de météo observés'} : <b>${(state.weatherSeen || []).length} / 6</b></div></div>`;
   setHtmlIfChanged(infos, html);

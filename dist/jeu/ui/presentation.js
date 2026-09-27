@@ -51,7 +51,7 @@ function revealPendingDescription(tabId, onDone) {
   // Une avance automatique ne laissait pas le temps de lire. Un descriptif est un tableau de
   // plusieurs répliques courtes (plutôt qu'un long pavé) pour ne pas agrandir la bulle —
   // tabAnnouncementLines renvoie toujours un tableau, même pour une réplique unique.
-  showDialogue('papi', lines, { position: 'top-right', onComplete: () => {
+  const fin = () => {
     stopFollowingDialogueAnchor();
     clearDescribedZone();
     // Mémorisé DURABLEMENT : c'est la seule trace de ce qui a déjà été expliqué, y compris
@@ -60,7 +60,14 @@ function revealPendingDescription(tabId, onDone) {
     _descriptionEnCours = null;
     saveGame();
     if (onDone) onDone();
-  } });
+  };
+  // Un onglet `enScene` (l'Ascension) : Papi l'explique en grand, par-dessus la fenêtre assombrie.
+  const def = TAB_DEFS.find(t => t.id === tabId);
+  if (def && def.enScene) {
+    papiEnScene(lines, fin);
+    return;
+  }
+  showDialogue('papi', lines, { position: 'top-right', onComplete: fin });
   // Papi décrit le CONTENU de l'onglet : un halo doré entoure la zone concernée (rien à
   // cliquer, donc pas de doigt ni de "Clique ici !") et la bulle se place là où elle ne la
   // cache pas. Le clic sur la bulle fait disparaître les deux.
@@ -529,6 +536,8 @@ function arreterPresentationsEnCours() {
   _lockedToTabId = null;
   Object.values(GROUP_TO_OVERLAY).forEach(closeModal);
   _highlightedTabIds = new Set();
+  _ongletsAVoir = new Set();
+  fermerScene(true); // scène en cours (point de Papi, introduction) refermée sans sa suite
   _appearingTabIds = new Set();
   _tabsPendingAppear = new Set();
   _tabsQueuedForAnnounce = new Set();

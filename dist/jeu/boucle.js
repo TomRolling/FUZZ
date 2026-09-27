@@ -154,20 +154,8 @@ function automationOn(id) {
   return !!a && a.unlock(state) && !!(state.automation || {})[id];
 }
 let _automationTick = 0;
-// Signale une fois chaque entrée débloquée d'une table. Tant que Papi n'a pas présenté l'onglet,
-// l'entrée est notée sans message : c'est la présentation de l'onglet qui la fait découvrir.
-function announceUnlocks(table, stateKey, tabId, message) {
-  const deja = state[stateKey] = state[stateKey] || {};
-  for (const x of table) {
-    if (!x.unlock(state) || deja[x.id]) continue;
-    deja[x.id] = true;
-    if (state.tabsSeen[tabId]) showToast(message(L(x, 'name'), state.lang === 'en'));
-  }
-}
 function runAutomations() {
   _automationTick++;
-  announceUnlocks(FAMILIERS, 'familiersAnnounced', 'familiers', (x, en) => en ? `🐾 New pet: ${x} (Pets tab)` : `🐾 Nouveau familier : ${x} (onglet Familiers)`);
-  announceUnlocks(AUTOMATIONS, 'automationsAnnounced', 'automatisation', (x, en) => en ? `🤖 New automation: ${x} (Automation tab)` : `🤖 Nouvelle automatisation : ${x} (onglet Automatisation)`);
 
   // Achat automatique : le compagnon VISIBLE au meilleur rapport qualité/prix. Quand le Prestige
   // automatique est actif, un achat n'est fait que s'il rapproche du Prestige visé (il rapporte
@@ -206,7 +194,7 @@ function runAutomations() {
   // qu'un tutoriel est à l'écran.
   // Ni pendant que le joueur lit le panneau de décision (les chiffres affichés deviendraient faux
   // sous ses yeux), ni pendant une cérémonie.
-  if (automationOn('prestige') && state.tabsSeen.prestige && !_pendingSpotlightGroup && !state.challengeActive && !decisionOuverte() && !ceremonieEnCours()) {
+  if (automationOn('prestige') && state.tabsSeen.prestige && !_pendingSpotlightGroup && !state.challengeActive && !decisionOuverte() && !ceremonieEnCours() && !sceneAffichee()) {
     const cible = Math.max(1, state.automation.prestigeSeeds || 1);
     if (prestigeGainAmount() >= cible) {
       showToast(state.lang === 'en' ? '🤖 Automatic Prestige' : '🤖 Prestige automatique');

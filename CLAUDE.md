@@ -52,7 +52,16 @@ cd tests && npm install && npx playwright install chromium   # one-time
 bash tests/tout.sh                # full suite (~15 min), one result file per test in tests/sortie-<test>.txt
 node tests/test-fluidite.js       # a single test
 node tests/banc.js ./equilibre-jeu-paliers.js attentif 42 150   # balance bench (run from tests/)
+COUVERTURE=1 bash tests/tout.sh && node tests/couverture.js      # game functions no test ever runs
 ```
+
+When adding content or a feature, the suite already checks it through the game's own tables:
+`test-contrats.js` (missing `tr()` keys, Papi categories, `defaultState()` fields, unread effect types,
+tabs without a panel or presentation), `test-achats-tables.js` (every item bought through its row: price
+paid = price shown, a measurable effect, survives reload) and `test-anciennes-sauvegardes.js` (saves from
+every released version still load). Tests must derive their lists from the tables (`TAB_DEFS`, `BUILDINGS`,
+...) rather than hardcode them, so new content is covered without editing the test, and use
+`tests/commun.js` (`chargerPartie`, `attendreDemarrage`, `finirScene`) instead of copying setup code.
 
 For anything visual or feel-related, also run `npm run tauri dev` (or open `dist/index.html` in a browser)
 and play through the affected flow.
@@ -69,11 +78,18 @@ a signed `latest.json` for the auto-updater. Before tagging a release:
 2. The updater requires `TAURI_SIGNING_PRIVATE_KEY` / `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` GitHub secrets to
    already be configured (one-time setup, documented in [README.md](README.md)); the public key lives in
    `tauri.conf.json` under `plugins.updater.pubkey`.
+3. After the tag exists, add its save to the compatibility fixtures: `cd tests && node
+   generer-sauvegardes-anciennes.js vX.X.X`, and commit `tests/sauvegardes-anciennes/vX.X.X.json`.
+   `tests/test-anciennes-sauvegardes.js` reloads every released version's save into the current game.
 
 ### Web version (GitHub Pages)
 
 `.github/workflows/pages.yml` publishes `dist/` to GitHub Pages on every push to `main` that touches
-`dist/**` — no tag involved, so a game change ships to the web as soon as it lands. `dist/sw.js` caches the
+`dist/**` — no tag involved, so a game change ships to the web as soon as it lands, but only once
+`.github/workflows/tests.yml` passes (check-tables, scan-traduction, test-contrats, test-achats-tables,
+test-anciennes-sauvegardes, audit-agression, about 5 min). `build.yml` runs the same job before building a
+release (skipped there when that commit already passed them, e.g. pushed to main then tagged), and it
+also runs alone on pushes to other branches. `dist/sw.js` caches the
 shell on install and everything else on demand; the workflow substitutes `__VERSION__` with the commit SHA so
 each deploy gets a fresh cache. `tests/test-web.js` serves `dist/` over http and checks the game boots,
 registers the service worker and reloads offline (the service worker only registers on `localhost` or https).
@@ -102,7 +118,7 @@ reference, not the folder names**: `moteur/` and `ui/` are a rough split, and se
 | `ui/navigation.js` | theme, tabs, modals, `verifierNouveauxOnglets`, mini-tab rows, Papi queue (`queueOrShowPapi`) |
 | `ui/presentation.js` | tab announcements, finger, halo, dialogue anchoring, descriptions, `arreterPresentationsEnCours` |
 | `ui/popups.js` | item icons, "new item" window, `fermerSurgissante` (fade-out shared by the small windows) |
-| `ui/ceremonie.js` | Prestige and Ascension: decision panel (`ouvrirDecision`), ceremony (`lancerCeremonie`) and recap |
+| `ui/ceremonie.js` | Prestige and Ascension: decision panel (`ouvrirDecision`), ceremony (`lancerCeremonie`), recap, Papi's briefing (`faireLePoint`) |
 | `ui/jardin.js` | the garden's inhabitants: owned companions walking in the click zone (`renderJardin`, `promenerHabitants`, `faireSursauterHabitants`) |
 | `ui/rendu.js` | `renderAll` and most `render*` (a few feature-specific ones live next to their feature) |
 | `boucle.js` | click handler, golden weed, butterflies, hourly cat, auto-buy, weather/visits/inactivity tick |
@@ -146,7 +162,24 @@ Key behaviours, with the file from the table above:
   reset plus the old sound and toast, no panel, no ceremony. Auto-Prestige pauses while the panel or
   ceremony is up. Multiplier formulas take their quantity as a parameter (`seedMultiplierPour`, ...) and
   the challenge verdict is `defiReussiPour(gain)`, so the panel announces exactly what the game will do.
-  Covered by `tests/test-ceremonie.js`.
+  When the recap closes, Papi gives a briefing built from the game (`faireLePoint`), as a scene like the
+  intro (`showScene` with `right: null`, `sansPasser`: Papi alone, large, dimmed screen, no Skip, buttons
+  hidden, so the player reads it). Big moments use that scene: the briefing, a completed challenge (said
+  first, with a special line for the very first one, and it forces the full briefing), and the explanation
+  of a tab flagged `enScene` in `TAB_DEFS` (Ascension) when the player opens it (`revealPendingDescription`).
+  The briefing says: where to spend the
+  Seeds or Shards, and each familier / automation / challenge the reset unlocked. `DEBLOCAGES` in `contenu/monde.js` is the
+  single list of unlockable tables (familiers, automations, challenges); they unlock only on the Prestige or
+  Ascension count, so `executerPrestige()` / `executerAscension()` diff `debloques()` around the reset and
+  return `nouveautes`: the ceremony hands them to Papi, `doPrestige()` / `doAscension()` toast them
+  (`annoncerNouveautes`). No per-second polling, nothing "already announced" stored in the save. The tabs he names get an orange dot (`_ongletsAVoir`, `.aNouveau`, also on the
+  window's floating button) until opened; so do tabs where an automatic Prestige unlocked something
+  (`annoncerNouveautes`), and Quests while a reward waits (`ongletAReclamer`: finished quest, daily bonus). A tab that has just appeared only gets "I have something new to
+  show you": its own presentation follows once the scene closes
+  (`verifierNouveauxOnglets` waits while `isMainScreenBlocked()`, which sees the scene). Full briefing for the first 3 Prestiges, every Ascension and whenever
+  something unlocked; otherwise the usual one-liner. Anything given at an Ascension (`atAscension`) stays
+  hidden until the first one (`visibleAvantAscension`). Covered by `tests/test-ceremonie.js` and
+  `tests/test-point-papi.js`.
 - **Garden inhabitants (`ui/jardin.js`)** — one creature per owned companion kind walks along the bottom of the click zone, hops when
   the player clicks near it, grows a little per milestone, and leaves at Prestige. Only real drawings appear: every generated
   placeholder sprite carries `provisoire: true` in `ITEM_SPRITES`, and removing that flag once the art is drawn is all it takes
@@ -207,7 +240,8 @@ Key behaviours, with the file from the table above:
   capabilities); if it is missing the URL falls back to the clipboard, so this path degrades instead of
   breaking. Covered by `tests/test-signalement.js`.
 - **Updater UI** — wraps `window.__TAURI__.updater`/`process`; entirely inert (hidden card) when
-  not running inside Tauri, so this code path can't be tested in a browser.
+  not running inside Tauri. `tests/test-gestes-joueur.js` covers it, and the other native paths (file
+  export, daily save file, clipboard, opener, Quit), by injecting a fake `window.__TAURI__` before load.
 - **Boot sequence** — strictly sequential via callbacks (never parallel, to avoid flashing raw
   UI): splash screen → language picker (first run only) → silent update check/prompt → opening JRPG scene +
   tutorial (first run only) → daily login reward. Follow the existing reveal-callback pattern

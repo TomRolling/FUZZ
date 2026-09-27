@@ -209,14 +209,98 @@ function afficherBilan() {
 function clicCeremonie() {
   if (!_ceremonie) return;
   if (!_ceremonie.bilan) { afficherBilan(); return; }
-  const type = _ceremonie.type;
+  const { type, resultat } = _ceremonie;
   _ceremonie = null;
   fermerSurgissante('ceremonieOverlay', () => {
     document.getElementById('ceremonieOverlay').className = 'ceremonieOverlay';
     document.getElementById('ceremonieParticules').innerHTML = '';
     // Papi réagit une fois l'écran rendu au joueur.
-    queueOrShowPapi(type, { position: 'top-right' });
+    faireLePoint(type, resultat);
   });
+}
+
+// ---------- Le point de Papi ----------
+// Après un Prestige ou une Ascension, rien ne disait au joueur où dépenser ce qu'il venait de
+// gagner, ni ce qui s'était débloqué : un nouveau familier n'avait droit qu'à une notification,
+// un nouveau défi à rien du tout. Papi fait donc le point, tiré de la partie : où dépenser les
+// Graines ou les Éclats, et ce qui vient d'apparaître. Les onglets dont il parle portent une
+// pastille jusqu'à ce que le joueur les ouvre. Point complet aux premiers Prestiges, à chaque
+// Ascension et dès que quelque chose se débloque ; sinon sa courte réplique habituelle (189
+// Prestiges en 25 jours au banc : le même discours à chaque fois lasserait).
+// Un onglet qui apparaît a droit à sa propre présentation (verifierNouveauxOnglets) : Papi n'en
+// détaille pas le contenu, il prévient seulement qu'il a du nouveau à montrer, et la présentation
+// attend la fin de la scène (isMainScreenBlocked la voit).
+// Le point est un moment important : Papi le dit en scène (papiEnScene), en grand comme dans
+// l'introduction. Dit en petite bulle, le joueur ouvrait le magasin par-dessus et ne lisait rien.
+
+// Ce que Papi dit d'une nouveauté dans un onglet déjà connu, selon qu'il y en a une ou plusieurs.
+const PHRASES_NOUVEAUTES = {
+  familiers: [
+    (n) => selonLangue(`Un nouveau familier t'attend dans l'onglet Familiers : ${n}. Un seul t'aide à la fois, à toi de choisir.`, `A new pet is waiting in the Pets tab: ${n}. Only one helps you at a time, so pick one.`),
+    (n) => selonLangue(`De nouveaux familiers t'attendent dans l'onglet Familiers : ${n}. Un seul t'aide à la fois, à toi de choisir.`, `New pets are waiting in the Pets tab: ${n}. Only one helps you at a time, so pick one.`)],
+  automatisation: [
+    (n) => selonLangue(`Nouvelle automatisation dans l'onglet Automatisation : ${n}. Pense à l'activer.`, `New automation in the Automation tab: ${n}. Remember to switch it on.`),
+    (n) => selonLangue(`Nouvelles automatisations dans l'onglet Automatisation : ${n}. Pense à les activer.`, `New automations in the Automation tab: ${n}. Remember to switch them on.`)],
+  defi: [
+    (n) => selonLangue(`Nouveau défi dans les Quêtes, onglet Défi : ${n}.`, `New challenge in Quests, Challenge tab: ${n}.`),
+    (n) => selonLangue(`Nouveaux défis dans les Quêtes, onglet Défi : ${n}.`, `New challenges in Quests, Challenge tab: ${n}.`)],
+};
+
+// « 🦉 Chouette », « 🦉 Chouette et 🐝 Abeille ».
+const nomsDe = (liste) => liste.map(x => x.icon + ' ' + L(x, 'name')).join(selonLangue(' et ', ' and '));
+function lignesDuPoint(type, resultat) {
+  // Ce que le reset vient de débloquer (voir executerPrestige) ; vide si le bilan a été passé sans résultat.
+  const nouveautes = (resultat && resultat.nouveautes) || {};
+  const lignes = [], onglets = [];
+  const vu = (id) => !!state.tabsSeen[id];
+  // Un défi réussi : un grand moment, dit en premier. Le tout premier a droit à ses félicitations.
+  const defiReussi = type === 'prestige' && resultat && resultat.defiReussi ? resultat.defi : null;
+  if (defiReussi) {
+    const nom = nomsDe([defiReussi]), recompense = L(defiReussi, 'reward');
+    if (challengesDoneCount(state) === 1) lignes.push(
+      selonLangue(`Tu as réussi ton premier défi : ${nom} ! Je n'y croyais qu'à moitié, je te l'avoue.`, `You completed your first challenge: ${nom}! I only half believed you could, I admit.`),
+      selonLangue(`Sa récompense est à toi pour toujours : ${recompense}. D'autres défis t'attendent dans les Quêtes, onglet Défi.`, `Its reward is yours forever: ${recompense}. More challenges are waiting in Quests, Challenge tab.`));
+    else lignes.push(selonLangue(`Défi réussi : ${nom}. Sa récompense est à toi pour toujours : ${recompense}.`, `Challenge completed: ${nom}. Its reward is yours forever: ${recompense}.`));
+  }
+  if (type === 'prestige') {
+    lignes.push(selonLangue(
+      `Te voilà avec ${graines(state.cosmicSeeds)} en poche. Dans l'onglet Prestige, elles s'échangent contre des améliorations qui te suivent d'un Prestige à l'autre.`,
+      `You now have ${graines(state.cosmicSeeds)} to spend. In the Prestige tab, they buy upgrades that stay with you from one Prestige to the next.`));
+    onglets.push('prestige');
+    if (vu('familiers')) {
+      lignes.push(selonLangue('Tes Graines font aussi monter tes familiers de niveau, dans l\'onglet Familiers.', 'Your Seeds also level up your pets, in the Pets tab.'));
+      onglets.push('familiers');
+    }
+  } else {
+    lignes.push(selonLangue(
+      `Tu as maintenant ${eclats(state.stellarShards)} à dépenser dans l'onglet Ascension. Ce que tu y achètes ne disparaît jamais.`,
+      `You now have ${eclats(state.stellarShards)} to spend in the Ascension tab. What you buy there is never lost.`),
+    selonLangue(
+      'Tes Graines et tes améliorations de Prestige sont reparties à zéro. Refais des Prestiges : grâce à tes Éclats, chacun te rapportera plus de Graines qu\'avant.',
+      'Your Seeds and Prestige upgrades are back to zero. Prestige again: thanks to your Shards, each one will bring you more Seeds than before.'));
+    onglets.push('ascension');
+  }
+  // Nouveautés dans un onglet déjà connu. Dans un onglet qui apparaît, sa présentation s'en charge.
+  for (const { onglet } of DEBLOCAGES) {
+    const liste = nouveautes[onglet] || [];
+    if (!liste.length || !vu(onglet)) continue;
+    lignes.push(PHRASES_NOUVEAUTES[onglet][liste.length > 1 ? 1 : 0](nomsDe(liste)));
+    onglets.push(onglet);
+  }
+  const ongletsQuiApparaissent = unlockedTabs().some(t => !vu(t.id) && !t.silent);
+  if (ongletsQuiApparaissent) lignes.push(selonLangue('Et ce n\'est pas tout : j\'ai du nouveau à te montrer.', 'And that\'s not all: I have something new to show you.'));
+  const aSignaler = !!defiReussi || ongletsQuiApparaissent || Object.values(nouveautes).some(l => l.length);
+  return { lignes, onglets, aSignaler };
+}
+
+function faireLePoint(type, resultat) {
+  const point = lignesDuPoint(type, resultat);
+  const complet = type === 'ascension' || (state.prestigeCount || 0) <= PRESTIGES_AVANT_VERSION_COURTE || point.aSignaler;
+  if (!complet || isMainScreenBlocked()) { queueOrShowPapi(type, { position: 'top-right' }); return; }
+  point.onglets.forEach(id => _ongletsAVoir.add(id));
+  const reaction = pickPapiLine(type);
+  papiEnScene(reaction ? [reaction, ...point.lignes] : point.lignes, flushPendingPapiCategories);
+  renderAll();
 }
 
 document.getElementById('decisionAnnulerBtn').addEventListener('click', () => fermerDecision());

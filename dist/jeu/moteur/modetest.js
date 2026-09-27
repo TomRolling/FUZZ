@@ -8,10 +8,7 @@ function avancerTemps(sec) { accrue(sec); checkAchievements(); }
 // révéler les boutons : syncRevealedButtonsOnLoad ne fait rien tant qu'elles sont suspendues
 // (nouvelle partie, intro, après un reset), c'est pour ça que l'ancien bouton ne marchait pas toujours.
 function toutDebloquerModeTest() {
-  arreterPresentationsEnCours();
-  _sceneOnComplete = null; // scène fermée sans jouer sa suite (le tutoriel)
-  _sceneQueue = [];
-  advanceScene();
+  arreterPresentationsEnCours(); // referme aussi la scène en cours, sans sa suite (le tutoriel)
   document.getElementById('tutorialOverlay').style.display = 'none';
   state.tutorialSeen = true;
   _suppressTabAnnouncements = false;
@@ -24,9 +21,6 @@ function toutDebloquerModeTest() {
 // (annonce, doigt « Clique ici ! », explication à l'ouverture) sans refaire une partie.
 function rejouerPresentationsModeTest() {
   arreterPresentationsEnCours();
-  _sceneOnComplete = null;
-  _sceneQueue = [];
-  advanceScene();
   document.getElementById('tutorialOverlay').style.display = 'none';
   state.tutorialSeen = true;
   // De quoi remplir toutes les conditions d'apparition (voir TAB_DEFS).
@@ -48,6 +42,7 @@ function rejouerPresentationsModeTest() {
   state.tabsDescribed = {};
   _suppressTabAnnouncements = false;
   _highlightedTabIds = new Set();
+  _ongletsAVoir = new Set();
   _appearingTabIds = new Set();
   _tabsPendingAppear = new Set();
   _tabsQueuedForAnnounce = new Set();
@@ -153,6 +148,7 @@ document.addEventListener('keydown', (e) => {
   if (!fenetre) return;
   const bouton = document.getElementById(fenetre.dataset.fermeture);
   if (!bouton) return;
+  rendreLeFocus();
   bouton.click();
   e.preventDefault();
 });

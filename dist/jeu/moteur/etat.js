@@ -69,9 +69,7 @@ function defaultState() {
     // Automatisations : achat et capacités allumés dès leur déblocage, Prestige automatique
     // éteint par défaut (il remet la partie à zéro, c'est au joueur de le décider).
     automation: { buyCompanions: true, abilities: true, prestige: false, prestigeSeeds: 10 },
-    automationsAnnounced: {},
     familiers: { actif: 'escargot', niveaux: {} }, // voir FAMILIERS
-    familiersAnnounced: {},
     totalAscensions: 0,
     seedsSinceAscension: 0,
     ascensionUpgrades: {},
@@ -94,6 +92,9 @@ function applyLoadedState(parsed) {
     state.totalShardsEarned = (state.stellarShards || 0)
       + ASCENSION_UPGRADES.filter(u => (state.ascensionUpgrades || {})[u.id]).reduce((t, u) => t + u.cost, 0);
   }
+  // Listes « déjà annoncé » d'une version précédente : les nouveautés viennent désormais du Prestige
+  // lui-même (voir DEBLOCAGES), ces champs ne servent plus.
+  for (const k of ['familiersAnnounced', 'automationsAnnounced', 'defisAnnounced']) delete state[k];
   state.saveVersion = SAVE_VERSION;
 }
 

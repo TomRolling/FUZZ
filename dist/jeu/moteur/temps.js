@@ -31,18 +31,23 @@ function accrue(sec, prodMult = 1) {
 
 // ================= OFFLINE PROGRESS =================
 // Au-delà, l'absence ne rapporte plus rien : le jeu récompense qu'on revienne, pas qu'on parte.
-const ABSENCE_COMPTEE_MAX_SEC = 8 * 3600;
+// 8 h au départ ; les améliorations hors-ligne qui viennent une fois les 100 % d'efficacité
+// atteints allongent cette durée (jusqu'à 24 h avec toutes).
+function absenceCompteeMaxSec() { return (8 + combinedUpgradeValue('offlineHeures')) * 3600; }
+// Part de la production qui continue pendant l'absence : 50 % de base, relevée par les
+// recherches hors-ligne, jamais au-delà de 100 %.
+function efficaciteHorsLigne() {
+  return Math.min(1, 0.5 + combinedUpgradeValue('offlineBonus'));
+}
 function applyOfflineProgress() {
   // Deux durées distinctes : celle de l'absence réelle (affichée telle quelle), et celle qui
   // produit (plafonnée). Afficher la seconde à la place de la première faisait lire « 8 h »
   // à un joueur parti vingt heures.
   const absenceSec = Math.max(0, (Date.now() - (state.lastSave || Date.now())) / 1000);
-  const elapsedSec = Math.min(absenceSec, ABSENCE_COMPTEE_MAX_SEC);
+  const maxSec = absenceCompteeMaxSec();
+  const elapsedSec = Math.min(absenceSec, maxSec);
   if (elapsedSec > 10) {
-    const baseEff = combinedUpgradeValue('offline') || 0.5;
-    const bonusEff = combinedUpgradeValue('offlineBonus') || 0;
-    const uniqueEff = uniqueMultipliers().offlineBonus;
-    const efficiency = Math.min(1, baseEff + bonusEff + uniqueEff);
+    const efficiency = efficaciteHorsLigne();
     const gain = totalCps() * elapsedSec * efficiency;
     if (gain > 0) {
       state.verdure += gain; state.totalEarned += gain;
@@ -51,8 +56,8 @@ function applyOfflineProgress() {
       if (elapsedSec > 60) {
         const en = state.lang === 'en', rendement = (efficiency * 100).toFixed(0);
         // Le plafond n'est dit que quand il a servi : inutile d'en parler après une heure d'absence.
-        const plafond = absenceSec > ABSENCE_COMPTEE_MAX_SEC
-          ? `<div class="offlineLigne"><span>${en ? 'Production counted' : 'Production comptée'}</span><b>${formatDureeCourte(ABSENCE_COMPTEE_MAX_SEC)} ${en ? '(max)' : '(maximum)'}</b></div>`
+        const plafond = absenceSec > maxSec
+          ? `<div class="offlineLigne"><span>${en ? 'Production counted' : 'Production comptée'}</span><b>${formatDureeCourte(maxSec)} ${en ? '(max)' : '(maximum)'}</b></div>`
           : '';
         document.getElementById('offlineBody').innerHTML =
           `<div class="offlineLigne"><span>${en ? 'Time away' : 'Durée de ton absence'}</span><b>${timeLabel}</b></div>` +

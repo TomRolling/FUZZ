@@ -95,17 +95,26 @@ const MULTIPLICATIFS = new Set(['prodMult', 'clickMult', 'synergyMult', 'knowled
 const UPGRADES_BY_TYPE = {};
 for (const [table, isOwned] of [[PRESTIGE_UPGRADES, hasPrestigeUpgrade], [RESEARCH, hasResearch], [ASCENSION_UPGRADES, hasAscensionUpgrade]]) {
   for (const u of table) {
-    (UPGRADES_BY_TYPE[u.type] = UPGRADES_BY_TYPE[u.type] || []).push({ u, isOwned, recherche: table === RESEARCH });
+    (UPGRADES_BY_TYPE[u.type] = UPGRADES_BY_TYPE[u.type] || []).push({ u, isOwned, table });
   }
+}
+// Protection météo : chaque table garde sa meilleure protection (les paliers de Recherche
+// annoncent un total : 50 %, 65 %, 80 %), puis les tables se cumulent sans atteindre 100 % :
+// Abri météo 50 % et Dôme climatique 50 % font 75 %. Gardée tout entière au maximum, la protection
+// rendait le Dôme climatique inutile à qui avait déjà l'Abri météo.
+function protectionMeteo() {
+  const meilleure = new Map();
+  for (const { u, isOwned, table } of UPGRADES_BY_TYPE['weatherShield'] || [])
+    if (isOwned(u.id) && !(table === RESEARCH && researchDisabled())) meilleure.set(table, Math.max(meilleure.get(table) || 0, u.value));
+  return 1 - [...meilleure.values()].reduce((reste, v) => reste * (1 - v), 1);
 }
 function combinedUpgradeValue(type) {
   let result = MULTIPLICATIFS.has(type) ? 1 : 0;
-  for (const { u, isOwned, recherche } of UPGRADES_BY_TYPE[type] || []) {
-    if (isOwned(u.id) && !(recherche && researchDisabled())) {
+  for (const { u, isOwned, table } of UPGRADES_BY_TYPE[type] || []) {
+    if (isOwned(u.id) && !(table === RESEARCH && researchDisabled())) {
       if (type === 'uniqueDiscount') result = Math.min(result, u.value);
       else if (MULTIPLICATIFS.has(type)) result *= u.value;
-      else if (type === 'offline' || type === 'weatherShield') result = Math.max(result, u.value);
-      else if (type === 'offlineBonus' || type === 'clickCpsPercent' || type === 'prestigeSeedMult' || type === 'ascensionSeedMult') result += u.value;
+      else if (type === 'offlineBonus' || type === 'offlineHeures' || type === 'clickCpsPercent' || type === 'prestigeSeedMult' || type === 'ascensionSeedMult') result += u.value;
       else if (type === 'startBonus') result = Math.max(result, u.value);
       else if (type === 'questMult') result = Math.max(result, u.value);
     }
@@ -170,11 +179,11 @@ function shardSeedMultiplierPour(eclats) { return 1 + 0.25 * Math.sqrt(eclats ||
 function shardSeedMultiplier() { return shardSeedMultiplierPour(state.totalShardsEarned); }
 
 function uniqueMultipliers() {
-  let prod = 1, click = 1, offlineBonus = 0, knowledge = 1, invasiveRate = 1;
+  let prod = 1, click = 1, knowledge = 1, invasiveRate = 1;
   // Un seul passif câblé ici désormais : les autres onglets couvrent production, clic,
   // connaissances et hors-ligne (voir le commentaire au-dessus de UNIQUE_BUILDINGS).
   if (uniqueActive('sentinelleTemporelle')) invasiveRate *= 0.5;
-  return { prod, click, offlineBonus, knowledge, invasiveRate };
+  return { prod, click, knowledge, invasiveRate };
 }
 
 // La météo qui compte : le Gel pendant « Tempête sans fin », sinon la météo du moment.
@@ -182,10 +191,15 @@ function currentWeather() { return challengeIs('tempete') ? WEATHERS.gel : (WEAT
 function weatherMultiplier() {
   const w = currentWeather();
   if (!w.negative) return w.mult;
-  const shield = combinedUpgradeValue('weatherShield') || 0;
-  const greenhouseRelief = (state.buildings.serre || 0) > 0 ? 0.5 : 0;
-  const totalRelief = Math.min(0.9, shield + greenhouseRelief * 0.5 + (challengeDone('tempete') ? 0.5 : 0));
-  return 1 - (1 - w.mult) * (1 - totalRelief);
+  // Chaque protection retire sa part de ce qui reste : elles se cumulent toutes sans jamais
+  // atteindre 100 %. Additionnées puis plafonnées à 90 %, la Serre et une recherche suffisaient à
+  // toucher le plafond, et les protections suivantes s'achetaient pour rien. La Serre (Tortue
+  // expérimentée) protège de moitié : à 25 %, le cumul protégeait moins que l'ancienne somme en
+  // milieu de partie, et la fin de partie ralentissait (mesuré au banc de 600 h).
+  const reste = (1 - protectionMeteo())
+    * ((state.buildings.serre || 0) > 0 ? 0.5 : 1)
+    * (challengeDone('tempete') ? 0.5 : 1);
+  return 1 - (1 - w.mult) * reste;
 }
 function invasivePenalty() { return challengeIs('papi') || (state.invasiveWeed && state.invasiveWeed.active) ? 0.7 : 1; }
 // Tous les bonus temporaires en cours, quelle que soit leur origine (herbe dorée ramassée,
@@ -625,15 +639,27 @@ function defiReussiPour(gain) {
 function doPrestige() {
   const r = executerPrestige();
   if (!r) return;
+  annoncerNouveautes(r.nouveautes);
   playPrestigeSound();
   showToast(state.lang === 'en'
     ? `🌍 Terraforming successful! +${r.gain} Cosmic Seed(s)` + (r.defi ? (r.defiReussi ? ` 🏅 Challenge completed: ${L(r.defi,'name')}` : '. Challenge failed') : '')
     : `🌍 Terraformation réussie ! +${r.gain} Graine(s) Cosmique(s)` + (r.defi ? (r.defiReussi ? ` 🏅 Défi réussi : ${L(r.defi,'name')}` : '. Défi raté') : ''));
 }
-// Le Prestige lui-même, sans son ni message. Renvoie ce qui a changé (null s'il ne rapporte rien).
+// Sans cérémonie (Prestige automatique, mode test), chaque nouveauté a sa notification et une
+// pastille sur son onglet. Un onglet que Papi n'a pas encore présenté se tait : c'est sa
+// présentation qui fera découvrir ce qu'il contient. La cérémonie, elle, passe par le point de Papi.
+function annoncerNouveautes(nouveautes) {
+  for (const d of DEBLOCAGES) {
+    if (!state.tabsSeen[d.onglet]) continue;
+    for (const x of nouveautes[d.onglet]) { showToast(d.message(L(x, 'name'), state.lang === 'en')); _ongletsAVoir.add(d.onglet); }
+  }
+}
+// Le Prestige lui-même, sans son ni message. Renvoie ce qui a changé, nouveautés débloquées
+// comprises (null s'il ne rapporte rien).
 function executerPrestige() {
   const gain = prestigeGainAmount();
   if (gain < 1) return null;
+  const avant = debloques();
   const defi = activeChallenge();
   const defiReussi = defiReussiPour(gain);
   const bonusAvant = seedMultiplier();
@@ -654,7 +680,7 @@ function executerPrestige() {
   bump('verdureCount');
   checkAchievements();
   saveGame(); renderAll();
-  return { gain, defi, defiReussi, bonusAvant, bonusApres: seedMultiplier() };
+  return { gain, defi, defiReussi, bonusAvant, bonusApres: seedMultiplier(), nouveautes: nouveautesDepuis(avant) };
 }
 
 const ASCENSION_SEED_DIVISOR = 15; // banc d'équilibrage : 1re Ascension vers 45-55 h de jeu actif
@@ -672,6 +698,7 @@ function ascensionUnlocked() { return (state.totalSeedsEarned || 0) >= ASCENSION
 function doAscension() {
   const r = executerAscension();
   if (!r) return;
+  annoncerNouveautes(r.nouveautes);
   playAscensionSound();
   showToast(state.lang === 'en'
     ? `🌟 Ascension successful! +${r.gain} Stellar Shard(s). Total production x${r.prodApres.toFixed(2)}`
@@ -681,6 +708,7 @@ function doAscension() {
 function executerAscension() {
   const gain = ascensionGainAmount();
   if (gain < 1) return null;
+  const avant = debloques();
   const prodAvant = shardMultiplier(), grainesAvant = shardSeedMultiplier();
   const cpsAvantReset = cpsHorsCapacite();
   creditShards(gain);
@@ -694,7 +722,7 @@ function executerAscension() {
   bump('verdureCount');
   checkAchievements();
   saveGame(); renderAll();
-  return { gain, prodAvant, prodApres: shardMultiplier(), grainesAvant, grainesApres: shardSeedMultiplier() };
+  return { gain, prodAvant, prodApres: shardMultiplier(), grainesAvant, grainesApres: shardSeedMultiplier(), nouveautes: nouveautesDepuis(avant) };
 }
 
 function buyAscensionUpgrade(id) {

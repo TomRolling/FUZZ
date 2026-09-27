@@ -243,7 +243,9 @@ function dismissDialogue() {
 
 // showScene([{character:'papi', text:'...'}, {character:'leroy', text:'...'}, ...], { left:'papi', right:'leroy', onComplete: fn })
 // Affiche les deux personnages face à face en bas de l'écran (façon JRPG rétro) — celui qui ne
-// parle pas s'assombrit automatiquement. Réservé aux vrais moments d'histoire (scène d'ouverture...).
+// parle pas s'assombrit automatiquement. Réservé aux vrais moments d'histoire (scène d'ouverture,
+// point de Papi après un Prestige ou une Ascension). `right: null` : un seul personnage.
+// `sansPasser` : pas de bouton « Passer », pour un texte que le joueur doit lire.
 let _sceneQueue = [];
 let _sceneOnComplete = null;
 let _sceneLeftChar = 'papi';
@@ -266,12 +268,15 @@ function showScene(exchanges, options = {}) {
   _sceneQueue = [...exchanges];
   _sceneOnComplete = options.onComplete || null;
   _sceneLeftChar = options.left || 'papi';
-  _sceneRightChar = options.right || 'leroy';
+  _sceneRightChar = options.right === null ? null : (options.right || 'leroy');
 
   setScenePortraitImage('scenePortraitLeftImg', _sceneLeftChar);
-  setScenePortraitImage('scenePortraitRightImg', _sceneRightChar);
+  if (_sceneRightChar) setScenePortraitImage('scenePortraitRightImg', _sceneRightChar);
 
-  document.getElementById('sceneOverlay').classList.add('visible');
+  const overlay = document.getElementById('sceneOverlay');
+  overlay.classList.toggle('solo', !_sceneRightChar);
+  overlay.classList.toggle('sansPasser', !!options.sansPasser);
+  overlay.classList.add('visible');
   document.body.classList.add('sceneActive');
   advanceScene();
 }
@@ -306,7 +311,18 @@ document.getElementById('sceneOverlay').addEventListener('click', () => {
 // future scène) plutôt que de devoir cliquer ligne par ligne jusqu'au bout.
 document.getElementById('sceneSkipBtn').addEventListener('click', (e) => {
   e.stopPropagation();
+  fermerScene();
+});
+function sceneAffichee() { return document.getElementById('sceneOverlay').classList.contains('visible'); }
+// Referme la scène en cours. `sansSuite` : sans jouer ce qui devait la suivre (reset, mode test).
+function fermerScene(sansSuite) {
+  if (sansSuite) _sceneOnComplete = null;
   _sceneQueue = [];
   advanceScene();
-});
+}
+// Papi seul, en grand, sans « Passer » : les moments que le joueur doit lire (point après un
+// Prestige, défi réussi, onglet `enScene`).
+function papiEnScene(lignes, onComplete) {
+  showScene(lignes.map(text => ({ character: 'papi', text })), { right: null, sansPasser: true, onComplete });
+}
 

@@ -219,6 +219,13 @@ function generateQuests() {
   saveGame();
 }
 function questProgressValue(type) { return state.dailyProgress[type] || 0; }
+function queteTerminee(q) { return !q.claimed && questProgressValue(q.type) >= q.target; }
+// Une quête du jour terminée mais pas encore réclamée (pastille sur le bouton Quêtes).
+function queteAReclamer() {
+  const dq = state.dailyQuests;
+  if (!state.tabsSeen.quetes || !dq || dq.date !== todayStr()) return false;
+  return dq.quests.some(queteTerminee);
+}
 // Génère le texte de la quête à l'affichage (pas au moment de sa création) pour qu'il
 // s'adapte automatiquement si la langue change en cours de journée.
 function questDesc(q) {

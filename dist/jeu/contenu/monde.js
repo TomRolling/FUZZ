@@ -186,8 +186,11 @@ function atPrestige(n, offerte) {
 }
 function atAscension(n, offerte) {
   return { stage: { fr: `Offert${offerte ? 'e' : ''} à la ${n === 1 ? '1re' : n + 'e'} Ascension`, en: `Unlocked at the ${ORDINAL_EN(n)} Ascension` },
-           unlock: s => (s.totalAscensions || 0) >= n };
+           unlock: s => (s.totalAscensions || 0) >= n, ascension: n };
 }
+// Ce qui arrive avec l'Ascension reste caché tant que le joueur n'en a fait aucune : l'annoncer
+// (« Offert à la 1re Ascension ») parlait d'un concept qu'il ne connaît pas encore.
+const visibleAvantAscension = (x) => !x.ascension || (state.totalAscensions || 0) > 0;
 
 // Automatisations offertes aux étapes de la progression, dans l'ordre où le joueur les obtient.
 const AUTOMATIONS = [
@@ -297,6 +300,23 @@ const FAMILIERS = [
     name: { fr: "Abeille", en: "Bee" }, effet: { fr: "sur le prix des compagnons", en: "on companion prices" },
     ...atAscension(3, true) },
 ];
+// Ce qu'un Prestige ou une Ascension débloque, par onglet. Tout s'y débloque au nombre de Prestiges
+// ou d'Ascensions (atPrestige, atAscension), qui ne change que dans executerPrestige et
+// executerAscension : ce sont elles qui disent ce qu'elles viennent de débloquer (voir debloques).
+// Pas de liste « déjà annoncé » à sauvegarder, ni de vérification chaque seconde. Une nouvelle table
+// à débloquer s'ajoute ici, et nulle part ailleurs.
+const DEBLOCAGES = [
+  { onglet: 'familiers', table: FAMILIERS,
+    message: (x, en) => en ? `🐾 New pet: ${x} (Pets tab)` : `🐾 Nouveau familier : ${x} (onglet Familiers)` },
+  { onglet: 'automatisation', table: AUTOMATIONS,
+    message: (x, en) => en ? `🤖 New automation: ${x} (Automation tab)` : `🤖 Nouvelle automatisation : ${x} (onglet Automatisation)` },
+  { onglet: 'defi', table: CHALLENGES,
+    message: (x, en) => en ? `🏅 New challenge: ${x} (Quests, Challenge tab)` : `🏅 Nouveau défi : ${x} (Quêtes, onglet Défi)` },
+];
+// Identifiants débloqués par onglet, pris juste avant un Prestige ou une Ascension ; nouveautesDepuis
+// en déduit ce que le reset vient d'ajouter.
+function debloques() { return Object.fromEntries(DEBLOCAGES.map(d => [d.onglet, new Set(d.table.filter(x => x.unlock(state)).map(x => x.id))])); }
+function nouveautesDepuis(avant) { return Object.fromEntries(DEBLOCAGES.map(d => [d.onglet, d.table.filter(x => x.unlock(state) && !avant[d.onglet].has(x.id))])); }
 const FAMILIER_NIVEAU_MAX = 10;
 // Graines pour passer du niveau n au niveau n+1 (indice n).
 const FAMILIER_COUTS = [0, 2, 3, 5, 8, 13, 21, 34, 55, 89];

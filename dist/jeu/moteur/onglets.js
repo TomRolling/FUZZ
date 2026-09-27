@@ -38,7 +38,9 @@ const TAB_DEFS = [
     unlock: s => !!(s.tabsDescribed || {}).batiments && (s.totalPlayTimeSec || 0) >= 1800 && (s.knowledge || 0) >= prixPremiereRecherche() },
   { id: 'prestige', label: { fr: 'Prestige', en: 'Prestige' }, icon: '🌍', unlock: s => s.verdure >= seuilOnglet('prestige'), group: 'shop' },
   { id: 'familiers', label: { fr: 'Familiers', en: 'Pets' }, icon: '🐾', unlock: s => (s.prestigeCount || 0) >= 1, group: 'shop' },
-  { id: 'ascension', label: { fr: 'Ascension', en: 'Ascension' }, icon: '🌟', unlock: s => (s.totalSeedsEarned || 0) >= ASCENSION_SEED_DIVISOR, group: 'shop' },
+  // `enScene` : un concept majeur, que Papi explique en grand (scène façon introduction) et non en
+  // petites bulles, pour que le joueur le lise vraiment (voir revealPendingDescription).
+  { id: 'ascension', label: { fr: 'Ascension', en: 'Ascension' }, icon: '🌟', unlock: s => (s.totalSeedsEarned || 0) >= ASCENSION_SEED_DIVISOR, group: 'shop', enScene: true },
   { id: 'automatisation', label: { fr: 'Automatisation', en: 'Automation' }, icon: '🤖', unlock: s => AUTOMATIONS.some(a => a.unlock(s)), group: 'shop' },
 
   // --- Quêtes : le bouton apparaît après 20 min de jeu, avec le Bonus quotidien comme onglet ---
