@@ -2,7 +2,7 @@
 // image ; les suivants n'affichent que leur prix. Un objet decouvert le reste apres un Prestige.
 const { chromium } = require('playwright');
 const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 
@@ -39,7 +39,7 @@ function verifier(label, rows, visiblesAttendus) {
     saveGame();
   });
   await page.reload();
-  await page.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(page);
   await page.waitForTimeout(1500);
   await page.evaluate(() => { document.getElementById('itemPopupOverlay').style.display = 'none'; openModal('shopPageOverlay'); });
   await page.waitForTimeout(400);

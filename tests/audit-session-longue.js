@@ -4,7 +4,7 @@
 // ecouteurs d'evenements, minuteurs actifs. Une fuite se voit comme une serie qui monte round
 // apres round sans jamais se stabiliser.
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 const ROUNDS = parseInt(process.argv[2] || '15', 10);
 
 (async () => {
@@ -36,7 +36,7 @@ const ROUNDS = parseInt(process.argv[2] || '15', 10);
     localStorage.setItem(SAVE_KEY, JSON.stringify(st));
   });
   await p.reload();
-  await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(p);
   await p.waitForTimeout(2500);
 
   const mesure = async () => {

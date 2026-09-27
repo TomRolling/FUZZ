@@ -4,7 +4,7 @@
 //  - la bulle de Verdure garde la meme largeur quel que soit le nombre affiche, sinon toute la
 //    ligne de bulles se decale a chaque chiffre.
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 const verifie = (c, ...m) => { if (!c) fail(...m); };
@@ -21,7 +21,7 @@ const verifie = (c, ...m) => { if (!c) fail(...m); };
     localStorage.setItem(SAVE_KEY, JSON.stringify(st));
   });
   await p.reload();
-  await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(p);
   await p.waitForTimeout(700);
 
   // 1. Une fois decroche, « Frenesie » ouvre la liste.

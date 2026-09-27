@@ -7,7 +7,7 @@
 //   - images perdues pendant une rafale de clics et pendant le defilement d'une longue liste ;
 //   - poids du DOM.
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 
 const moyenne = (a) => a.reduce((x, y) => x + y, 0) / a.length;
 const centile = (a, p) => { const t = [...a].sort((x, y) => x - y); return t[Math.min(t.length - 1, Math.floor(t.length * p))]; };
@@ -33,7 +33,7 @@ const centile = (a, p) => { const t = [...a].sort((x, y) => x - y); return t[Mat
     localStorage.setItem(SAVE_KEY, JSON.stringify(st));
   });
   await p.reload();
-  await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 20000 });
+  await attendreDemarrage(p);
   await p.waitForTimeout(1500);
   await p.evaluate(() => hideDialogue(false));
 

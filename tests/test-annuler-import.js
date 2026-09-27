@@ -2,7 +2,7 @@
 // remet en place, meme apres avoir joue un moment ; la sauvegarde de secours n'est pas touchee ; le
 // reset total efface la copie.
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 const verifie = (c, ...m) => { if (!c) fail(...m); };

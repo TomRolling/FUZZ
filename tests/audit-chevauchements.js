@@ -10,7 +10,7 @@
 //      LayerTree) et on compte, pour chaque élément, ses passages page <-> calque.
 // Usage : node audit-chevauchements.js            (sortie : liste des problemes, code 1 s'il y en a)
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 
 // Éléments d'interface qui doivent chacun avoir leur place. Les décors (habitants, particules, herbe
 // dorée, décor saisonnier) ont le droit de passer derrière ou devant : ils ne sont pas dans la liste.
@@ -43,7 +43,7 @@ async function etatCharge(p, { creatures = 1, zoom = 1, minimal = false, capacit
     window.saveGame = () => {}; localStorage.setItem(SAVE_KEY, JSON.stringify(st));
   }, { creatures, zoom, minimal, capacite });
   await p.reload();
-  await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 20000 });
+  await attendreDemarrage(p);
   await p.evaluate(({ creatures, minimal }) => {
     hideDialogue(false);
     if (!creatures) ITEM_SPRITES.stagiaire.provisoire = true;
@@ -115,6 +115,7 @@ const ATTENDUS = {
   ];
   for (const [nom, viewport, dpr, zoom] of tailles) {
     const p = await b.newPage({ viewport, deviceScaleFactor: dpr });
+    p.on('pageerror', e => { console.log('  X pageerror:', e.message); problemes++; });
     await etatCharge(p, { zoom });
     const vus = new Set();
     // Seules les deux positions que le jeu emploie : en haut à droite (répliques de Papi) et en bas à
@@ -138,6 +139,7 @@ const ATTENDUS = {
   console.log('=== 2. bascules page <-> calque provoquees par les animations ===');
   for (const [creatures, minimal, capacite] of [[0, true], [1, true], [1, true, true], [1, false], [12, false]]) {
     const p = await b.newPage({ viewport: { width: 1536, height: 864 }, deviceScaleFactor: 1.25 });
+    p.on('pageerror', e => { console.log('  X pageerror:', e.message); problemes++; });
     await etatCharge(p, { creatures, minimal, capacite });
     const cdp = await p.context().newCDPSession(p);
     // Chaque élément est suivi par une SIGNATURE STABLE, celle que verrait le joueur : la chaîne des

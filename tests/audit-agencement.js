@@ -2,7 +2,7 @@
 // capturee sur plusieurs tailles de fenetre. Pour chaque taille : captures, et liste des elements
 // qui se chevauchent alors qu'ils ne devraient pas.
 const { chromium } = require('playwright'); const path = require('path'); const fs = require('fs');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 const sortie = path.join(__dirname, 'captures', 'agencement');
 
 const TAILLES = [[1280, 820, 'reference'], [1024, 640, 'petite'], [1920, 1080, 'grande'], [1366, 620, 'basse']];
@@ -37,7 +37,7 @@ const ELEMENTS = {
       localStorage.setItem(SAVE_KEY, JSON.stringify(st));
     });
     await p.reload();
-    await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+    await attendreDemarrage(p);
     await p.waitForTimeout(1500);
     // Tout a l'ecran : saison, visite de Papi, bonus, herbe doree, notifications, bulle de Papi.
     await p.evaluate(() => {

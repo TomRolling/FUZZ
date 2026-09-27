@@ -1,6 +1,6 @@
 // Prestige et Ascension : panneau de décision (à la place de confirm()), cérémonie, bilan.
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, chargerPartie, finirScene } = require('./commun');
 let problems = 0;
 const ok = (c, m) => { console.log((c ? '  ok ' : '  X  ') + m); if (!c) problems++; };
 
@@ -8,15 +8,8 @@ async function partie(b, extra = {}) {
   const p = await b.newPage({ viewport: { width: 1280, height: 820 } });
   p.on('pageerror', e => { console.log('  pageerror:', e.message); problems++; });
   await p.goto(filePath);
-  await p.evaluate((extra) => {
-    const st = { ...state, langChosen: true, tutorialSeen: true, lastDailyLoginDate: todayStr(), totalClicks: 5000, prestigeCount: 1,
-      cosmicSeeds: 4, totalSeedsEarned: 4, seedsSinceAscension: 4, ...extra };
-    for (const t of TAB_DEFS) { st.tabsSeen[t.id] = true; st.tabsDescribed[t.id] = true; }
-    st.buildings = { stagiaire: 40, voisin: 20 };
-    window.saveGame = () => {}; localStorage.setItem(SAVE_KEY, JSON.stringify(st));
-  }, extra);
-  await p.reload();
-  await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 20000 });
+  await chargerPartie(p, { totalClicks: 5000, prestigeCount: 1, cosmicSeeds: 4, totalSeedsEarned: 4, seedsSinceAscension: 4,
+    ...extra, buildings: { stagiaire: 40, voisin: 20 } });
   await p.waitForTimeout(800);
   await p.evaluate(() => {
     hideDialogue(false);
@@ -30,6 +23,8 @@ async function partie(b, extra = {}) {
 const CAPT = path.resolve(__dirname, 'captures');
 // Après une cérémonie on est sur l'écran principal : le joueur rouvre le magasin pour recommencer.
 async function rouvrirMagasin(p, onglet = 'prestige') {
+  // Comme un joueur : on laisse d'abord Papi finir son point (une scène, qui bloque tout le reste).
+  await finirScene(p);
   await p.evaluate((onglet) => { hideDialogue(false); openModal('shopPageOverlay'); activeShopTab = onglet; renderAll(); }, onglet);
   await p.waitForTimeout(450);
 }
@@ -95,7 +90,8 @@ async function relancerPrestige(p) {
   await p.screenshot({ path: CAPT + '/ceremonie-3-bilan-prestige.png' });
   await p.mouse.click(640, 700); await p.waitForTimeout(600);
   const ferme = await p.evaluate(() => ({ ceremonie: ceremonieEnCours(), ouverte: document.getElementById('ceremonieOverlay').style.display === 'flex',
-    magasin: isOverlayOpen('shopPageOverlay'), papi: isDialogueVisible() || _pendingPapiCategories.includes('prestige') }));
+    // Papi réagit : courte réplique en bulle, ou point complet en scène (voir faireLePoint).
+    magasin: isOverlayOpen('shopPageOverlay'), papi: isDialogueVisible() || sceneAffichee() || _pendingPapiCategories.includes('prestige') }));
   ok(!ferme.ceremonie && !ferme.ouverte, 'un clic referme le bilan');
   ok(!ferme.magasin, 'apres la vague, on est sur l ecran principal et non plus dans le magasin');
   ok(ferme.papi, 'Papi reagit juste apres la ceremonie');

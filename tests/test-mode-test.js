@@ -1,6 +1,6 @@
 // Mode test cache : invisible par defaut, Ctrl+Maj+D l'ouvre et le ferme, chaque bouton agit.
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 const clic = (p, libelle) => p.evaluate((l) => {
@@ -14,7 +14,7 @@ const clic = (p, libelle) => p.evaluate((l) => {
   p.on('pageerror', e => fail('pageerror:', e.message));
   await p.goto(filePath);
   await p.evaluate(() => { state.langChosen = true; state.tutorialSeen = true; state.lastDailyLoginDate = todayStr(); state.buildings = { stagiaire: 10 }; saveGame(); });
-  await p.reload(); await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await p.reload(); await attendreDemarrage(p);
   await p.waitForTimeout(800);
   await p.evaluate(() => { window.confirm = () => false; }); // aucune action du mode test ne doit demander de confirmation
 

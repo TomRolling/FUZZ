@@ -1,12 +1,11 @@
 // Papi commente les achats : une replique propre a chaque onglet du magasin, toujours au
 // premier achat d'un onglet, jamais sur un achat automatique, et pas a chaque fois ensuite.
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 const verifie = (c, ...m) => { if (!c) fail(...m); };
 
-const ONGLETS = ['production', 'clic', 'batiments', 'special', 'recherche', 'prestige', 'familiers', 'ascension', 'automatisation'];
 
 (async () => {
   const b = await chromium.launch();
@@ -22,11 +21,13 @@ const ONGLETS = ['production', 'clic', 'batiments', 'special', 'recherche', 'pre
     localStorage.setItem(SAVE_KEY, JSON.stringify(st));
   });
   await p.reload();
-  await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(p);
   await p.waitForTimeout(800);
 
   // 1. Chaque onglet est bien relie a un pool. L'equilibre fr/en et l'absence de doublon sont
   // deja verifies pour TOUS les pools par test-papi-visite.js : inutile de le refaire ici.
+  // Tous les onglets du magasin, lus dans TAB_DEFS : un onglet ajouté plus tard est vérifié d'office.
+  const ONGLETS = await p.evaluate(() => TAB_DEFS.filter(t => t.group === 'shop').map(t => t.id));
   const sansPool = await p.evaluate((ONGLETS) => ONGLETS.filter(o => !PAPI_LINES[CATEGORIE_ACHAT[o]]), ONGLETS);
   verifie(sansPool.length === 0, 'onglet(s) sans repliques :', sansPool.join(', '));
   console.log(`  ${ONGLETS.length - sansPool.length}/${ONGLETS.length} onglets ont leurs repliques`);

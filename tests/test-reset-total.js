@@ -1,7 +1,7 @@
 // Reset total : toute la progression repart de zero (Eclats compris), seuls les parametres restent,
 // rien ne revient apres rechargement ni via la sauvegarde de secours.
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 const verifie = (c, ...m) => { if (!c) fail(...m); };
@@ -41,7 +41,7 @@ async function differences(p) {
     localStorage.setItem(LEGACY_SAVE_KEY, JSON.stringify(st));
     localStorage.setItem(LEGACY_SAVE_KEY_BACKUP, JSON.stringify(st));
   }, PARAMETRES);
-  await p.reload(); await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await p.reload(); await attendreDemarrage(p);
   await p.waitForTimeout(800);
 
   console.log('=== 1. partie avancee en cours (mode test x100, bonus, herbe doree) ===');

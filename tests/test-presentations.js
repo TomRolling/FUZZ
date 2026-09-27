@@ -1,7 +1,7 @@
 // Mode test « Rejouer les présentations » : Papi doit enchainer la presentation de TOUS les onglets
 // (annonce + doigt « Clique ici ! » + explication a l'ouverture), sans rien oublier ni rester bloque.
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 const verifie = (c, ...m) => { if (!c) fail(...m); };
@@ -16,7 +16,7 @@ const verifie = (c, ...m) => { if (!c) fail(...m); };
     const st = { ...state, langChosen: true, tutorialSeen: true, lastDailyLoginDate: todayStr() };
     localStorage.setItem(SAVE_KEY, JSON.stringify(st));
   });
-  await p.reload(); await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await p.reload(); await attendreDemarrage(p);
   await p.waitForTimeout(800);
 
   console.log('=== 1. lancement depuis le panneau du mode test ===');
@@ -61,6 +61,8 @@ const verifie = (c, ...m) => { if (!c) fail(...m); };
       if (bouton) { bouton.click(); return 'bouton ' + bouton.id; }
       const onglet = document.querySelector('.drawerBtn.featureHighlight');
       if (onglet) { onglet.click(); return 'onglet ' + onglet.dataset.tabId; }
+      // Un onglet `enScene` (l'Ascension) est expliqué en scène : un clic dessus la fait avancer.
+      if (document.getElementById('sceneOverlay').classList.contains('visible')) { document.getElementById('sceneOverlay').click(); return 'scene'; }
       if (isDialogueVisible()) { document.getElementById('dialogueBox').click(); return 'bulle'; }
       const ouverte = Object.values(GROUP_TO_OVERLAY).find(isOverlayOpen);
       if (ouverte) { closeModal(ouverte); return 'fermeture ' + ouverte; }

@@ -1,6 +1,6 @@
 const { chromium } = require('playwright');
 const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 
@@ -10,7 +10,7 @@ async function boot(browser, w, h, skipTuto) {
   await page.goto(filePath);
   await page.evaluate((skip) => { state.langChosen = true; if (skip) { state.langChosen = true; state.tutorialSeen = true; state.totalClicks = 200; state.tabsSeen = { options: true, stats: true, production: true, clic: true }; saveGame(); } }, skipTuto);
   await page.reload();
-  await page.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(page);
   await page.waitForTimeout(400);
   if (!skipTuto) {
     for (let i = 0; i < 40; i++) {

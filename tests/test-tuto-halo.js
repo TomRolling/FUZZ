@@ -3,7 +3,7 @@
 // qu'un clic sur la bulle fait disparaitre bulle + halo.
 const { chromium } = require('playwright');
 const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
@@ -14,7 +14,7 @@ async function boot(browser, w, h) {
   await page.goto(filePath);
   await page.evaluate(() => { state.langChosen = true; saveGame(); });
   await page.reload();
-  await page.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(page);
   await page.waitForTimeout(400);
   // saute la scene d'ouverture jusqu'au panneau de tutoriel
   for (let i = 0; i < 40; i++) {

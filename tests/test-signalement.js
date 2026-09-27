@@ -2,7 +2,7 @@
 // le rapport contient bien ce qu'il faut pour diagnostiquer (version, environnement, etat de la
 // partie, derniere erreur JS), le lien GitHub est valide, et Echap referme la fenetre.
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 const versionAttendue = require('../src-tauri/tauri.conf.json').version;
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
@@ -25,7 +25,7 @@ const verifie = (c, ...m) => { if (!c) fail(...m); };
     localStorage.setItem(SAVE_KEY, JSON.stringify(st));
   });
   await p.reload();
-  await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(p);
   await p.waitForTimeout(1000);
 
   // Une erreur JS quelconque doit se retrouver dans le rapport : c'est tout l'interet.
@@ -88,5 +88,7 @@ const verifie = (c, ...m) => { if (!c) fail(...m); };
 
   console.log(problems ? `\n${problems} PROBLEME(S)` : '\nTOUT EST OK');
   await b.close();
+  const inattendues = erreursPage.filter(m => !/boum/.test(m));
+  verifie(!inattendues.length, 'erreur(s) JS inattendue(s) :', inattendues.slice(0, 3).join(' | '));
   process.exitCode = problems ? 1 : 0;
 })();

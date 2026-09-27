@@ -1,6 +1,6 @@
 // Fenetre « Pendant ton absence » : textes traduits (FR et EN), contenu complet, et capture.
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 const verifie = (c, ...m) => { if (!c) fail(...m); };
@@ -19,7 +19,7 @@ const verifie = (c, ...m) => { if (!c) fail(...m); };
       st.buildings = { stagiaire: 30, voisin: 20 };
       localStorage.setItem(SAVE_KEY, JSON.stringify(st));
     }, lang);
-    await p.reload(); await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+    await p.reload(); await attendreDemarrage(p);
     await p.waitForTimeout(900);
     const r = await p.evaluate(() => ({
       visible: getComputedStyle(document.getElementById('offlineOverlay')).display === 'flex',
@@ -51,7 +51,7 @@ const verifie = (c, ...m) => { if (!c) fail(...m); };
       st.buildings = { stagiaire: 30, voisin: 20 };
       localStorage.setItem(SAVE_KEY, JSON.stringify(st));
     }, lang);
-    await p.reload(); await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+    await p.reload(); await attendreDemarrage(p);
     await p.waitForTimeout(900);
     const corps = await p.evaluate(() => document.getElementById('offlineBody').textContent.replace(/\s+/g, ' ').trim());
     console.log(' ', lang, '20 h :', corps);

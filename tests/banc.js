@@ -10,7 +10,7 @@
 const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath } = require('./commun');
 const CONFIG = require(path.resolve(process.argv[2] || './equilibre-actuel.js'));
 const PROFIL = process.argv[3] || 'attentif';
 const GRAINE = parseInt(process.argv[4] || '42', 10);

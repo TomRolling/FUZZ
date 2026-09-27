@@ -6,7 +6,7 @@
 //   - aucune ressource negative, aucun achat gratuit ;
 //   - la sauvegarde survit a tout ce qu'on lui fait subir.
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problemes = 0;
 const fail = (...m) => { console.log('  X', ...m); problemes++; };
 const verifie = (c, ...m) => { if (!c) fail(...m); };
@@ -28,7 +28,7 @@ async function nouvellePage(b, etat = {}, taille = { width: 1280, height: 820 })
     localStorage.setItem(SAVE_KEY, JSON.stringify(st));
   }, etat);
   await p.reload();
-  await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 20000 });
+  await attendreDemarrage(p);
   await p.waitForTimeout(900);
   p._erreurs = erreurs;
   return p;
@@ -132,7 +132,7 @@ const texteVisible = (p) => p.evaluate(() => {
     await p.goto(filePath);
     await p.evaluate((brut) => { localStorage.setItem('fuzzSave', brut); }, fabrique);
     await p.reload();
-    const demarre = await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 20000 }).then(() => true).catch(() => false);
+    const demarre = await attendreDemarrage(p).then(() => true).catch(() => false);
     await p.waitForTimeout(700);
     const etat = demarre ? await p.evaluate(() => ({ verdure: state.verdure, ok: Number.isFinite(state.verdure) && state.verdure >= 0 })) : null;
     const verdict = !demarre ? 'NE DEMARRE PAS' : (erreurs.length ? 'erreurs: ' + erreurs[0].slice(0, 60) : (etat.ok ? 'demarre, verdure ' + Math.round(etat.verdure) : 'verdure invalide: ' + etat.verdure));
@@ -177,12 +177,15 @@ const texteVisible = (p) => p.evaluate(() => {
     const r = await p.evaluate(async () => {
       const avant = { graines: state.cosmicSeeds, eclats: state.stellarShards };
       for (let i = 0; i < 10; i++) { state.verdure = 1e14; state.totalEarned = 1e14; doPrestige(true); }
-      for (let i = 0; i < 3; i++) { state.totalSeedsEarned = 1e6; state.cosmicSeeds = 1e6; doAscension(true); }
+      // Le gain d'Ascension se calcule sur les Graines gagnées DEPUIS la dernière : remplir les autres
+      // compteurs ne suffisait pas, et seule la première des trois Ascensions avait lieu.
+      for (let i = 0; i < 3; i++) { state.totalSeedsEarned = 1e6; state.cosmicSeeds = 1e6; state.seedsSinceAscension = 1e6; doAscension(true); }
       return { avant, graines: state.cosmicSeeds, eclats: state.stellarShards, prestiges: state.prestigeCount,
                ascensions: state.totalAscensions, verdure: state.verdure, cps: totalCps(),
                fini: ['verdure','knowledge','cosmicSeeds','stellarShards'].every(k => Number.isFinite(state[k])) };
     });
     console.log(`  ${r.prestiges} prestiges, ${r.ascensions} ascensions, graines ${r.graines}, eclats ${r.eclats}`);
+    verifie(r.prestiges === 10 && r.ascensions === 3, `resets manquants : ${r.prestiges} Prestiges sur 10, ${r.ascensions} Ascensions sur 3`);
     verifie(r.fini, 'une ressource est devenue NaN ou Infinity apres les resets');
     verifie(r.verdure >= 0 && Number.isFinite(r.cps), `etat incoherent : verdure=${r.verdure} cps=${r.cps}`);
     verifie(p._erreurs.length === 0, 'erreurs pendant prestige/ascension :', p._erreurs.slice(0, 3).join(' | '));

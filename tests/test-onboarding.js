@@ -5,7 +5,7 @@
 //  3) l'arrivee du Magasin a 200 clics et la place de la bulle de Papi dedans.
 const { chromium } = require('playwright');
 const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 
@@ -17,7 +17,7 @@ const fail = (...m) => { console.log('  X', ...m); problems++; };
   await page.goto(filePath);
   await page.evaluate(() => { state.langChosen = true; state.tutorialSeen = true; saveGame(); });
   await page.reload();
-  await page.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(page);
   await page.waitForTimeout(2500);
 
   // ---------- 1. Les conditions de deblocage ----------

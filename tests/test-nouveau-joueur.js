@@ -4,7 +4,7 @@
 //  2. aucun onglet n'est presente entierement grise : Batiments et Special apparaissent quand
 //     leur premier objet est abordable, et Recherche arrive avec de quoi faire une recherche.
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 const verifie = (c, ...m) => { if (!c) fail(...m); };
@@ -19,7 +19,7 @@ async function partie(b, etat) {
     localStorage.setItem(SAVE_KEY, JSON.stringify(st));
   }, etat);
   await p.reload();
-  await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(p);
   await p.waitForTimeout(700);
   return p;
 }

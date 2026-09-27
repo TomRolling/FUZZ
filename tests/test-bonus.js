@@ -2,7 +2,7 @@
 // actives doivent afficher leur duree restante, et disparaitre a l'expiration.
 const { chromium } = require('playwright');
 const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 
@@ -25,7 +25,7 @@ const CHIPS = () => [...document.querySelectorAll('#boostRow .boostChip')].map(c
     saveGame();
   });
   await page.reload();
-  await page.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(page);
   await page.waitForTimeout(1200);
 
   console.log('=== aucun bonus au depart ===');

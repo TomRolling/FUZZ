@@ -1,6 +1,6 @@
 // Familiers : deblocage aux etapes, un seul actif, niveaux en Graines, effets, onglet, migration.
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 const verifie = (c, ...m) => { if (!c) fail(...m); };
@@ -19,7 +19,7 @@ const verifie = (c, ...m) => { if (!c) fail(...m); };
     window.saveGame = () => {};
     localStorage.setItem(SAVE_KEY, JSON.stringify(vieux));
   });
-  await p.reload(); await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await p.reload(); await attendreDemarrage(p);
   await p.waitForTimeout(800);
   const mig = await p.evaluate(() => ({ actif: state.familiers.actif, niveau: familierNiveau('escargot'), bonus: familierBonus('escargot'), icone: document.getElementById('companion').textContent, visible: document.getElementById('companion').style.display }));
   console.log('  ', JSON.stringify(mig));

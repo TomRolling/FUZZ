@@ -5,7 +5,7 @@
 //    au moment ou Papi revele l'onglet : l'animation doit etre differee, pas jouee dans le vide).
 const { chromium } = require('playwright');
 const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 
@@ -15,7 +15,7 @@ async function boot(browser, tuto) {
   await page.goto(filePath);
   await page.evaluate((t) => { state.langChosen = true; if (!t) state.tutorialSeen = true; saveGame(); }, tuto);
   await page.reload();
-  await page.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(page);
   await page.waitForTimeout(400);
   return page;
 }

@@ -2,7 +2,7 @@
 // en evidence, doigt sur le mini-onglet, descriptif au clic.
 const { chromium } = require('playwright');
 const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 
@@ -17,7 +17,7 @@ const fail = (...m) => { console.log('  X', ...m); problems++; };
     state.lastDailyLoginDate = todayStr(); state.prestigeCount = 2; saveGame();
   });
   await page.reload();
-  await page.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(page);
   await page.waitForTimeout(1500);
   const avant = await page.evaluate(() => ({ vu: !!state.tabsSeen.automatisation, halo: document.getElementById('shopBtn').classList.contains('featureHighlight') }));
   console.log('  au 2e Prestige :', JSON.stringify(avant));
@@ -41,7 +41,9 @@ const fail = (...m) => { console.log('  X', ...m); problems++; };
   const desc = await page.evaluate(() => ({ bulle: isDialogueVisible(), texte: document.getElementById('dialogueText').textContent.slice(0, 60), actif: activeShopTab, lignes: document.querySelectorAll('#automationList .upgrade').length }));
   console.log('  apres le clic :', JSON.stringify(desc));
   if (!desc.bulle || desc.actif !== 'automatisation') fail('pas de descriptif de l onglet');
-  if (desc.lignes !== 3) fail('le panneau n affiche pas les 3 automatisations');
+  // 3e Prestige, aucune Ascension : seule l'automatisation du Prestige est visible (celles de
+  // l'Ascension restent cachées jusqu'à la première, voir visibleAvantAscension).
+  if (desc.lignes !== 1) fail('le panneau doit afficher la seule automatisation du Prestige');
   await page.screenshot({ path: __dirname + '/captures/automatisation-papi.png' });
 
   console.log(problems ? `\n${problems} PROBLEME(S)` : '\nTOUT EST OK');

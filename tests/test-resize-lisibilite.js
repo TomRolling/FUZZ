@@ -2,7 +2,7 @@
 // 2) Les unites lisibles : « /sec » et « 25 sec » au lieu de « /s » et « 25s » ; « % » dans une
 //    police nette.
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 const mesure = p => p.evaluate(() => {
@@ -21,7 +21,7 @@ const mesure = p => p.evaluate(() => {
     p.on('pageerror', e => fail('pageerror:', e.message));
     await p.goto(filePath);
     await p.evaluate(() => { state.langChosen = true; state.tutorialSeen = true; state.tabsSeen = { options: true, stats: true }; state.tabsDescribed = { options: true, stats: true }; state.achievements = { a_click100: true }; state.lastDailyLoginDate = todayStr(); saveGame(); });
-    await p.reload(); await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+    await p.reload(); await attendreDemarrage(p);
     await p.waitForTimeout(1800);
     const avant = await mesure(p);
     for (const [w, h] of [[1600, 1000], [1100, 700], [2200, 1200]]) {
@@ -41,7 +41,7 @@ const mesure = p => p.evaluate(() => {
     p.on('pageerror', e => fail('pageerror:', e.message));
     await p.goto(filePath);
     await p.evaluate(() => { state.langChosen = true; state.tutorialSeen = true; for (const t of TAB_DEFS) { state.tabsSeen[t.id] = true; state.tabsDescribed[t.id] = true; } state.lastDailyLoginDate = todayStr(); state.buildings = { stagiaire: 12 }; state.itemPopupsShown = { stagiaire: true }; state.achievements = { a_click100: true }; saveGame(); });
-    await p.reload(); await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+    await p.reload(); await attendreDemarrage(p);
     await p.waitForTimeout(800);
     const r = await p.evaluate(() => {
       startTimedBoost('click', 2, 25000); renderAll();

@@ -6,7 +6,7 @@
 //   3. une fois lu, il ne se rejoue plus.
 const { chromium } = require('playwright');
 const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 
@@ -22,7 +22,7 @@ const fail = (...m) => { console.log('  X', ...m); problems++; };
     state.totalClicks = 200; saveGame();
   });
   await page.reload();
-  await page.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(page);
   await page.waitForTimeout(1500);
   await page.evaluate(() => document.getElementById('shopBtn').click());
   await page.waitForTimeout(400);

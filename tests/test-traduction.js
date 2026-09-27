@@ -2,7 +2,7 @@
 // fenetres, et signale tout texte francais encore affiche. Complete scan-traduction.js
 // (passe statique sur les tables bilingues).
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 
@@ -48,7 +48,7 @@ function suspect(texte) {
     localStorage.setItem(SAVE_KEY, JSON.stringify(st));
   });
   await p.reload();
-  await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(p);
   await p.waitForTimeout(1200);
 
   // Ramasse le texte visible, morceau par morceau, avec le chemin de l'element pour le retrouver.

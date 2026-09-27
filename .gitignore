@@ -1,3 +1,10 @@
 node_modules/
 src-tauri/target/
 graphify-out/
+
+# Regeneres par Tauri a chaque compilation (le modele officiel de Tauri les ignore aussi).
+src-tauri/gen/schemas/
+# Reglages personnels de Claude Code.
+.claude/settings.local.json
+# Captures et fiche pour le portfolio : gardees en local (tests/captures-portfolio.js les produit).
+docs/portfolio/

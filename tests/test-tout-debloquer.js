@@ -1,7 +1,7 @@
 // Mode test « Tout debloquer » : doit marcher a tout moment (scene d'ouverture, juste apres le
 // tutoriel, pendant une annonce de Papi, apres un reset total).
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 const verifie = (c, ...m) => { if (!c) fail(...m); };
@@ -11,7 +11,7 @@ async function demarrer(b, etat) {
   p.on('pageerror', e => fail('pageerror:', e.message));
   await p.goto(filePath);
   await p.evaluate((etat) => { window.saveGame = () => {}; const st = { ...state, langChosen: true, lastDailyLoginDate: todayStr(), ...etat }; localStorage.setItem(SAVE_KEY, JSON.stringify(st)); }, etat);
-  await p.reload(); await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await p.reload(); await attendreDemarrage(p);
   return p;
 }
 

@@ -1,7 +1,7 @@
 // Captures pour le portfolio (rangees dans docs/portfolio/).
 // Meme partie de reference que captures-readme.js, mais plus de scenes et en 2x pour un site.
 const { chromium } = require('playwright'); const path = require('path'); const fs = require('fs');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 const sortie = path.resolve(__dirname, '../docs/portfolio');
 
 (async () => {
@@ -28,7 +28,7 @@ const sortie = path.resolve(__dirname, '../docs/portfolio');
     localStorage.setItem(SAVE_KEY, JSON.stringify(st));
   });
   await p.reload();
-  await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(p);
   await p.waitForTimeout(2500);
 
   const prise = async (nom, prepare, attente = 700) => {

@@ -3,7 +3,7 @@
 // declarer la partie corrompue : le jeu redemarrait a zero sans que rien ne le signale.)
 const { chromium } = require('playwright');
 const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 

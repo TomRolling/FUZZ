@@ -3,7 +3,7 @@
 // compare les menus entre eux (fermeture, onglets, libelles) pour reperer les incoherences.
 // Sortie : un transcript du tutoriel + un tableau des menus + des captures dans tests/captures/ergonomie.
 const { chromium } = require('playwright'); const path = require('path'); const fs = require('fs');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 const SORTIE = path.join(__dirname, 'captures', 'ergonomie');
 
 const etatEcran = (p) => p.evaluate(() => {
@@ -60,7 +60,7 @@ const etatEcran = (p) => p.evaluate(() => {
     await p.locator('#langPopupOverlay button').first().click();   // vrai clic souris
     await p.waitForTimeout(1200);
   }
-  await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 25000 }).catch(() => {});
+  await attendreDemarrage(p).catch(() => {});
   await p.waitForTimeout(1200);
   await p.screenshot({ path: path.join(SORTIE, '02-apres-splash.png') });
 
@@ -140,7 +140,7 @@ const etatEcran = (p) => p.evaluate(() => {
     localStorage.setItem(SAVE_KEY, JSON.stringify(st));
   });
   await p.reload();
-  await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 20000 });
+  await attendreDemarrage(p);
   await p.waitForTimeout(1200);
   await p.evaluate(() => hideDialogue(false));
 

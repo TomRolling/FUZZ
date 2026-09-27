@@ -6,7 +6,7 @@
 // Le parcours part de zero via « Rejouer les presentations » (mode test), ce qui couvre tous
 // les onglets du jeu d'un coup, dans l'ordre ou un joueur les decouvrirait.
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 const verifie = (c, ...m) => { if (!c) fail(...m); };
@@ -22,7 +22,7 @@ const verifie = (c, ...m) => { if (!c) fail(...m); };
     localStorage.setItem(SAVE_KEY, JSON.stringify(st));
   });
   await p.reload();
-  await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(p);
   await p.waitForTimeout(800);
 
   await p.evaluate(() => {
@@ -96,6 +96,8 @@ const verifie = (c, ...m) => { if (!c) fail(...m); };
       if (bouton) { bouton.click(); return 'bouton'; }
       const onglet = document.querySelector('.drawerBtn.featureHighlight');
       if (onglet) { onglet.click(); return 'onglet'; }
+      // Un onglet `enScene` (l'Ascension) est expliqué en scène : un clic dessus la fait avancer.
+      if (document.getElementById('sceneOverlay').classList.contains('visible')) { document.getElementById('sceneOverlay').click(); return 'scene'; }
       if (isDialogueVisible()) { document.getElementById('dialogueBox').click(); return 'bulle'; }
       const ouverte = Object.values(GROUP_TO_OVERLAY).find(isOverlayOpen);
       if (ouverte) { closeModal(ouverte); return 'fermeture'; }

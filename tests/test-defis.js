@@ -2,7 +2,7 @@
 // reussite / echec au Prestige, recompenses, panneau.
 const { chromium } = require('playwright');
 const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 const verifie = (cond, ...m) => { if (!cond) fail(...m); };
@@ -18,7 +18,7 @@ const verifie = (cond, ...m) => { if (!cond) fail(...m); };
     state.lastDailyLoginDate = todayStr(); state.prestigeCount = 1; state.cosmicSeeds = 7; state.seedsSinceAscension = 7; saveGame();
   });
   await page.reload();
-  await page.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(page);
   await page.waitForTimeout(800);
   await page.evaluate(() => { window.confirm = () => true; state.automation.buyCompanions = false; });
 

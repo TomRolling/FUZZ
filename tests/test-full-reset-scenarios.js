@@ -1,7 +1,7 @@
 const { chromium } = require('playwright');
 const path = require('path');
 
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 
 async function newPage(browser) {
   const page = await browser.newPage();
@@ -16,7 +16,7 @@ async function waitBoot(page) {
   await page.goto(filePath);
   await page.evaluate(() => { state.langChosen = true; saveGame(); });
   await page.reload();
-  await page.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(page);
   await page.waitForTimeout(300);
 }
 
@@ -31,7 +31,7 @@ async function skipIntroToTutorialOverlay(page) {
 // Verifie qu apres un reset, refaire tout le parcours (intro -> tuto -> Parametres) fonctionne
 // normalement, sans blocage residuel (clic verrouille pour toujours, mini-onglets bloques, etc).
 async function verifyPostResetFlowWorks(page, label) {
-  await page.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(page);
   await page.waitForTimeout(500);
 
   const postResetState = await page.evaluate(() => ({
@@ -116,6 +116,8 @@ async function verifyPostResetFlowWorks(page, label) {
     if (clickTest.locked && clickTest.after === clickTest.before) issues.push('le clic reste bloque indefiniment apres avoir ferme Parametres post-reset');
   }
 
+  // Une erreur JavaScript de la page, n'importe quand dans le scénario, compte comme un problème.
+  issues.push(...page.consoleErrors.map(e => 'erreur JS : ' + e));
   console.log(`[${label}] Problemes detectes:`, issues.length ? issues : 'AUCUN');
   return issues;
 }

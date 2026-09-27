@@ -66,13 +66,15 @@ for (const t of ['RESEARCH', 'PRESTIGE_UPGRADES', 'ASCENSION_UPGRADES']) {
 }
 
 // RESEARCH : uniquement les 5 catégories autorisées
-const ALLOWED = new Set(['prodMult', 'knowledgeMult', 'cheaper', 'weatherShield', 'offlineBonus']);
+const ALLOWED = new Set(['prodMult', 'knowledgeMult', 'cheaper', 'weatherShield', 'offlineBonus', 'offlineHeures']);
 for (const r of [...tables.RESEARCH, ...tables.RESEARCH_INFINITE]) {
   if (!ALLOWED.has(r.type)) fail('type interdit dans Recherche:', r.id, r.type);
 }
-// weatherShield se combine en Math.max -> chaque palier doit être strictement meilleur
+// Protection météo : la Recherche garde son meilleur palier (Math.max, voir protectionMeteo). Une
+// valeur est la part d'effet SUPPRIMÉE, chaque palier doit donc être strictement plus grand que le
+// précédent. Ce contrôle exigeait l'inverse, et protégeait ainsi deux paliers sans effet.
 const ws = tables.RESEARCH.filter(r => r.type === 'weatherShield').map(r => r.value);
-for (let i = 1; i < ws.length; i++) if (ws[i] >= ws[i - 1]) fail('weatherShield non strictement meilleur:', ws);
+for (let i = 1; i < ws.length; i++) if (ws[i] <= ws[i - 1]) fail('weatherShield non strictement croissant:', ws);
 
 // COMPANION_BUILDINGS : targetId doit exister dans BUILDINGS
 const compIds = new Set(tables.BUILDINGS.map(b => b.id));

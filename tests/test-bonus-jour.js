@@ -2,7 +2,7 @@
 // par-dessus un menu, et seulement une fois l'onglet debloque.
 const { chromium } = require('playwright');
 const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 const popup = page => page.evaluate(() => document.getElementById('dailyPopupOverlay').style.display === 'flex');
@@ -28,7 +28,7 @@ async function boot(browser, onglet) {
   console.log('=== 1. magasin ouvert des le lancement ===');
   {
     const page = await boot(browser, true);
-    await page.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+    await attendreDemarrage(page);
     await page.evaluate(() => openModal('shopPageOverlay'));
     await page.waitForTimeout(3500);
     const pendant = await popup(page);
@@ -46,7 +46,7 @@ async function boot(browser, onglet) {
   console.log('=== 2. onglet pas encore debloque ===');
   {
     const page = await boot(browser, false);
-    await page.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+    await attendreDemarrage(page);
     await page.waitForTimeout(3000);
     const r = await page.evaluate(() => ({ popup: document.getElementById('dailyPopupOverlay').style.display === 'flex', reclame: state.lastDailyLoginDate === todayStr() }));
     console.log('  ', JSON.stringify(r));
@@ -58,7 +58,7 @@ async function boot(browser, onglet) {
   {
     const page = await boot(browser, true);
     // Ouvre la fenetre avant la fin du splash, pour que le tick n'ait jamais l'ecran libre.
-    await page.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+    await attendreDemarrage(page);
     await page.evaluate(() => { openModal('questsModalOverlay'); activeQuestsTab = 'dailyreward'; renderAll(); });
     await page.waitForTimeout(600);
     const avant = await page.evaluate(() => ({ popup: document.getElementById('dailyPopupOverlay').style.display === 'flex', bouton: getComputedStyle(document.getElementById('dailyRewardClaimBtn')).display !== 'none' }));
@@ -83,7 +83,7 @@ async function boot(browser, onglet) {
   console.log('=== 4. icone des objets caches ===');
   {
     const page = await boot(browser, true);
-    await page.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+    await attendreDemarrage(page);
     await page.evaluate(() => { state.lastDailyLoginDate = todayStr(); openModal('shopPageOverlay'); });
     await page.waitForTimeout(500);
     const ic = await page.evaluate(() => {

@@ -1,7 +1,7 @@
 // Automatisations offertes aux etapes : deblocage, onglet, achat auto, capacites auto, Prestige auto.
 const { chromium } = require('playwright');
 const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 
@@ -13,7 +13,7 @@ async function boot(browser, setup) {
   await page.evaluate(() => { window.tousOngletsVusG = () => { state.langChosen = true; state.tutorialSeen = true; for (const t of TAB_DEFS) if (t.id !== 'automatisation') { state.tabsSeen[t.id] = true; state.tabsDescribed[t.id] = true; } state.lastDailyLoginDate = todayStr(); }; });
   await page.evaluate(setup);
   await page.reload();
-  await page.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(page);
   await page.waitForTimeout(800);
   // Le test appelle lui-meme les automatisations, dans des evaluate synchrones ou la vraie boucle
   // (setInterval) ne peut pas s'intercaler. confirm renvoie false : un Prestige qui demanderait

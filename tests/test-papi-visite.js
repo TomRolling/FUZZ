@@ -2,7 +2,7 @@
 // pool, et les repliques respectent les regles d'ecriture du jeu (francais complet, pas de
 // tiret cadratin, autant de phrases en francais qu'en anglais).
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 const verifie = (c, ...m) => { if (!c) fail(...m); };
@@ -19,7 +19,7 @@ const verifie = (c, ...m) => { if (!c) fail(...m); };
     localStorage.setItem(SAVE_KEY, JSON.stringify(st));
   });
   await p.reload();
-  await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(p);
   await p.waitForTimeout(800);
 
   // 1. Les pools : tous presents, equilibres fr/en, sans doublon interne.

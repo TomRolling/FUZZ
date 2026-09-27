@@ -4,7 +4,7 @@
 // 3) L'herbe doree et les papillons ne passent plus au-dessus des menus.
 const { chromium } = require('playwright');
 const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 
@@ -15,19 +15,21 @@ const fail = (...m) => { console.log('  X', ...m); problems++; };
   await page.goto(filePath);
   await page.evaluate(() => {
     state.langChosen = true; state.tutorialSeen = true; state.totalClicks = 200;
-    state.tabsSeen = { options: true, stats: true, production: true, clic: true,
-                       batiments: true, special: true, recherche: true, prestige: true };
+    // Tous les onglets débloqués et déjà vus : la boucle 1 les passe tous en revue.
+    state.prestigeCount = 3; state.totalSeedsEarned = 20;
+    state.tabsSeen = Object.fromEntries(TAB_DEFS.map(t => [t.id, true]));
     state.verdure = 1e9; state.totalPlayTimeSec = 3600;
     saveGame();
   });
   await page.reload();
-  await page.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(page);
   await page.waitForTimeout(1500);
 
   console.log('=== 1. bulle de Papi, onglet par onglet ===');
   await page.evaluate(() => { openModal('shopPageOverlay'); });
   await page.waitForTimeout(500);
-  for (const tab of ['production', 'batiments', 'clic', 'special', 'recherche', 'prestige']) {
+  // Tous les onglets du magasin, lus dans TAB_DEFS : un onglet ajouté plus tard est vérifié d'office.
+  for (const tab of await page.evaluate(() => TAB_DEFS.filter(t => t.group === 'shop').map(t => t.id))) {
     const r = await page.evaluate((id) => {
       activeShopTab = id; renderAll();
       showDialogue('papi', ['Voila ce que fait cet onglet, en deux mots pour voir.'], { position: 'top-right' });
@@ -39,9 +41,11 @@ const fail = (...m) => { console.log('  X', ...m); problems++; };
         dans: box.left >= slot.left - 30 && box.right <= slot.right + 30
            && box.bottom <= slot.bottom + 30 && box.top >= slot.top - 30,
         box: { l: Math.round(box.left), t: Math.round(box.top) },
+        actif: activeShopTab,
       };
     }, tab);
     console.log(' ', tab.padEnd(11), JSON.stringify(r));
+    if (r.actif !== tab) fail('l onglet', tab, 'ne s affiche pas (le magasin montre', r.actif + ') : verification sans objet');
     if (!r.dans) fail('bulle hors de l emplacement reserve sur l onglet', tab, JSON.stringify(r.box));
   }
 

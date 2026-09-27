@@ -1,0 +1,68 @@
+name: Tests rapides
+
+# Les tests qui attrapent ce qu'un ajout casse sans bruit, en quelques minutes : tables du jeu,
+# traductions, contrats (textes, repliques de Papi, champs de sauvegarde, effets), chaque objet
+# achetable, reprise des sauvegardes de toutes les versions publiees, et les parties du jeu qui
+# plantaient sans le dire.
+# Appeles AVANT la mise en ligne web (pages.yml) et avant la construction d'une version
+# (build.yml) : un jeu casse ne part plus chez les joueurs. Tournent aussi seuls a chaque envoi qui
+# touche au jeu ou aux tests (une branche avec une demande de fusion n'est donc testee qu'une fois),
+# et a la main depuis l'onglet Actions.
+# La suite complete (tests/tout.sh, environ 15 min) reste a lancer en local avant chaque version.
+on:
+  workflow_call:
+  workflow_dispatch:
+  push:
+    branches-ignore: [main] # sur main, pages.yml les appelle deja avant la mise en ligne
+    paths:
+      - 'dist/**'
+      - 'tests/**'
+      - '.github/workflows/tests.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: tests
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: tests/package-lock.json
+
+      # Chromium telecharge une fois par version de Playwright (le fichier de verrouillage la fixe).
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('tests/package-lock.json') }}
+
+      - name: Installer Playwright et Chromium
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Tables du jeu et decoupage en fichiers
+        run: node check-tables.js
+
+      - name: Textes francais oublies dans le code
+        run: node scan-traduction.js
+
+      - name: Contrats (textes, Papi, sauvegarde, effets, onglets, images)
+        run: node test-contrats.js
+
+      - name: Chaque objet s'achete, coute son prix et a un effet
+        run: node test-achats-tables.js
+
+      - name: Les sauvegardes de chaque version publiee se reprennent
+        run: node test-anciennes-sauvegardes.js
+
+      - name: Aucune panne sous les mauvais traitements
+        run: node audit-agression.js

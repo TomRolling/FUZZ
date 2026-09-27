@@ -2,7 +2,7 @@
 // l'ouverture et a la fermeture, combien d'images depassent 20 ms pendant la transition, et
 // quelques points de confort (Echap, empilement des notifications, defilement des onglets).
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 
 (async () => {
   const b = await chromium.launch();
@@ -19,7 +19,7 @@ const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split
     localStorage.setItem(SAVE_KEY, JSON.stringify(st));
   });
   await p.reload();
-  await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(p);
   await p.waitForTimeout(1500);
   await p.evaluate(() => hideDialogue(false));
 

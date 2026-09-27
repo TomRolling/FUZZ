@@ -2,7 +2,7 @@
 // bonus actifs), la bulle de Papi ne doit rien recouvrir, a plusieurs tailles de fenetre ; et les
 // onglets du magasin doivent former une grille de cases identiques, sans case trop etroite.
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 const verifie = (c, ...m) => { if (!c) fail(...m); };
@@ -23,7 +23,7 @@ const verifie = (c, ...m) => { if (!c) fail(...m); };
       localStorage.setItem(SAVE_KEY, JSON.stringify(st));
     });
     await p.reload();
-    await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+    await attendreDemarrage(p);
     await p.waitForTimeout(1200);
     const r = await p.evaluate(async () => {
       hideDialogue(false);

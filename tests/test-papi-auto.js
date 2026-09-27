@@ -2,7 +2,7 @@
 // ferme le jeu toute seule meme si une autre bulle etait affichee, les explications d'onglet
 // restent au clic.
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 const verifie = (c, ...m) => { if (!c) fail(...m); };
@@ -17,7 +17,7 @@ const verifie = (c, ...m) => { if (!c) fail(...m); };
     window.saveGame = () => {};
     localStorage.setItem(SAVE_KEY, JSON.stringify(st));
   });
-  await p.reload(); await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await p.reload(); await attendreDemarrage(p);
   await p.waitForTimeout(800);
   const bulle = () => p.evaluate(() => document.getElementById('dialogueOverlay').classList.contains('visible'));
 

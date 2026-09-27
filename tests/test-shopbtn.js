@@ -2,7 +2,7 @@
 // deplacement d'une image `image-rendering: pixelated` qui la faisait gresiller.
 const { chromium } = require('playwright');
 const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 const R = () => { const b = document.getElementById('shopBtn'); const r = b.getBoundingClientRect();

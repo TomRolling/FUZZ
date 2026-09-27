@@ -1,6 +1,6 @@
 // Capture d'un evenement saisonnier (badge + decor), pour verifier a l'oeil.
 const { chromium } = require('playwright'); const path = require('path'); const fs = require('fs');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 const saison = process.argv[2] || 'noel';
 
 (async () => {
@@ -17,7 +17,7 @@ const saison = process.argv[2] || 'noel';
     localStorage.setItem(SAVE_KEY, JSON.stringify(st));
   });
   await p.reload();
-  await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(p);
   await p.waitForTimeout(1500);
   await p.evaluate(s => { hideDialogue(false); state.evenementsVus = { [`${s}-${new Date().getFullYear()}`]: true }; _evenementForce = s; renderAll(); spawnGoldenWeed(); }, saison);
   await p.waitForTimeout(1200);

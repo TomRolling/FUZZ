@@ -1,7 +1,7 @@
 // Import d'une sauvegarde : la page recharge et le demarrage normal reconstruit tout (boutons
 // reveles, partie importee, memoire de session propre, notification de confirmation).
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 const verifie = (c, ...m) => { if (!c) fail(...m); };
@@ -13,7 +13,7 @@ const verifie = (c, ...m) => { if (!c) fail(...m); };
   await p.goto(filePath);
   // Partie en cours : debut de partie, tutoriel vu, aucun bouton debloque.
   await p.evaluate(() => { const st = { ...state, langChosen: true, tutorialSeen: true, lastDailyLoginDate: todayStr() }; localStorage.setItem(SAVE_KEY, JSON.stringify(st)); });
-  await p.reload(); await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await p.reload(); await attendreDemarrage(p);
   await p.waitForTimeout(800);
 
   console.log('=== 1. import d une partie avancee pendant une partie en cours (vitesse x100, bonus actif) ===');
@@ -28,7 +28,7 @@ const verifie = (c, ...m) => { if (!c) fail(...m); };
   console.log('   boutons visibles avant :', avant.boutons);
   await p.waitForEvent('load', { timeout: 15000 });
   const t0 = Date.now();
-  await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(p);
   const dureeLancement = Date.now() - t0;
   console.log('   ecran de lancement apres import :', dureeLancement, 'ms');
   verifie(dureeLancement < 1500, 'l ecran de lancement (logos) repasse apres un import');
@@ -36,7 +36,7 @@ const verifie = (c, ...m) => { if (!c) fail(...m); };
   const apres = await p.evaluate(() => ({
     boutons: ['shopBtn', 'settingsBtn', 'achievementsBtn', 'questsBtn'].filter(id => getComputedStyle(document.getElementById(id)).display !== 'none').length,
     prestiges: state.prestigeCount, graines: state.cosmicSeeds, vitesse: _vitesseTest, boosts: Object.keys(_boosts).length,
-    toast: [...document.querySelectorAll('.toast')].some(t => /Sauvegarde importée/.test(t.textContent)),
+    toast: [...document.querySelectorAll('.toast')].some(t => /Sauvegarde importée/.test(t.textContent)), toasts: [...document.querySelectorAll('.toast')].map(t => t.textContent),
     bulle: document.getElementById('dialogueOverlay').classList.contains('visible'), spotlight: _pendingSpotlightGroup,
   }));
   console.log('  ', JSON.stringify(apres));
@@ -47,7 +47,7 @@ const verifie = (c, ...m) => { if (!c) fail(...m); };
   verifie(!apres.bulle && !apres.spotlight, 'aucune annonce de Papi ne doit se declencher pour des onglets deja vus');
 
   console.log('=== 2. la partie importee survit a un nouveau rechargement ===');
-  await p.reload(); await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await p.reload(); await attendreDemarrage(p);
   await p.waitForTimeout(800);
   const encore = await p.evaluate(() => ({ prestiges: state.prestigeCount, toast: [...document.querySelectorAll('.toast')].some(t => /Sauvegarde importée/.test(t.textContent)) }));
   console.log('  ', JSON.stringify(encore));

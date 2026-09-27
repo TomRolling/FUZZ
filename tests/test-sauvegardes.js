@@ -1,7 +1,7 @@
 // Sauvegardes de secours : une par jour sur trois jours, plus la copie automatique, listees
 // dans les Options avec leur contenu, et restaurables.
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 const verifie = (c, ...m) => { if (!c) fail(...m); };
@@ -17,7 +17,7 @@ const verifie = (c, ...m) => { if (!c) fail(...m); };
     localStorage.setItem(SAVE_KEY, JSON.stringify(st));
   });
   await p.reload();
-  await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(p);
   await p.waitForTimeout(600);
 
   // 1. Une entree par jour, la plus ancienne tombe au-dela de trois jours.

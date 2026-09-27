@@ -3,7 +3,7 @@
 // (3) une piste illisible fait basculer sur une autre au lieu de tuer la musique.
 const { chromium } = require('playwright');
 const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath } = require('./commun');
 
 async function boot(browser) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 820 } });

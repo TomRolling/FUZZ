@@ -1,7 +1,7 @@
 // Barre des capacites sur l'ecran de jeu, Prestige qui remet Clic/Batiments/Special a zero,
 // petits correctifs (familiers, clic droit, Tout debloquer, taille des cases).
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 const verifie = (c, ...m) => { if (!c) fail(...m); };
@@ -21,7 +21,7 @@ const verifie = (c, ...m) => { if (!c) fail(...m); };
     window.saveGame = () => {};
     localStorage.setItem(SAVE_KEY, JSON.stringify(st));
   });
-  await p.reload(); await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await p.reload(); await attendreDemarrage(p);
   await p.waitForTimeout(1200);
 
   console.log('=== 1. barre des capacites ===');
@@ -94,7 +94,7 @@ const verifie = (c, ...m) => { if (!c) fail(...m); };
   p2.on('pageerror', e => fail('pageerror:', e.message));
   await p2.goto(filePath);
   await p2.evaluate(() => { const st = { ...state, langChosen: true, tutorialSeen: true, lastDailyLoginDate: todayStr() }; window.saveGame = () => {}; localStorage.setItem(SAVE_KEY, JSON.stringify(st)); });
-  await p2.reload(); await p2.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await p2.reload(); await attendreDemarrage(p2);
   await p2.waitForTimeout(800);
   const visibles = await p2.evaluate(() => {
     const vus = () => ['shopBtn', 'settingsBtn', 'achievementsBtn', 'questsBtn'].filter(id => getComputedStyle(document.getElementById(id)).display !== 'none').length;

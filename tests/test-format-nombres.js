@@ -1,7 +1,7 @@
 // formatNum : aucune unite ne doit jamais depasser 999.99 (999 999 s'affichait « 1000K »,
 // parce que l'unite est choisie avant l'arrondi d'affichage).
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 const verifie = (c, ...m) => { if (!c) fail(...m); };

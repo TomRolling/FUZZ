@@ -1,6 +1,6 @@
 // Captures d'ecran pour le README (rangees dans docs/captures/).
 const { chromium } = require('playwright'); const path = require('path'); const fs = require('fs');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 const sortie = path.resolve(__dirname, '../docs/captures');
 
 (async () => {
@@ -26,7 +26,7 @@ const sortie = path.resolve(__dirname, '../docs/captures');
     st.activeCooldowns = { grelotVent: Date.now() + 8 * 60000, tamtamCrapauds: Date.now() + 95 * 1000 };
     localStorage.setItem(SAVE_KEY, JSON.stringify(st));
   });
-  await p.reload(); await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await p.reload(); await attendreDemarrage(p);
   await p.waitForTimeout(2500);
   await p.evaluate(() => { hideDialogue(false); startTimedBoost('golden', 2, 22000); renderAll(); });
   await p.waitForTimeout(600);

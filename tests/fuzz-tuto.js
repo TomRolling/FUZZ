@@ -2,7 +2,7 @@
 // mini-onglets. Cherche un etat bloque — bulle verrouillee sans moyen de la fermer.
 const { chromium } = require('playwright');
 const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 
 const CIBLES = ['dialogueBox', 'achievementsBtn', 'shopBtn', 'settingsBtn', 'questsBtn',
                 'achievementsModalCloseBtn', 'shopPageCloseBtn', 'settingsModalCloseBtn'];
@@ -19,7 +19,7 @@ async function unePasse(browser, graine) {
     saveGame();
   });
   await page.reload();
-  await page.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(page);
   await page.waitForTimeout(1500);
 
   // Marteau : 120 clics pseudo-aleatoires mais reproductibles.
@@ -85,7 +85,7 @@ async function unePasse(browser, graine) {
     const fige = !etat.clicPasse && !etat.modaleOuverte && !etat.bulle;
     console.log('graine', String(graine).padStart(4), bloque ? 'BLOQUE' : (fige ? 'FIGE' : 'ok    '), JSON.stringify(etat));
     if (erreurs.length) console.log('        erreurs:', erreurs.slice(0, 2));
-    if (bloque || fige) bloques++;
+    if (bloque || fige || erreurs.length) bloques++;
   }
   console.log(bloques ? `\n${bloques} PASSE(S) BLOQUEE(S)` : '\nAUCUN BLOCAGE');
   await browser.close();

@@ -14,7 +14,35 @@ permissions:
   contents: write
 
 jobs:
+  # Ce commit a-t-il deja passe les tests rapides ? C'est le cas d'une version poussee sur main (la mise
+  # en ligne web les lance, pages.yml) puis taguee : inutile de les refaire. Dans le doute (erreur,
+  # rien trouve), la reponse est non et les tests tournent.
+  deja-teste:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    outputs:
+      oui: ${{ steps.cherche.outputs.oui }}
+    steps:
+      - id: cherche
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          n=$(gh run list --repo "$GITHUB_REPOSITORY" --commit "$GITHUB_SHA" --status success --json workflowName \
+               --jq '[.[] | select(.workflowName == "Version web (GitHub Pages)" or .workflowName == "Tests rapides")] | length' 2>/dev/null || echo 0)
+          if [ "${n:-0}" -gt 0 ] 2>/dev/null; then echo "oui=true" >> "$GITHUB_OUTPUT"; else echo "oui=false" >> "$GITHUB_OUTPUT"; fi
+          echo "Tests rapides deja passes sur ce commit : ${n:-0} execution(s) trouvee(s)"
+
+  # Les tests rapides d'abord (tests.yml) : une version qui les echoue n'est pas construite.
+  tests:
+    needs: deja-teste
+    if: needs.deja-teste.outputs.oui != 'true'
+    uses: ./.github/workflows/tests.yml
+
+  # Construite si les tests viennent de passer, ou s'ils avaient deja passe (job saute) ; jamais s'ils echouent.
   build:
+    needs: [deja-teste, tests]
+    if: ${{ !cancelled() && !failure() }}
     strategy:
       fail-fast: false
       matrix:

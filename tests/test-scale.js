@@ -3,7 +3,7 @@
 // et que la taille apparente du texte grandisse un peu — sans exploser — quand on maximise.
 const { chromium } = require('playwright');
 const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath } = require('./commun');
 
 const SIZES = [
   ['petite fenetre  900x620', 900, 620],
@@ -22,6 +22,7 @@ const SIZES = [
 
   for (const [label, w, h] of SIZES) {
     const page = await browser.newPage({ viewport: { width: w, height: h } });
+    page.on('pageerror', e => fail('pageerror:', e.message));
     await page.goto(filePath);
     await page.evaluate(() => { state.langChosen = true; state.tutorialSeen = true; saveGame(); });
     await page.reload();

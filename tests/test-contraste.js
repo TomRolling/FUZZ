@@ -3,7 +3,7 @@
 // sans fixer sa couleur de texte devient alors illisible (c'est arrive au badge meteo et a la
 // banniere « Papi debarque »). On mesure le contraste WCAG reel de chaque texte visible.
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 
@@ -24,7 +24,7 @@ const SEUIL_GRAND = 3;   // texte de 18 px et plus (ou 14 px gras)
     localStorage.setItem(SAVE_KEY, JSON.stringify(st));
   });
   await p.reload();
-  await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(p);
   await p.waitForTimeout(900);
 
   const mesure = () => p.evaluate(() => {

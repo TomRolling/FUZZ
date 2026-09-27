@@ -1,7 +1,7 @@
 // Fluidite : compteur de Verdure continu (jamais au-dessus de la vraie valeur), fondu des fenetres,
 // bulle de Papi de taille fixe pendant l'ecriture, boutons des quetes gardes d'un rendu a l'autre.
 const { chromium } = require('playwright'); const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 const verifie = (c, ...m) => { if (!c) fail(...m); };
@@ -19,7 +19,7 @@ const verifie = (c, ...m) => { if (!c) fail(...m); };
     window.saveGame = () => {};
     localStorage.setItem(SAVE_KEY, JSON.stringify(st));
   });
-  await p.reload(); await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await p.reload(); await attendreDemarrage(p);
   await p.waitForTimeout(1500);
 
   console.log('=== 1. compteur de Verdure continu ===');

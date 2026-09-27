@@ -3,7 +3,7 @@
 // Verifie aussi que le bouton « Activer » des capacites de Special fonctionne toujours.
 const { chromium } = require('playwright');
 const path = require('path');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 let problems = 0;
 const fail = (...m) => { console.log('  X', ...m); problems++; };
 
@@ -17,6 +17,8 @@ const ONGLETS = [
   ['recherche (infinies)', '#tab-recherche #researchInfiniteShop'],
   ['prestige', '#tab-prestige #prestigeShop'],
   ['ascension', '#tab-ascension #ascensionShop'],
+  ['familiers', '#tab-familiers #familiersList'],
+  ['automatisation', '#tab-automatisation #automationList'],
 ];
 
 (async () => {
@@ -28,13 +30,14 @@ const ONGLETS = [
   await page.evaluate(() => {
     state.langChosen = true; state.tutorialSeen = true; state.totalClicks = 5000;
     state.tabsSeen = { options: true, stats: true, galerie: true, production: true, clic: true,
-                       batiments: true, special: true, recherche: true, prestige: true, ascension: true };
+                       batiments: true, special: true, recherche: true, prestige: true, ascension: true,
+                       familiers: true, automatisation: true };
     state.verdure = 1e15; state.knowledge = 1e9; state.cosmicSeeds = 500; state.stellarShards = 500;
     state.totalSeedsEarned = 1e9; state.prestigeCount = 3; state.totalPlayTimeSec = 7200;
     saveGame();
   });
   await page.reload();
-  await page.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(page);
   await page.waitForTimeout(1200);
   await page.evaluate(() => { openModal('shopPageOverlay'); });
   await page.waitForTimeout(400);
@@ -71,6 +74,12 @@ const ONGLETS = [
     if (obs.sameNode !== obs.total) fail(nom, ': la ligne est recreee pendant le survol (' + obs.sameNode + '/' + obs.total + ')');
     if (obs.hovered !== obs.total) fail(nom, ': le survol se perd (' + obs.hovered + '/' + obs.total + ')');
   }
+
+  // Un onglet du magasin ajouté plus tard doit rejoindre la liste : sinon il échapperait au test
+  // sans que rien ne le signale.
+  const couverts = new Set(ONGLETS.map(([, sel]) => sel.match(/#tab-([a-z]+)/)[1]));
+  const oublies = await page.evaluate((c) => TAB_DEFS.filter(t => t.group === 'shop' && !c.includes(t.id)).map(t => t.id), [...couverts]);
+  if (oublies.length) fail('onglet(s) du magasin absent(s) de ONGLETS :', oublies.join(', '));
 
   // Le bouton « Activer » d'une capacite de Special doit toujours marcher, et NE PAS declencher
   // l'achat de la ligne.

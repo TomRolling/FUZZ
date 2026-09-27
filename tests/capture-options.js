@@ -1,6 +1,6 @@
 // Capture du panneau Options (nouveaux reglages de confort + liste des sauvegardes).
 const { chromium } = require('playwright'); const path = require('path'); const fs = require('fs');
-const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split(path.sep).join('/');
+const { filePath, attendreDemarrage } = require('./commun');
 
 (async () => {
   fs.mkdirSync(path.join(__dirname, 'captures'), { recursive: true });
@@ -21,7 +21,7 @@ const filePath = 'file://' + path.resolve(__dirname, '../dist/index.html').split
     }))));
   });
   await p.reload();
-  await p.waitForFunction(() => document.getElementById('splashOverlay').style.display === 'none', { timeout: 15000 });
+  await attendreDemarrage(p);
   await p.waitForTimeout(900);
   await p.evaluate(() => {
     hideDialogue(false);
